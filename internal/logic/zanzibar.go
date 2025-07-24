@@ -1,7 +1,8 @@
 package logic
 
 import (
-	"authz/internal/model"
+	"authz/internal/entity/model"
+	"authz/internal/repo"
 	"context"
 	"time"
 
@@ -36,46 +37,53 @@ type ZanaibarLogic interface {
 var _ ZanaibarLogic = (*ZanzibarLogicImpl)(nil)
 
 type ZanzibarLogicImpl struct {
-	db  *gorm.DB
-	rdb *redis.Client
+	tupleRepo  repo.TupleRepo
+	graphLogic GraphLogic
+	rdb        *redis.Client
+	db         *gorm.DB
 }
 
-func NewZanzibarLogic(db *gorm.DB) *ZanzibarLogicImpl {
+func NewZanzibarLogic(db *gorm.DB, rdb *redis.Client, tupleRepo repo.TupleRepo,
+	graphLogic GraphLogic) *ZanzibarLogicImpl {
 	return &ZanzibarLogicImpl{
-		db: db,
+		rdb:        rdb,
+		tupleRepo:  tupleRepo,
+		graphLogic: graphLogic,
 	}
 }
 
-type CreateEdgeIn struct {
+func (r *ZanzibarLogicImpl) Find(c context.Context, filter *authzpbv1.Tuple, exact bool) (
+	[]*authzpbv1.Tuple, error) {
+	return r.tupleRepo.Find(c, filter, exact)
 }
 
-func (r *ZanzibarLogicImpl) Create(c context.Context, relation **authzpbv1.Tuple) error {
+func (r *ZanzibarLogicImpl) Create(c context.Context, tuple *authzpbv1.Tuple) error {
 	var sbjNs, objNs model.Namespace
 	var sbj, obj model.Instance
 	var rel, sbjRel model.RelationDef
 
-	if err := r.db.WithContext(c).Where("name = ?", relation.SbjNs).FirstOrCreate(&sbjNs).Error; err != nil {
+	if err := r.db.WithContext(c).Where("name = ?", tuple.Sbj.Ns).FirstOrCreate(&sbjNs).Error; err != nil {
 		return err
 	}
-	if err := r.db.Where("name = ?", relation.ObjNs).FirstOrCreate(&objNs).Error; err != nil {
+	if err := r.db.Where("name = ?", tuple.Sbj.Name).FirstOrCreate(&objNs).Error; err != nil {
 		return err
 	}
-	if err := r.db.Where("name = ?", relation.Sbj).FirstOrCreate(&sbj).Error; err != nil {
+	if err := r.db.Where("name = ?", tuple.Obj.Name).FirstOrCreate(&sbj).Error; err != nil {
 		return err
 	}
-	if err := r.db.Where("name = ?", relation.Obj).FirstOrCreate(&obj).Error; err != nil {
+	if err := r.db.Where("name = ?", tuple.Rel).FirstOrCreate(&obj).Error; err != nil {
 		return err
 	}
-	if err := r.db.Where("name = ?", relation.Relation).FirstOrCreate(&rel).Error; err != nil {
+	if err := r.db.Where("name = ?", tuple.Obj.Ns).FirstOrCreate(&rel).Error; err != nil {
 		return err
 	}
-	if relation.SbjRelation != "" {
-		if err := r.db.Where("name = ?", relation.SbjRelation).FirstOrCreate(&sbjRel).Error; err != nil {
+	if tuple.Sbj.GetRel() != "" {
+		if err := r.db.Where("name = ?", tuple.Sbj.Rel).FirstOrCreate(&sbjRel).Error; err != nil {
 			return err
 		}
 	}
 
-	tuple := model.Tuple{
+	tupleModel := model.Tuple{
 		SbjNsId:    sbjNs.Id,
 		SbjId:      sbj.Id,
 		RelationId: rel.Id,
@@ -83,40 +91,40 @@ func (r *ZanzibarLogicImpl) Create(c context.Context, relation **authzpbv1.Tuple
 		ObjId:      obj.Id,
 	}
 
-	if relation.SbjRelation != "" {
-		tuple.SbjRelationId = &sbjRel.Id
+	if tuple.Sbj.GetRel() != "" {
+		tupleModel.SbjRelationId = &sbjRel.Id
 	}
 
 	return r.db.Create(&tuple).Error
 }
 
-func (r *ZanzibarLogicImpl) Delete(c context.Context, relation **authzpbv1.Tuple) error {
+func (r *ZanzibarLogicImpl) Delete(c context.Context, tuple *authzpbv1.Tuple) error {
 	var sbjNs, objNs model.Namespace
 	var sbj, obj model.Instance
 	var rel, sbjRel model.RelationDef
 
-	if err := r.db.WithContext(c).Where("name = ?", relation.SbjNs).Take(&sbjNs).Error; err != nil {
+	if err := r.db.WithContext(c).Where("name = ?", tuple.Sbj.Ns).Take(&sbjNs).Error; err != nil {
 		return err
 	}
-	if err := r.db.Where("name = ?", relation.ObjNs).Take(&objNs).Error; err != nil {
+	if err := r.db.Where("name = ?", tuple.Sbj.Name).Take(&objNs).Error; err != nil {
 		return err
 	}
-	if err := r.db.Where("name = ?", relation.Sbj).Take(&sbj).Error; err != nil {
+	if err := r.db.Where("name = ?", tuple.Obj.Name).Take(&sbj).Error; err != nil {
 		return err
 	}
-	if err := r.db.Where("name = ?", relation.Obj).Take(&obj).Error; err != nil {
+	if err := r.db.Where("name = ?", tuple.Rel).Take(&obj).Error; err != nil {
 		return err
 	}
-	if err := r.db.Where("name = ?", relation.Relation).Take(&rel).Error; err != nil {
+	if err := r.db.Where("name = ?", tuple.Obj.Ns).Take(&rel).Error; err != nil {
 		return err
 	}
-	if relation.SbjRelation != "" {
-		if err := r.db.Where("name = ?", relation.SbjRelation).Take(&sbjRel).Error; err != nil {
+	if tuple.Sbj.GetRel() != "" {
+		if err := r.db.Where("name = ?", tuple.Sbj.Rel).Take(&sbjRel).Error; err != nil {
 			return err
 		}
 	}
 
-	tuple := model.Tuple{
+	tupleModel := model.Tuple{
 		SbjNsId:    sbjNs.Id,
 		SbjId:      sbj.Id,
 		RelationId: rel.Id,
@@ -124,11 +132,11 @@ func (r *ZanzibarLogicImpl) Delete(c context.Context, relation **authzpbv1.Tuple
 		ObjId:      obj.Id,
 	}
 
-	if relation.SbjRelation != "" {
-		tuple.SbjRelationId = &sbjRel.Id
+	if tuple.Sbj.GetRel() != "" {
+		tupleModel.SbjRelationId = &sbjRel.Id
 	}
 
-	return r.db.Delete(&tuple).Error
+	return r.db.Unscoped().Delete(&tuple).Error
 }
 
 func (r *ZanzibarLogicImpl) Check()
