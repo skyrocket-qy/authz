@@ -2,6 +2,7 @@ package logic
 
 import (
 	"authz/internal/model"
+	"authz/internal/repo"
 	"context"
 	"time"
 
@@ -36,13 +37,19 @@ type ZanaibarLogic interface {
 var _ ZanaibarLogic = (*ZanzibarLogicImpl)(nil)
 
 type ZanzibarLogicImpl struct {
-	db  *gorm.DB
-	rdb *redis.Client
+	db         *gorm.DB
+	rdb        *redis.Client
+	graphLogic GraphLogic
+	tupleRepo  repo.TupleRepo
 }
 
-func NewZanzibarLogic(db *gorm.DB) *ZanzibarLogicImpl {
+func NewZanzibarLogic(db *gorm.DB, rdb *redis.Client, graphLogic GraphLogic,
+	tupleRepo repo.TupleRepo) *ZanzibarLogicImpl {
 	return &ZanzibarLogicImpl{
-		db: db,
+		db:         db,
+		rdb:        rdb,
+		graphLogic: graphLogic,
+		tupleRepo:  tupleRepo,
 	}
 }
 
