@@ -28,6 +28,9 @@ redis:
 	redis \
 	redis-server --requirepass password
 
+redis-stk:
+	docker run -p --name my-redis 6379:6379 redis/redis-stack-server:latest
+
 build-img:
 	docker build -t go-server-template .
 
