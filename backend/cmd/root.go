@@ -3,14 +3,8 @@ package cmd
 import (
 	"authz/api"
 	"authz/internal/handler"
-	"authz/internal/handler/middleware"
-	"authz/internal/logic"
-	cognitologic "authz/internal/logic/cognito"
-	internallogic "authz/internal/logic/inter"
-	"authz/internal/model"
 	"authz/internal/pkg"
 	"authz/internal/repository"
-	"authz/internal/service/aws"
 	"authz/internal/service/database"
 	"authz/internal/service/logger"
 	"authz/internal/service/redis"
@@ -22,7 +16,6 @@ import (
 	validate "authz/internal/service/validate"
 
 	"github.com/gin-gonic/gin"
-	"github.com/robfig/cron"
 	"github.com/rs/zerolog/log"
 	"github.com/skyrocket-qy/gox/logx"
 	"github.com/spf13/cobra"
@@ -48,19 +41,9 @@ func Execute() {
 
 func init() {
 	Cmd.Flags().
-		StringVarP(&pkg.Db, `database`, "d", "postgres", `"postgres", "mysql"`)
-	Cmd.Flags().
 		StringVarP(&pkg.Env, `env`, "e", "local", `default: local`)
-	Cmd.Flags().
-		StringP(`logic`, "l", "internal", "internal or cognito")
 
 	Cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
-		validDatabases := map[string]bool{"postgres": true, "mysql": true}
-		if !validDatabases[pkg.Db] {
-			return fmt.Errorf("invalid database value: %s. Must be one of: postgres, mysql",
-				pkg.Db)
-		}
-
 		validEnvs := map[string]bool{"local": true, "dev": true, "prod": true, "stage": true}
 		if !validEnvs[pkg.Env] {
 			return fmt.Errorf(
@@ -118,62 +101,26 @@ func RunServer(cmd *cobra.Command, args []string) {
 
 	var app *fx.App
 
-	switch cmd.Flag("logic").Value.String() {
-	case "internal":
-		app = fx.New(
-			fx.Supply(
-				fx.Annotate(
-					context.TODO(),
-					fx.As(new(context.Context)),
-				),
+	app = fx.New(
+		fx.Supply(
+			fx.Annotate(
+				context.TODO(),
+				fx.As(new(context.Context)),
 			),
-			fx.Provide(
-				aws.NewSES,
-				database.New,
-				logic.NewKafkaConsumer,
-				cron.New,
-				redis.New,
-				repository.NewZanzibarRepo,
-				NewGinEngine,
-				fx.Annotate(middleware.NewInterAuthMid, fx.As(new(middleware.AuthMid))),
-				fx.Annotate(internallogic.New, fx.As(new(logic.Logic))),
-				handler.NewHandler,
-			),
-			fx.Invoke(
-				validate.New,
-				model.NewRoleData,
-				pkg.InitSwagger,
-				repository.StartCleanJob,
-				logic.RegisterEmailWorker,
-				api.RegisterAPIHandlers,
-				StartHTTPServer,
-			),
-		)
-		app.Run()
-	case "cognito":
-
-		app = fx.New(
-			fx.Supply(
-				fx.Annotate(
-					context.TODO(),
-					fx.As(new(context.Context)),
-				),
-			),
-			fx.Provide(
-				validate.New,
-				database.New,
-				aws.NewCognito,
-				redis.New,
-				NewGinEngine,
-				fx.Annotate(cognitologic.New, fx.As(new(logic.Logic))),
-				handler.NewHandler,
-			),
-			fx.Invoke(
-				pkg.InitSwagger,
-				api.RegisterAPIHandlers,
-				StartHTTPServer,
-			),
-		)
-		app.Run()
-	}
+		),
+		fx.Provide(
+			database.New,
+			redis.New,
+			NewGinEngine,
+			handler.NewHandler,
+		),
+		fx.Invoke(
+			validate.New,
+			pkg.InitSwagger,
+			repository.StartCleanJob,
+			api.RegisterAPIHandlers,
+			StartHTTPServer,
+		),
+	)
+	app.Run()
 }

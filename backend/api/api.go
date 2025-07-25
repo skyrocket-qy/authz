@@ -1,10 +1,10 @@
 package api
 
 import (
+	handler "authz/internal/handler"
+	"authz/internal/handler/middleware"
+	"authz/internal/pkg"
 	"net/http"
-	handler "srv/internal/handler"
-	"srv/internal/handler/middleware"
-	"srv/internal/pkg"
 
 	"github.com/gin-gonic/gin"
 	"github.com/skyrocket-qy/erx"

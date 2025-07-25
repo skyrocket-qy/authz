@@ -1,1 +1,1 @@
-# zanzibarx
+# authz
