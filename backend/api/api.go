@@ -2,7 +2,7 @@ package api
 
 import (
 	handler "authz/internal/handler"
-	"authz/internal/handler/middleware"
+	"authz/internal/handler/rest/middleware"
 	"authz/internal/pkg"
 	"net/http"
 
