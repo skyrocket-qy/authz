@@ -1,0 +1,292 @@
+definitions:
+  authcontroller.ChangePassword.Req:
+    properties:
+      newPass:
+        type: string
+      oldPass:
+        type: string
+    required:
+    - newPass
+    - oldPass
+    type: object
+  logic.ConfirmForgotPasswordIn:
+    properties:
+      code:
+        type: string
+      email:
+        type: string
+      newPass:
+        type: string
+    required:
+    - code
+    - email
+    - newPass
+    type: object
+  logic.ConfirmSignUpIn:
+    properties:
+      code:
+        type: string
+      email:
+        type: string
+    required:
+    - code
+    - email
+    type: object
+  logic.ForgotPasswordIn:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  logic.LoginIn:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  logic.LoginOut:
+    properties:
+      accessToken:
+        type: string
+      idToken:
+        type: string
+      refreshToken:
+        type: string
+    type: object
+  logic.RefreshTokenIn:
+    properties:
+      email:
+        type: string
+      refreshToken:
+        type: string
+    required:
+    - email
+    - refreshToken
+    type: object
+  logic.RefreshTokenOut:
+    properties:
+      accessToken:
+        type: string
+      idToken:
+        type: string
+      refreshToken:
+        type: string
+    type: object
+  logic.ResendConfirmationCodeIn:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  logic.SetNewPasswordIn:
+    properties:
+      email:
+        type: string
+      newPass:
+        type: string
+      oldPass:
+        type: string
+    required:
+    - email
+    - newPass
+    - oldPass
+    type: object
+  logic.SignUpIn:
+    properties:
+      email:
+        type: string
+      nickName:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - nickName
+    - password
+    type: object
+  er.APIError:
+    properties:
+      code:
+        type: string
+      msg:
+        type: string
+      traceID:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /v1/change-password:
+    post:
+      parameters:
+      - description: req
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/authcontroller.ChangePassword.Req'
+      responses:
+        "200":
+          description: OK
+      tags:
+      - auth
+  /v1/confirm-forgot-password:
+    post:
+      parameters:
+      - description: Request body
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/logic.ConfirmForgotPasswordIn'
+      responses:
+        "200":
+          description: OK
+      tags:
+      - auth
+  /v1/confirm-sign-up:
+    post:
+      parameters:
+      - description: Request body
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/logic.ConfirmSignUpIn'
+      responses:
+        "200":
+          description: OK
+      tags:
+      - auth
+  /v1/forgot-password:
+    post:
+      parameters:
+      - description: Request body
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/logic.ForgotPasswordIn'
+      responses:
+        "200":
+          description: OK
+      tags:
+      - auth
+  /v1/healthy:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/er.APIError'
+      tags:
+      - general
+  /v1/invite-user:
+    post:
+      parameters:
+      - description: request body
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/logic.LoginIn'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/logic.LoginOut'
+      tags:
+      - auth
+  /v1/login:
+    post:
+      parameters:
+      - description: request body
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/logic.LoginIn'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/logic.LoginOut'
+      tags:
+      - auth
+  /v1/ping:
+    get:
+      responses:
+        "200":
+          description: OK
+      tags:
+      - general
+  /v1/refresh-token:
+    post:
+      parameters:
+      - description: req
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/logic.RefreshTokenIn'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/logic.RefreshTokenOut'
+      tags:
+      - auth
+  /v1/resend-confirmation-code:
+    post:
+      parameters:
+      - description: request body
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/logic.ResendConfirmationCodeIn'
+      responses:
+        "200":
+          description: OK
+      tags:
+      - auth
+  /v1/set-new-password:
+    post:
+      parameters:
+      - description: request body
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/logic.SetNewPasswordIn'
+      responses:
+        "200":
+          description: OK
+      tags:
+      - auth
+  /v1/sign-up:
+    post:
+      parameters:
+      - description: req
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/logic.SignUpIn'
+      responses:
+        "200":
+          description: OK
+      tags:
+      - auth
+securityDefinitions:
+  Bearer:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
