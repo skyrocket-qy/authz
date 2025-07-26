@@ -1,7 +1,6 @@
 package api
 
 import (
-	handler "authz/internal/handler"
 	"authz/internal/handler/rest/middleware"
 	"authz/internal/pkg"
 	"net/http"
@@ -12,7 +11,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func RegisterAPIHandlers(r *gin.Engine, h *handler.Handler, authMid middleware.AuthMid) {
+func RegisterAPIHandlers(r *gin.Engine, h *rest.Handler, checkAuth gin.HandlerFunc) {
 	r.Use(middleware.Cors())
 	r.Use(middleware.ErrorHttp)
 
@@ -22,27 +21,13 @@ func RegisterAPIHandlers(r *gin.Engine, h *handler.Handler, authMid middleware.A
 	{
 		vr.GET("/ping", h.Ping)
 		vr.GET("/healthy", h.Healthy)
-
-		vr.POST("/login", Hdl(h.Login))
-		vr.POST("/set-new-password", HdlNoOut(h.SetNewPassword))
-
-		vr.POST("/sign-up", HdlNoOut(h.SignUp))
-		vr.POST("/confirm-sign-up", HdlNoOut(h.ConfirmSignUp))
-
-		vr.POST("/forgot-password", HdlNoOut(h.ForgotPassword))
-		vr.POST("/confirm-forgot-password", HdlNoOut(h.ConfirmForgotPassword))
-
-		vr.POST("/resend-confirmation-code", HdlNoOut(h.ResendConfirmationCode))
-		vr.POST("/refresh-token", Hdl(h.RefreshToken))
 	}
 
 	pR := r.Group("/")
-	pR.Use(authMid.CheckAuth())
+	pR.Use(checkAuth)
 
 	vpr := pR.Group("/v1")
 	{
-		vpr.POST("/change-password", HdlNoOut(h.ChangePassword))
-		vpr.POST("/invite-user", HdlNoOut(h.InviteUser))
 	}
 }
 
