@@ -5,6 +5,7 @@ go 1.24.5
 require (
 	ariga.io/atlas-provider-gorm v0.5.3
 	github.com/caarlos0/env/v11 v11.3.1
+	github.com/deckarep/golang-set/v2 v2.8.0
 	github.com/gin-gonic/gin v1.10.1
 	github.com/go-playground/validator/v10 v10.20.0
 	github.com/golang-jwt/jwt/v5 v5.2.3

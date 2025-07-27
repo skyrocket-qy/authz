@@ -19,9 +19,12 @@ type ZanzibarLogic interface {
 	Create(c context.Context, rel *entity.Tuple) error
 	Find(c context.Context, filter *entity.Tuple, exact bool) ([]*entity.Tuple, error)
 	Delete(c context.Context, filter *entity.Tuple) error
+
 	Check(c context.Context, sbj *entity.Instance, rel string, obj *entity.Instance) (bool, error)
 	Lookup(c context.Context, sbj *entity.Instance, rel string) ([]*entity.Instance, error)
 	Expand(c context.Context, relation string, obj *entity.Instance) ([]entity.Instance, error)
+
+	
 }
 
 var _ ZanzibarLogic = (*ZanzibarLogicImpl)(nil)

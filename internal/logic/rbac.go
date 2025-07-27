@@ -3,6 +3,8 @@ package logic
 import (
 	"authz/internal/entity"
 	"context"
+
+	mapset "github.com/deckarep/golang-set/v2"
 )
 
 /*
@@ -50,6 +52,36 @@ type RbacLogicImpl struct {
 
 func NewRbacLogic(zbLogic ZanzibarLogic) *RbacLogicImpl {
 	return &RbacLogicImpl{zbLogic: zbLogic}
+}
+
+func (r *RbacLogicImpl) ListUser(c context.Context, filter string, page, size int) (
+	[]string, error,
+) {
+	tp, err := r.zbLogic.Find(c, &entity.Tuple{Sbj: &entity.Instance{Ns: "user"}}, false)
+	if err != nil {
+		return nil, err
+	}
+
+	m := mapset.NewSet[string]()
+	for _, t := range tp {
+		m.Add(t.Sbj.Id)
+	}
+	return m.ToSlice(), nil
+}
+
+func (r *RbacLogicImpl) ListRole(c context.Context, filter string, page, size int) (
+	[]string, error,
+) {
+	tp, err := r.zbLogic.Find(c, &entity.Tuple{Sbj: &entity.Instance{Ns: "role"}}, false)
+	if err != nil {
+		return nil, err
+	}
+
+	m := mapset.NewSet[string]()
+	for _, t := range tp {
+		m.Add(t.Sbj.Id)
+	}
+	return m.ToSlice(), nil
 }
 
 func (r *RbacLogicImpl) AssignRole(c context.Context, user string, role string) error {
