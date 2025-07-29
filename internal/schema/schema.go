@@ -6,7 +6,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type SchemaConfig struct {
+type Schema struct {
 	Namespaces map[string]*Namespace `yaml:"namespaces" json:"namespaces"`
 }
 
@@ -27,14 +27,16 @@ type Permission struct {
 	Relation     string   `yaml:"relation,omitempty" json:"relation,omitempty"`
 }
 
-func Load() {
+func Load() (*Schema, error) {
 	data, err := os.ReadFile("schema.yaml")
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	var cfg SchemaConfig
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		panic(err)
+	var schema Schema
+	if err := yaml.Unmarshal(data, &schema); err != nil {
+		return nil, err
 	}
+
+	return &schema, nil
 }

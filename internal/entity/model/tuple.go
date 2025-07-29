@@ -13,9 +13,9 @@ type Tuple struct {
 
 type Vertex struct {
 	Id        uint64  `gorm:"primaryKey"`
-	Namespace string  `gorm:"uniqueIndex:idx_ns_name;not null"`
-	Name      string  `gorm:"uniqueIndex:idx_ns_name;not null"`
-	Relation  *string `gorm:"uniqueIndex:idx_ns_name"`
+	Namespace string  `gorm:"uniqueIndex:idx_ns_name_relation;not null"`
+	Name      string  `gorm:"uniqueIndex:idx_ns_name_relation;not null"`
+	Relation  *string `gorm:"uniqueIndex:idx_ns_name_relation"`
 }
 
 type Edge struct {
