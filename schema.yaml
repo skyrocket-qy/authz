@@ -13,6 +13,7 @@ namespaces:
 
       view:
         union: ["reader", "writer"]
+        relation: "reader"
 
   group:
     relations:

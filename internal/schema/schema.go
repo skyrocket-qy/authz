@@ -11,8 +11,8 @@ type Schema struct {
 }
 
 type Namespace struct {
-	Relations   map[string]*Relation   `yaml:"relations" json:"relations"`
-	Permissions map[string]*Permission `yaml:"permissions" json:"permissions"`
+	Relations   map[string]*Relation       `yaml:"relations" json:"relations"`
+	Permissions map[string]*PermissionExpr `yaml:"permissions" json:"permissions"`
 }
 
 type Relation struct {
@@ -25,6 +25,14 @@ type Permission struct {
 	Intersection []string `yaml:"intersection,omitempty" json:"intersection,omitempty"`
 	Exclusion    []string `yaml:"exclusion,omitempty" json:"exclusion,omitempty"`
 	Relation     string   `yaml:"relation,omitempty" json:"relation,omitempty"`
+}
+
+type PermissionExpr struct {
+	// Exactly one of these should be set
+	Relation string            `yaml:"relation,omitempty"`
+	Or       []*PermissionExpr `yaml:"union,omitempty"`
+	And      []*PermissionExpr `yaml:"intersection,omitempty"`
+	Not      []*PermissionExpr `yaml:"exclusion,omitempty"`
 }
 
 func Load() (*Schema, error) {
