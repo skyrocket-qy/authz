@@ -1,0 +1,20 @@
+# wildcard support
+namespaces:
+  document:
+    relations:
+      writer:
+        types: ["user", "group"]
+      reader:
+        types: ["user"]
+
+    permissions:
+      edit:
+        union: ["writer"]
+
+      view:
+        union: ["reader", "writer"]
+
+  group:
+    relations:
+      member:
+        types: ["user", "group#member"]

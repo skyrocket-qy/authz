@@ -74,8 +74,9 @@ func (t *Tuple) ToFilterModel(ctx context.Context, db *gorm.DB) (*model.Tuple, e
 }
 
 type Instance struct {
-	Ns string `validate:"required"`
-	Id string `validate:"required"`
+	Ns  string `validate:"required"`
+	Id  string `validate:"required"`
+	Rel *string
 }
 
 // type TreeNode struct {
