@@ -13,12 +13,13 @@ Let R₁, R₂, ..., Rₙ be relation names. Then:
 ```
 example perm_expr = Union(R1, Intersection(R2, R3))
 ```
-
+that is
 ```math
 \text{EVALUATE}(\text{Union}(R_1, \text{Intersection}(R_2, R_3)), U, \text{object}) \\ = 
 \text{CHECK}(U, \langle \text{object}\#R_1 \rangle) \lor (\text{CHECK}(U, \langle \text{object}\#R_2 \rangle) \land \text{CHECK}(U, \langle \text{object}\#R_3 \rangle))
 ```
 
+and each check is
 
 EVALUATE(Union(R1, ..., Rn), U, obj)         = ∨ᵢ CHECK(U, ⟨obj#Ri⟩)
 
