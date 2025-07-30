@@ -2,8 +2,10 @@ package engine
 
 import (
 	"authz/internal/entity"
+	"authz/internal/entity/model"
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 
 	"authz/internal/schema"
@@ -26,7 +28,7 @@ type ZanzibarEngineImpl struct {
 	kafkaR *kafka.Reader
 	db     *gorm.DB
 	rds    *redis.Client
-	graph  map[entity.Instance]map[uint64]map[entity.Instance]struct{}
+	graph  map[string]map[string]map[string]struct{}
 
 	instanceId map[entity.Instance]uint64
 	relId      map[string]uint64
@@ -60,64 +62,100 @@ func (e *ZanzibarEngineImpl) checkRel(c context.Context, sbj *entity.Instance, r
 	obj *entity.Instance) (
 	bool, error,
 ) {
-	visited := make(map[uint64]struct{})
-	queue := []uint64{sbjId}
-
-	for len(queue) > 0 {
-		current := queue[0]
-		queue = queue[1:]
-
-		if _, seen := visited[current]; seen {
-			continue
-		}
-		visited[current] = struct{}{}
-
-		relMap, exists := e.graph[current]
-		if !exists {
-			continue
-		}
-
-		objSet, exists := relMap[relId]
-		if !exists {
-			continue
-		}
-
-		for next := range objSet {
-			if next == objId {
-				return true, nil
-			}
-
-			objInst, ok := e.idInstance[next]
-			if !ok {
-				continue // or log warning
-			}
-			objInst.Rel, ok = e.idRel[relId]
-			if !ok {
-				continue
-			}
-			nextId, ok := e.instanceId[objInst]
-			if !ok {
-				continue
-			}
-			queue = append(queue, nextId)
-		}
-	}
 
 	return false, nil
 }
 
-func (e *ZanzibarEngineImpl) Check(c context.Context, user *entity.User, perm string,
+func (e *ZanzibarEngineImpl) Check(c context.Context, user *entity.Instance, perm string,
 	obj *entity.Instance) (bool, error,
 ) {
 	e.mutex.RLock()
 	defer e.mutex.RUnlock()
 
-	rewrite := e.EvalPerm(obj, perm)
+	if e.hasDirectTuple(user, perm, obj) {
+		return true, nil
+	}
 
-	return e.Eval(user, obj, rewrite)
+	ns, ok := e.schema.Namespaces[obj.Ns]
+	if !ok {
+		return false, fmt.Errorf("unknown namespace: %s", obj.Ns)
+	}
+	rewrite, ok := ns.Relations[perm]
+	if !ok {
+		return false, fmt.Errorf("unknown relation: %s", perm)
+	}
+
+	if rewrite == nil {
+		return false, nil
+	}
+
+	return e.evalUsersetRewrite(rewrite, user, obj), nil
 }
 
-func (e *ZanzibarEngineImpl) evalExpr(c context.Context, sbj, obj *entity.Instance,
+func (e *ZanzibarEngineImpl) evalUsersetRewrite(rewrite *UsersetRewrite, user *entity.User, obj *entity.Instance) bool {
+	if rewrite.ComputedUserSet != nil {
+		return e.hasDirectTuple(user, rewrite.ComputedUserSet.Relation, obj)
+	}
+
+	if rewrite.TupleToUserset != nil {
+		// Find tuples that point to intermediate objects
+		var intermediate []entity.Instance
+		for _, t := range e.tuples {
+			if t.ObjNs == obj.Namespace && t.ObjId == obj.ObjectID &&
+				t.Relation == rewrite.TupleToUserset.Tupleset.Relation {
+				intermediate = append(intermediate, entity.Instance{
+					Namespace: t.SbjNs,
+					ObjectID:  t.SbjId,
+				})
+			}
+		}
+
+		// For each intermediate, follow ComputedUserset
+		for _, inst := range intermediate {
+			ok, _ := e.Check(context.TODO(), user, rewrite.TupleToUserset.ComputedUserset.Relation, &inst)
+			if ok {
+				return true
+			}
+		}
+		return false
+	}
+
+	if rewrite.Union != nil {
+		for _, r := range rewrite.Union {
+			if e.evalUsersetRewrite(r, user, obj) {
+				return true
+			}
+		}
+		return false
+	}
+
+	if rewrite.Intersection != nil {
+		for _, r := range rewrite.Intersection {
+			if !e.evalUsersetRewrite(r, user, obj) {
+				return false
+			}
+		}
+		return true
+	}
+
+	if rewrite.Exclusion != nil {
+		return e.evalUsersetRewrite(rewrite.Exclusion.Base, user, obj) &&
+			!e.evalUsersetRewrite(rewrite.Exclusion.Subtract, user, obj)
+	}
+
+	return false
+}
+
+func (e *ZanzibarEngineImpl) hasDirectTuple(user *entity.User, rel string, obj *entity.Instance) bool {
+	objS := obj.Ns + ":" + obj.Id
+	sbj := user.Ns + ":" + user.Id
+	if _, ok := e.graph[objS][rel][sbj]; ok {
+		return true
+	}
+	return false
+}
+
+func (e *ZanzibarEngineImpl) eval(c context.Context, sbj, obj *entity.Instance,
 	expr *schema.PermissionExpr) (bool, error,
 ) {
 	switch {
@@ -186,10 +224,10 @@ func (e *ZanzibarEngineImpl) expand(c context.Context, perm string, obj *entity.
 }
 
 func (e *ZanzibarEngineImpl) build(c context.Context) error {
-	// tuples := []model.Tuple{}
-	// if err := e.db.WithContext(c).Find(&tuples).Error; err != nil {
-	// 	return err
-	// }
+	tuples := []model.Tuple{}
+	if err := e.db.WithContext(c).Find(&tuples).Error; err != nil {
+		return err
+	}
 
 	// vertices := []model.Vertex{}
 	// if err := e.db.WithContext(c).Find(&vertices).Error; err != nil {
@@ -201,18 +239,22 @@ func (e *ZanzibarEngineImpl) build(c context.Context) error {
 	// 	return err
 	// }
 
-	// e.mutex.Lock()
-	// defer e.mutex.Unlock()
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
 
-	// for _, tuple := range tuples {
-	// 	if _, exists := e.graph[tuple.SbjId]; !exists {
-	// 		e.graph[tuple.SbjId] = make(map[uint64]map[uint64]struct{})
-	// 	}
-	// 	if _, exists := e.graph[tuple.SbjId][tuple.RelationId]; !exists {
-	// 		e.graph[tuple.SbjId][tuple.RelationId] = make(map[uint64]struct{})
-	// 	}
-	// 	e.graph[tuple.SbjId][tuple.RelationId][tuple.ObjId] = struct{}{}
-	// }
+	for _, tuple := range tuples {
+		obj := tuple.ObjNs + ":" + tuple.ObjId
+		sbj := tuple.SbjNs + ":" + tuple.SbjId
+		rel := tuple.Relation
+
+		if _, exists := e.graph[obj]; !exists {
+			e.graph[obj] = make(map[string]map[string]struct{})
+		}
+		if _, exists := e.graph[obj][rel]; !exists {
+			e.graph[obj][rel] = make(map[string]struct{})
+		}
+		e.graph[obj][rel][sbj] = struct{}{}
+	}
 
 	// for _, vertex := range vertices {
 	// 	key := entity.Instance{
