@@ -4,7 +4,6 @@ import (
 	"authz/internal/entity"
 	"authz/internal/entity/model"
 	"context"
-	"errors"
 	"fmt"
 	"sync"
 
@@ -28,7 +27,7 @@ type ZanzibarEngineImpl struct {
 	kafkaR *kafka.Reader
 	db     *gorm.DB
 	rds    *redis.Client
-	graph  map[string]map[string]map[string]struct{}
+	graph  map[entity.Instance]map[string]map[entity.Instance]struct{}
 
 	instanceId map[entity.Instance]uint64
 	relId      map[string]uint64
@@ -43,10 +42,10 @@ func NewZanzibarEngine(c context.Context, db *gorm.DB, kafkaR *kafka.Reader, rds
 	*ZanzibarEngineImpl, error,
 ) {
 	engine := ZanzibarEngineImpl{
-		kafkaR: kafkaR,
-		db:     db,
-		rds:    rds,
-		// graph:      make(map[uint64]map[uint64]map[uint64]struct{}),
+		kafkaR:     kafkaR,
+		db:         db,
+		rds:        rds,
+		graph:      make(map[entity.Instance]map[string]map[entity.Instance]struct{}),
 		instanceId: make(map[entity.Instance]uint64),
 		relId:      make(map[string]uint64),
 	}
@@ -89,127 +88,65 @@ func (e *ZanzibarEngineImpl) Check(c context.Context, user *entity.Instance, per
 		return false, nil
 	}
 
-	return e.evalUsersetRewrite(rewrite, user, obj), nil
+	return e.evalUsersetRewrite(c, rewrite, user, obj), nil
 }
 
 func (e *ZanzibarEngineImpl) evalUsersetRewrite(c context.Context, rewrite *schema.UsersetRewrite,
 	user *entity.Instance, obj *entity.Instance) bool {
-	if rewrite.ComputedUserSet != nil {
+	switch {
+
+	case rewrite.ComputedUserSet != nil:
 		return e.hasDirectTuple(user, rewrite.ComputedUserSet.Relation, obj)
-	}
 
-	if rewrite.TupleToUserset != nil {
+	case rewrite.TupleToUserset != nil:
 		// Find tuples that point to intermediate objects
-		var intermediate []entity.Instance
-		relSbj, ok := e.graph[obj.Ns+":"+obj.Id]
+		relSbj, ok := e.graph[*obj]
 		if !ok {
 			return false
 		}
-		sbj, ok := relSbj[rewrite.TupleToUserset.Tupleset.Relation]
+		sbjs, ok := relSbj[rewrite.TupleToUserset.Tupleset.Relation]
 		if !ok {
 			return false
 		}
 
-		intermediate = append(intermediate, sbj...)
-
-		// For each intermediate, follow ComputedUserset
-		for _, inst := range intermediate {
-			ok, _ := e.Check(context.TODO(), user, rewrite.TupleToUserset.ComputedUserset.Relation, &inst)
+		for sbj := range sbjs {
+			ok, _ := e.Check(c, user, rewrite.TupleToUserset.ComputedUserset.Relation, &sbj)
 			if ok {
 				return true
 			}
 		}
-		return false
-	}
 
-	if rewrite.Union != nil {
+		return false
+
+	case rewrite.Union != nil:
 		for _, r := range rewrite.Union {
-			if e.evalUsersetRewrite(r, user, obj) {
+			if e.evalUsersetRewrite(c, r, user, obj) {
 				return true
 			}
 		}
 		return false
-	}
 
-	if rewrite.Intersection != nil {
+	case rewrite.Intersection != nil:
 		for _, r := range rewrite.Intersection {
-			if !e.evalUsersetRewrite(r, user, obj) {
+			if !e.evalUsersetRewrite(c, r, user, obj) {
 				return false
 			}
 		}
 		return true
-	}
 
-	if rewrite.Exclusion != nil {
-		return e.evalUsersetRewrite(rewrite.Exclusion.Base, user, obj) &&
-			!e.evalUsersetRewrite(rewrite.Exclusion.Subtract, user, obj)
+	case rewrite.Exclusion != nil:
+		return e.evalUsersetRewrite(c, rewrite.Exclusion.Base, user, obj) &&
+			!e.evalUsersetRewrite(c, rewrite.Exclusion.Subtract, user, obj)
 	}
 
 	return false
 }
 
 func (e *ZanzibarEngineImpl) hasDirectTuple(user *entity.Instance, rel string, obj *entity.Instance) bool {
-	objS := obj.Ns + ":" + obj.Id
-	sbj := user.Ns + ":" + user.Id
-	if _, ok := e.graph[objS][rel][sbj]; ok {
+	if _, ok := e.graph[*obj][rel][*user]; ok {
 		return true
 	}
 	return false
-}
-
-func (e *ZanzibarEngineImpl) eval(c context.Context, sbj, obj *entity.Instance,
-	expr *schema.PermissionExpr) (bool, error,
-) {
-	switch {
-	case expr.Relation != "":
-		return e.checkRel(c, sbj, expr.Relation, obj)
-
-	case expr.Or != nil:
-		for _, sub := range expr.Or {
-			ok, err := e.evalExpr(c, sbj, obj, sub)
-			if err != nil {
-				return false, err
-			}
-			if ok {
-				return true, nil
-			}
-		}
-		return false, nil
-
-	case expr.And != nil:
-		for _, sub := range expr.And {
-			ok, err := e.evalExpr(c, sbj, obj, sub)
-			if err != nil {
-				return false, err
-			}
-			if !ok {
-				return false, nil
-			}
-		}
-		return true, nil
-
-	case expr.Not != nil:
-		if len(expr.Not) == 0 {
-			return false, nil
-		}
-		ok, err := e.evalExpr(c, sbj, obj, expr.Not[0])
-		if err != nil || !ok {
-			return false, err
-		}
-		for _, sub := range expr.Not[1:] {
-			ok, err := e.evalExpr(c, sbj, obj, sub)
-			if err != nil {
-				return false, err
-			}
-			if ok {
-				return false, nil
-			}
-		}
-		return true, nil
-
-	default:
-		return false, errors.New("invalid permission expression")
-	}
 }
 
 func (e *ZanzibarEngineImpl) lookup(c context.Context, sbj *entity.Instance, perm string) (
@@ -245,15 +182,21 @@ func (e *ZanzibarEngineImpl) build(c context.Context) error {
 	defer e.mutex.Unlock()
 
 	for _, tuple := range tuples {
-		obj := tuple.ObjNs + ":" + tuple.ObjId
-		sbj := tuple.SbjNs + ":" + tuple.SbjId
+		obj := entity.Instance{
+			Ns: tuple.ObjNs,
+			Id: tuple.ObjId,
+		}
+		sbj := entity.Instance{
+			Ns: tuple.SbjNs,
+			Id: tuple.SbjId,
+		}
 		rel := tuple.Relation
 
 		if _, exists := e.graph[obj]; !exists {
-			e.graph[obj] = make(map[string]map[string]struct{})
+			e.graph[obj] = make(map[string]map[entity.Instance]struct{})
 		}
 		if _, exists := e.graph[obj][rel]; !exists {
-			e.graph[obj][rel] = make(map[string]struct{})
+			e.graph[obj][rel] = make(map[entity.Instance]struct{})
 		}
 		e.graph[obj][rel][sbj] = struct{}{}
 	}
