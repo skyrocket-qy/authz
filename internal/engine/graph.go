@@ -92,7 +92,8 @@ func (e *ZanzibarEngineImpl) Check(c context.Context, user *entity.Instance, per
 	return e.evalUsersetRewrite(rewrite, user, obj), nil
 }
 
-func (e *ZanzibarEngineImpl) evalUsersetRewrite(rewrite *UsersetRewrite, user *entity.User, obj *entity.Instance) bool {
+func (e *ZanzibarEngineImpl) evalUsersetRewrite(c context.Context, rewrite *schema.UsersetRewrite,
+	user *entity.Instance, obj *entity.Instance) bool {
 	if rewrite.ComputedUserSet != nil {
 		return e.hasDirectTuple(user, rewrite.ComputedUserSet.Relation, obj)
 	}
@@ -100,15 +101,16 @@ func (e *ZanzibarEngineImpl) evalUsersetRewrite(rewrite *UsersetRewrite, user *e
 	if rewrite.TupleToUserset != nil {
 		// Find tuples that point to intermediate objects
 		var intermediate []entity.Instance
-		for _, t := range e.tuples {
-			if t.ObjNs == obj.Namespace && t.ObjId == obj.ObjectID &&
-				t.Relation == rewrite.TupleToUserset.Tupleset.Relation {
-				intermediate = append(intermediate, entity.Instance{
-					Namespace: t.SbjNs,
-					ObjectID:  t.SbjId,
-				})
-			}
+		relSbj, ok := e.graph[obj.Ns+":"+obj.Id]
+		if !ok {
+			return false
 		}
+		sbj, ok := relSbj[rewrite.TupleToUserset.Tupleset.Relation]
+		if !ok {
+			return false
+		}
+
+		intermediate = append(intermediate, sbj...)
 
 		// For each intermediate, follow ComputedUserset
 		for _, inst := range intermediate {
@@ -146,7 +148,7 @@ func (e *ZanzibarEngineImpl) evalUsersetRewrite(rewrite *UsersetRewrite, user *e
 	return false
 }
 
-func (e *ZanzibarEngineImpl) hasDirectTuple(user *entity.User, rel string, obj *entity.Instance) bool {
+func (e *ZanzibarEngineImpl) hasDirectTuple(user *entity.Instance, rel string, obj *entity.Instance) bool {
 	objS := obj.Ns + ":" + obj.Id
 	sbj := user.Ns + ":" + user.Id
 	if _, ok := e.graph[objS][rel][sbj]; ok {
