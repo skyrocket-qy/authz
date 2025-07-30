@@ -10,9 +10,7 @@ type Namespace struct {
 	Relations map[string]*Relation `yaml:"relations"`
 }
 
-type Relation struct {
-	UsersetRewrite *UsersetRewrite `yaml:"userset_rewrite,omitempty"` // optional for basic relations
-}
+type Relation = UsersetRewrite
 
 // Recursive AST-like structure
 type UsersetRewrite struct {
