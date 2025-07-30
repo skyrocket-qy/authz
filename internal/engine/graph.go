@@ -106,24 +106,15 @@ func (e *ZanzibarEngineImpl) checkRel(c context.Context, sbj *entity.Instance, r
 	return false, nil
 }
 
-func (e *ZanzibarEngineImpl) Check(c context.Context, sbj *entity.Instance, perm string,
+func (e *ZanzibarEngineImpl) Check(c context.Context, user *entity.User, perm string,
 	obj *entity.Instance) (bool, error,
 ) {
 	e.mutex.RLock()
 	defer e.mutex.RUnlock()
 
-	sbjs, err := e.expand(c, perm, obj)
-	if err != nil {
-		return false, err
-	}
+	rewrite := e.EvalPerm(obj, perm)
 
-	for _, s := range sbjs {
-		if *s == *sbj {
-			return true, nil
-		}
-	}
-
-	return false, nil
+	return e.Eval(user, obj, rewrite)
 }
 
 func (e *ZanzibarEngineImpl) evalExpr(c context.Context, sbj, obj *entity.Instance,
