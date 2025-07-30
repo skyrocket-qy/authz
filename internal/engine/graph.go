@@ -168,16 +168,6 @@ func (e *ZanzibarEngineImpl) build(c context.Context) error {
 		return err
 	}
 
-	// vertices := []model.Vertex{}
-	// if err := e.db.WithContext(c).Find(&vertices).Error; err != nil {
-	// 	return err
-	// }
-
-	// edges := []model.Edge{}
-	// if err := e.db.WithContext(c).Find(&edges).Error; err != nil {
-	// 	return err
-	// }
-
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
@@ -200,22 +190,6 @@ func (e *ZanzibarEngineImpl) build(c context.Context) error {
 		}
 		e.graph[obj][rel][sbj] = struct{}{}
 	}
-
-	// for _, vertex := range vertices {
-	// 	key := entity.Instance{
-	// 		Ns: vertex.Namespace,
-	// 		Id: vertex.Name,
-	// 	}
-
-	// 	if vertex.Relation != nil {
-	// 		key.Rel = *vertex.Relation
-	// 	}
-	// 	e.instanceId[key] = vertex.Id
-	// }
-
-	// for _, edge := range edges {
-	// 	e.relId[edge.Relation] = edge.Id
-	// }
 
 	return nil
 }

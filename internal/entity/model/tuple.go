@@ -30,3 +30,23 @@ type Tuple struct {
 	ObjNs    string `gorm:"uniqueIndex:idx_tuple;not null"`
 	ObjId    string `gorm:"uniqueIndex:idx_tuple;not null"`
 }
+
+type ChangeLog struct {
+	Id    uint
+	Tuple []byte // marshal tuple into byte data to reduce storage
+}
+
+// only one latest one record
+type GraphCheckpoint struct {
+	LastChangeLogID uint   `gorm:"primaryKey"` // up to which changelog was applied
+	Data            []byte // marshaled in-memory graph
+}
+
+/*
+1. Every successful write (create/delete of a tuple) will append a ChangeLog entry.
+2. Periodically (based on time or ChangeLog size), create a GraphCheckpoint by serializing the current in-memory graph.
+3. On service restart or graph desync:
+   a. First attempt to replay ChangeLog entries from the latest checkpoint.
+   b. If that fails (e.g., checkpoint corrupted), rebuild from scratch using the full ChangeLog.
+4. Periodically purge old ChangeLog entries that are already reflected in a persisted checkpoint.
+*/
