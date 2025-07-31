@@ -1,1 +1,2 @@
-hot-reload with air
+- hot-reload with air lib
+- db resolver if do read-write separation

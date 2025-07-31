@@ -2,9 +2,12 @@ package logic
 
 import (
 	"authz/internal/entity"
+	"authz/internal/entity/model"
 	"context"
 
-	mapset "github.com/deckarep/golang-set/v2"
+	authzpbv1 "github.com/skyrocket-qy/protos/gen/authzpb/v1"
+	"google.golang.org/protobuf/types/known/timestamppb"
+	"gorm.io/gorm"
 )
 
 /*
@@ -18,13 +21,18 @@ type PermAssignment struct {
 }
 
 type RbacLogic interface {
-	ListUsers(ctx context.Context, filter string, page, size int) ([]string, error)
-	ListRoles(ctx context.Context, filter string, page, size int) ([]string, error)
+	ListUsers(c context.Context) ([]*authzpbv1.User, error)
+	UpdateUser(c context.Context, in *authzpbv1.UpdateUserIn) error
+	DeleteUser(c context.Context, id uint64) error
+
+	CreateRole(c context.Context, name string) error
+	ListRoles(c context.Context) ([]*authzpbv1.Role, error)
+	UpdateRole(c context.Context, role *authzpbv1.Role) error
+	DeleteRole(c context.Context, id uint64) error
+
 	GetUsersWithRole(ctx context.Context, role string) ([]string, error)
 	GetUsersWithPerm(ctx context.Context, perm string, res string) ([]string, error)
 
-	DeleteUser(c context.Context, user string) error
-	DeleteRole(c context.Context, role string) error
 	DeletePerm(c context.Context, perm string) error
 	DeleteRes(c context.Context, res string) error
 
@@ -47,6 +55,7 @@ type RbacLogic interface {
 var _ RbacLogic = (*RbacLogicImpl)(nil)
 
 type RbacLogicImpl struct {
+	pgdb    *gorm.DB
 	zbLogic ZanzibarLogic
 }
 
@@ -54,34 +63,88 @@ func NewRbacLogic(zbLogic ZanzibarLogic) *RbacLogicImpl {
 	return &RbacLogicImpl{zbLogic: zbLogic}
 }
 
-func (r *RbacLogicImpl) ListUser(c context.Context, filter string, page, size int) (
-	[]string, error,
-) {
-	tp, err := r.zbLogic.Find(c, &entity.Tuple{Sbj: &entity.Instance{Ns: "user"}}, false)
-	if err != nil {
-		return nil, err
-	}
-
-	m := mapset.NewSet[string]()
-	for _, t := range tp {
-		m.Add(t.Sbj.Id)
-	}
-	return m.ToSlice(), nil
+func (r *RbacLogicImpl) db(c context.Context) *gorm.DB {
+	return r.pgdb.WithContext(c)
 }
 
-func (r *RbacLogicImpl) ListRole(c context.Context, filter string, page, size int) (
-	[]string, error,
-) {
-	tp, err := r.zbLogic.Find(c, &entity.Tuple{Sbj: &entity.Instance{Ns: "role"}}, false)
-	if err != nil {
+// TODO: add listoptions
+func (r *RbacLogicImpl) ListUsers(c context.Context) ([]*authzpbv1.User, error) {
+	userMds := []*model.User{}
+	if err := r.db(c).Preload("Orgs").Preload("UserAuths").Find(&userMds).Error; err != nil {
 		return nil, err
 	}
 
-	m := mapset.NewSet[string]()
-	for _, t := range tp {
-		m.Add(t.Sbj.Id)
+	users := make([]*authzpbv1.User, 0, len(userMds))
+	for _, userMd := range userMds {
+		user := &authzpbv1.User{
+			Id:               userMd.Id,
+			Name:             userMd.Name,
+			Email:            userMd.Email,
+			IsActive:         userMd.IsActive,
+			IsEmailConfirmed: userMd.IsEmailConfirmed,
+			CreatedAt:        timestamppb.New(userMd.CreatedAt),
+		}
+
+		for _, org := range userMd.Orgs {
+			user.Orgs = append(user.Orgs, org.Name)
+		}
+
+		for _, userAuth := range userMd.UserAuths {
+			user.AuthTypes = append(user.AuthTypes, userAuth.AuthType)
+		}
 	}
-	return m.ToSlice(), nil
+	return users, nil
+}
+
+func (r *RbacLogicImpl) UpdateUser(c context.Context, in *authzpbv1.UpdateUserIn) error {
+	updates := map[string]any{}
+	if in.IsActive != nil {
+		updates["is_active"] = in.IsActive
+	}
+	if in.Name != nil {
+		updates["name"] = in.Name
+	}
+
+	if err := r.db(c).Model(&model.User{}).Where("id = ?", in.Id).Updates(updates).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *RbacLogicImpl) DeleteUser(c context.Context, id uint64) error {
+	return r.db(c).Delete(&model.User{}, id).Error
+}
+
+func (r *RbacLogicImpl) CreateRole(c context.Context, name string) error {
+	return r.db(c).Create(&model.Role{Name: name}).Error
+}
+
+func (r *RbacLogicImpl) ListRoles(c context.Context) ([]*authzpbv1.Role, error) {
+	roleMds := []*model.Role{}
+	if err := r.db(c).Find(&roleMds).Error; err != nil {
+		return nil, err
+	}
+
+	roles := make([]*authzpbv1.Role, 0, len(roleMds))
+	for _, roleMd := range roleMds {
+		roles = append(roles, &authzpbv1.Role{
+			Id:   roleMd.Id,
+			Name: roleMd.Name,
+		})
+	}
+
+	return roles, nil
+}
+
+func (r *RbacLogicImpl) UpdateRole(c context.Context, in *authzpbv1.Role) error {
+	return r.db(c).Model(&model.Role{}).Where("id = ?", in.Id).Updates(map[string]any{
+		"name": in.Name,
+	}).Error
+}
+
+func (r *RbacLogicImpl) DeleteRole(c context.Context, id uint64) error {
+	return r.db(c).Delete(&model.Role{}, id).Error
 }
 
 func (r *RbacLogicImpl) AssignRole(c context.Context, user string, role string) error {

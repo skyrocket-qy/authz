@@ -4,15 +4,16 @@ import (
 	"authz/internal/entity"
 	"authz/internal/entity/model"
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"github.com/robfig/cron"
-	"github.com/skyrocket-qy/erx"
 	"github.com/skyrocket-qy/gox/logx"
+	authzpbv1 "github.com/skyrocket-qy/protos/gen/authzpb/v1"
+	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type ZanzibarLogic interface {
@@ -23,139 +24,116 @@ type ZanzibarLogic interface {
 	Check(c context.Context, sbj *entity.Instance, rel string, obj *entity.Instance) (bool, error)
 	Lookup(c context.Context, sbj *entity.Instance, rel string) ([]*entity.Instance, error)
 	Expand(c context.Context, relation string, obj *entity.Instance) ([]entity.Instance, error)
-
-	
 }
 
 var _ ZanzibarLogic = (*ZanzibarLogicImpl)(nil)
 
 type ZanzibarLogicImpl struct {
-	db  *gorm.DB
-	rdb *redis.Client
+	pgdb *gorm.DB
+	rdb  *redis.Client
 }
 
 func NewZanzibarLogic(db *gorm.DB, rdb *redis.Client) *ZanzibarLogicImpl {
 	return &ZanzibarLogicImpl{
-		db:  db,
-		rdb: rdb,
+		pgdb: db,
+		rdb:  rdb,
 	}
 }
 
-func (r *ZanzibarLogicImpl) Find(c context.Context, filter *entity.Tuple, exact bool) (
-	[]*entity.Tuple, error,
+func (r *ZanzibarLogicImpl) db(c context.Context) *gorm.DB {
+	return r.pgdb.WithContext(c)
+}
+
+// TODO: pagination and limit , sorter
+func (r *ZanzibarLogicImpl) Find(c context.Context, filter *entity.TupleFilter) (
+	[]*model.Tuple, error,
 ) {
-	filterModel, err := filter.ToFilterModel(c, r.db)
+	tuples := []*model.Tuple{}
+	if err := r.db(c).Scopes(filter.Apply()).Find(&tuples).Error; err != nil {
+		return nil, err
+	}
+
+	return tuples, nil
+}
+
+func (r *ZanzibarLogicImpl) Create(c context.Context, tuple *authzpbv1.Tuple) error {
+	tupleModel := model.Tuple{
+		SbjNs:    tuple.SbjNs,
+		SbjId:    tuple.SbjId,
+		Relation: tuple.Rel,
+		ObjNs:    tuple.ObjNs,
+		ObjId:    tuple.ObjId,
+	}
+
+	tupleBytes, err := proto.Marshal(tuple)
 	if err != nil {
-		return nil, erx.W(err)
+		return err
 	}
 
-	if exact {
-		var tuple entity.Tuple
-		if err := r.db.WithContext(c).Scopes(filterModel.ToQuery()).Take(&tuple).Error; err != nil {
-			return nil, err
-		}
-		return []*entity.Tuple{&tuple}, nil
-	} else {
-		var tuples []*entity.Tuple
-		if err := r.db.WithContext(c).Where(filterModel).Find(&tuples).Error; err != nil {
-			return nil, erx.W(err)
-		}
-		return tuples, nil
-	}
-}
-
-func (r *ZanzibarLogicImpl) Create(c context.Context, tuple *entity.Tuple) error {
-	var sbjNs, objNs model.Namespace
-	var sbj, obj model.Instance
-	var rel, sbjRel model.RelationDef
-
-	if err := r.db.WithContext(c).Where("name = ?", tuple.Sbj.Ns).FirstOrCreate(&sbjNs).Error; err != nil {
-		return err
-	}
-	if err := r.db.Where("name = ?", tuple.Obj.Ns).FirstOrCreate(&objNs).Error; err != nil {
-		return err
-	}
-	if err := r.db.Where("name = ?", tuple.Sbj.Id).FirstOrCreate(&sbj).Error; err != nil {
-		return err
-	}
-	if err := r.db.Where("name = ?", tuple.Obj.Id).FirstOrCreate(&obj).Error; err != nil {
-		return err
-	}
-	if err := r.db.Where("name = ?", tuple.Rel).FirstOrCreate(&rel).Error; err != nil {
-		return err
-	}
-	if *tuple.SbjRel != "" {
-		if err := r.db.Where("name = ?", tuple.SbjRel).FirstOrCreate(&sbjRel).Error; err != nil {
+	if err := r.db(c).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&tupleModel).Error; err != nil {
 			return err
 		}
-	}
 
-	tupleModel := model.Tuple{
-		SbjNsId:    sbjNs.Id,
-		SbjId:      sbj.Id,
-		RelationId: rel.Id,
-		ObjNsId:    objNs.Id,
-		ObjId:      obj.Id,
-	}
-
-	if *tuple.SbjRel != "" {
-		tupleModel.SbjRelationId = &sbjRel.Id
-	}
-
-	return r.db.Create(&tupleModel).Error
-}
-
-func (r *ZanzibarLogicImpl) Delete(c context.Context, tuple *entity.Tuple) error {
-	var sbjNs, objNs model.Namespace
-	var sbj, obj model.Instance
-	var rel, sbjRel model.RelationDef
-
-	if err := r.db.WithContext(c).Where("name = ?", tuple.Sbj.Ns).Take(&sbjNs).Error; err != nil {
-		return err
-	}
-	if err := r.db.Where("name = ?", tuple.Obj.Ns).Take(&objNs).Error; err != nil {
-		return err
-	}
-	if err := r.db.Where("name = ?", tuple.Sbj.Id).Take(&sbj).Error; err != nil {
-		return err
-	}
-	if err := r.db.Where("name = ?", tuple.Obj.Id).Take(&obj).Error; err != nil {
-		return err
-	}
-	if err := r.db.Where("name = ?", tuple.Rel).Take(&rel).Error; err != nil {
-		return err
-	}
-	if *tuple.SbjRel != "" {
-		if err := r.db.Where("name = ?", tuple.SbjRel).Take(&sbjRel).Error; err != nil {
+		if err := tx.Create(&model.ChangeLog{
+			Tuple: tupleBytes,
+		}).Error; err != nil {
 			return err
 		}
+
+		return nil
+	}); err != nil {
+		return err
 	}
 
-	tupleModel := model.Tuple{
-		SbjNsId:    sbjNs.Id,
-		SbjId:      sbj.Id,
-		RelationId: rel.Id,
-		ObjNsId:    objNs.Id,
-		ObjId:      obj.Id,
-	}
+	return nil
+}
 
-	if *tuple.SbjRel != "" {
-		tupleModel.SbjRelationId = &sbjRel.Id
-	}
+func (r *ZanzibarLogicImpl) Delete(c context.Context, filter *entity.TupleFilter) error {
+	return r.db(c).Transaction(func(tx *gorm.DB) error {
+		var toDelete []model.Tuple
 
-	return r.db.Unscoped().Delete(&tupleModel).Error
+		if err := tx.Scopes(filter.Apply()).
+			Clauses(clause.Locking{Strength: "UPDATE"}).
+			Find(&toDelete).Error; err != nil {
+			return err
+		}
+
+		var changelogs []model.ChangeLog
+		for _, tuple := range toDelete {
+			tupleProto := &authzpbv1.Tuple{
+				SbjNs: tuple.SbjNs,
+				SbjId: tuple.SbjId,
+				Rel:   tuple.Relation,
+				ObjNs: tuple.ObjNs,
+				ObjId: tuple.ObjId,
+			}
+
+			data, err := proto.Marshal(tupleProto)
+			if err != nil {
+				return err
+			}
+
+			changelogs = append(changelogs, model.ChangeLog{Tuple: data})
+		}
+
+		if err := tx.Scopes(filter.Apply()).Unscoped().Delete(&model.Tuple{}).Error; err != nil {
+			return err
+		}
+
+		if len(changelogs) > 0 {
+			if err := tx.Create(&changelogs).Error; err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 }
 
 func (r *ZanzibarLogicImpl) Check(c context.Context, user *entity.Instance, perm string,
 	obj *entity.Instance) (bool, error,
 ) {
-	var ok bool
-	if err := r.db.WithContext(c).
-		Raw("Check(?, ?, ?, ?, ?)", user.Ns, user.Id, perm, obj.Ns, obj.Id).
-		Scan(&ok).Error; err != nil {
-		return false, err
-	}
-
 	return ok, nil
 }
 
@@ -163,29 +141,6 @@ func (r *ZanzibarLogicImpl) Check(c context.Context, user *entity.Instance, perm
 func (r *ZanzibarLogicImpl) Lookup(c context.Context, user *entity.Instance, perm string) (
 	objs []*entity.Instance, err error,
 ) {
-	var results []struct {
-		ObjNs   string
-		ObjName string
-	}
-
-	// Call the stored procedure, mapping subject namespace, subject name, subject relation, relation
-	err = r.db.Raw(`
-        SELECT obj_ns, obj_name
-        FROM lookup_objects_by_subject_and_relation(?, ?, ?)
-    `, user.Ns, user.Id, perm).Scan(&results).Error
-
-	if err != nil {
-		return nil, err
-	}
-
-	// Map results into your entity.Obj slice
-	objs = make([]*entity.Instance, 0, len(results))
-	for _, res := range results {
-		objs = append(objs, &entity.Instance{
-			Ns: res.ObjNs,
-			Id: res.ObjName,
-		})
-	}
 
 	return objs, nil
 }
@@ -212,19 +167,6 @@ func StartCleanJob(r *ZanzibarLogicImpl, cro *cron.Cron) error {
 func (r *ZanzibarLogicImpl) Expand(c context.Context, perm string, obj *entity.Instance) (
 	users []entity.Instance, err error,
 ) {
-	var results []entity.Instance
-
-	err = r.db.WithContext(c).
-		Raw(`
-			SELECT ns, name
-			FROM expand_permission_by_name(?, ?, ?)
-		`, obj.Ns, obj.Id, perm).
-		Scan(&results).Error
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to expand permission: %w", err)
-	}
-
 	return results, nil
 }
 
