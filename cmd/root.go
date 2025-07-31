@@ -4,7 +4,6 @@ import (
 	"authz/api"
 	"authz/internal/handler"
 	"authz/internal/pkg"
-	"authz/internal/repository"
 	"authz/internal/service/database"
 	"authz/internal/service/logger"
 	"authz/internal/service/redis"
@@ -117,7 +116,6 @@ func RunServer(cmd *cobra.Command, args []string) {
 		fx.Invoke(
 			validate.New,
 			pkg.InitSwagger,
-			repository.StartCleanJob,
 			api.RegisterAPIHandlers,
 			StartHTTPServer,
 		),

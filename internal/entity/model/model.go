@@ -41,3 +41,10 @@ type Role struct {
 	Id   uint64 `gorm:"primarykey"`
 	Name string `gorm:"unique;type:varchar(255);not null"`
 }
+
+// metadata
+type Resource struct {
+	Id   uint64 `gorm:"primarykey"`
+	Ns   string `gorm:"uniqueindex:idx_ns_name;type:varchar(255);not null"`
+	Name string `gorm:"uniqueindex:idx_ns_name;type:varchar(255);not null"`
+}

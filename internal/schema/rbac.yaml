@@ -19,4 +19,4 @@ namespaces:
     relations:
       member: {}   # users added to role via tuple
 
-
+  user: {}

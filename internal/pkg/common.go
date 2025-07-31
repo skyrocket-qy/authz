@@ -6,8 +6,8 @@ import (
 	"strconv"
 
 	"github.com/rs/zerolog/log"
-	"github.com/skyrocket-qy/srand"
 	"github.com/skyrocket-qy/erx"
+	"github.com/skyrocket-qy/srand"
 )
 
 func Close(closer io.ReadCloser) {
@@ -37,4 +37,8 @@ type EmailJob struct {
 	Subject string `json:"subject"`
 	HTML    string `json:"html"`
 	Text    string `json:"text"`
+}
+
+func Str(s string) *string {
+	return &s
 }
