@@ -12,12 +12,11 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/k0kubun/pp/v3 v3.5.0
 	github.com/redis/go-redis/v9 v9.11.0
-	github.com/robfig/cron v1.2.0
 	github.com/rs/zerolog v1.34.0
 	github.com/segmentio/kafka-go v0.4.48
 	github.com/skyrocket-qy/erx v0.3.20
 	github.com/skyrocket-qy/gox v1.2.29
-	github.com/skyrocket-qy/protos v0.1.13
+	github.com/skyrocket-qy/protos v0.1.15
 	github.com/skyrocket-qy/srand v0.1.0
 	github.com/spf13/cobra v1.9.1
 	github.com/swaggo/files v1.0.1

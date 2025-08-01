@@ -1,27 +1,71 @@
 package pkg
 
 import (
-	ope "github.com/skyrocket-qy/gox/gormx/lib/operator"
-	wh "github.com/skyrocket-qy/gox/gormx/lib/where"
+	"errors"
+	"fmt"
+	"slices"
+
+	pkgpbv1 "github.com/skyrocket-qy/protos/gen/pkgpb/v1"
 	"gorm.io/gorm"
 )
 
-type Filter struct {
-	Field string `json:"field" validate:"required"`
-	Fuzzy bool   `json:"fuzzy" validate:"required"`
-	Value string `json:"value" validate:"required"`
+var opTemplate = map[pkgpbv1.Operator]string{
+	pkgpbv1.Operator_OPERATOR_EQ:      "%s = ?",
+	pkgpbv1.Operator_OPERATOR_GT:      "%s > ?",
+	pkgpbv1.Operator_OPERATOR_GTE:     "%s >= ?",
+	pkgpbv1.Operator_OPERATOR_LT:      "%s < ?",
+	pkgpbv1.Operator_OPERATOR_LTE:     "%s <= ?",
+	pkgpbv1.Operator_OPERATOR_BETWEEN: "%s BETWEEN ? AND ?",
 }
 
-func ApplyFilter(filters []Filter) func(db *gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		for _, ft := range filters {
-			if ft.Fuzzy {
-				db = db.Where(wh.B(ft.Field, ope.Like), "%"+ft.Value+"%")
-			} else {
-				db = db.Where(wh.B(ft.Field, ope.Eq), ft.Value)
-			}
+func ApplyFilter(filters []*pkgpbv1.Filter, validFields []string) (func(db *gorm.DB) *gorm.DB, error) {
+	for _, ft := range filters {
+		if ft.Field == "" {
+			return nil, errors.New("field is empty")
 		}
 
-		return db
+		if !slices.Contains(validFields, ft.Field) {
+			return nil, fmt.Errorf("invalid field: %v", ft.Field)
+		}
+
+		switch ft.Op {
+		case pkgpbv1.Operator_OPERATOR_EQ,
+			pkgpbv1.Operator_OPERATOR_GT,
+			pkgpbv1.Operator_OPERATOR_GTE,
+			pkgpbv1.Operator_OPERATOR_LT,
+			pkgpbv1.Operator_OPERATOR_LTE:
+			if len(ft.Values) != 1 {
+				return nil, fmt.Errorf("%v filter requires one value", ft.Op)
+			}
+		case pkgpbv1.Operator_OPERATOR_BETWEEN:
+			if len(ft.Values) != 2 {
+				return nil, errors.New("between filter requires two values")
+			}
+			// Optional: check range
+			if ft.Values[1] <= ft.Values[0] {
+				return nil, errors.New("between: second value must be >= first")
+			}
+		default:
+			return nil, fmt.Errorf("unsupported operator: %v", ft.Op)
+		}
 	}
+
+	return func(db *gorm.DB) *gorm.DB {
+		for _, ft := range filters {
+			column := ft.Field
+			tmpl, _ := opTemplate[ft.Op]
+
+			switch ft.Op {
+			case pkgpbv1.Operator_OPERATOR_BETWEEN:
+				if len(ft.Values) >= 2 {
+					db = db.Where(fmt.Sprintf(tmpl, column), ft.Values[0], ft.Values[1])
+				}
+			default:
+				if len(ft.Values) >= 1 {
+					db = db.Where(fmt.Sprintf(tmpl, column), ft.Values[0])
+				}
+			}
+		}
+		return db
+	}, nil
 }

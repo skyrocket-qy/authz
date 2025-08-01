@@ -60,7 +60,16 @@ func (r *RbacLogicImpl) db(c context.Context) *gorm.DB {
 }
 
 // TODO: add listoptions
-func (r *RbacLogicImpl) ListUsers(c context.Context) ([]*authzpbv1.User, error) {
+func (r *RbacLogicImpl) ListUsers(c context.Context, in *authzpbv1.ListUsersIn) (
+	out *authzpbv1.ListUsersOut, err error,
+) {
+	filterExprs := map[string]string{
+		"org": "JOIN orgs ON ",
+	}
+
+	validFilterFields := []string{"created_at", "email", "name", "is_email_confirmed", "is_active",
+		"auth_type", "org_name"}
+
 	userMds := []*model.User{}
 	if err := r.db(c).Preload("Orgs").Preload("UserAuths").Find(&userMds).Error; err != nil {
 		return nil, err
