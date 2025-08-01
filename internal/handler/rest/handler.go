@@ -1,4 +1,4 @@
-package handler
+package rest
 
 import (
 	"authz/internal/logic"
@@ -40,29 +40,20 @@ func (d *Handler) Healthy(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-func (d *Handler) ListUsers(c *gin.Context) ([]*authzpbv1.User, error) {
-	return d.rbacLogic.ListUsers(c)
+func (d *Handler) ListUsers(c *gin.Context, in *authzpbv1.ListUsersIn) (*authzpbv1.ListUsersOut, error) {
+	return d.rbacLogic.ListUsers(c, in)
 }
 
 func (d *Handler) UpdateUser(c *gin.Context, in *authzpbv1.UpdateUserIn) error {
 	return d.rbacLogic.UpdateUser(c, in)
 }
 
-func (d *Handler) DeleteUser(c *gin.Context) error {
-	type Req struct {
-		Id uint64 `json:"id"`
-	}
-
-	var req Req
-	if err := c.ShouldBindJSON(&req); err != nil {
-		return err
-	}
-
-	return d.rbacLogic.DeleteUser(c, req.Id)
+func (d *Handler) DeleteUser(c *gin.Context, in *authzpbv1.DeleteUserIn) error {
+	return d.rbacLogic.DeleteUser(c, in)
 }
 
-func (d *Handler) CreateRole(c *gin.Context, name string) error {
-	return d.rbacLogic.CreateRole(c, name)
+func (d *Handler) CreateRole(c *gin.Context, in *authzpbv1.CreateRoleIn) error {
+	return d.rbacLogic.CreateRole(c, in)
 }
 
 func (d *Handler) ListRoles(c *gin.Context) ([]*authzpbv1.Role, error) {

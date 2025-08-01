@@ -1,6 +1,7 @@
 package api
 
 import (
+	"authz/internal/handler/rest"
 	"authz/internal/handler/rest/middleware"
 	"authz/internal/pkg"
 	"net/http"
@@ -28,6 +29,20 @@ func RegisterAPIHandlers(r *gin.Engine, h *rest.Handler, checkAuth gin.HandlerFu
 
 	vpr := pR.Group("/v1")
 	{
+		vpr.GET("/users", Hdl(h.ListUsers))
+		vpr.PUT("/user", HdlNoOut(h.UpdateUser))
+		vpr.DELETE("/user", HdlNoOut(h.DeleteUser))
+		vpr.GET("/roles", HdlNoOut(h.ListRoles))
+		vpr.POST("/role", HdlNoOut(h.CreateRole))
+		vpr.PUT("/role", HdlNoOut(h.UpdateRole))
+		vpr.DELETE("/role", HdlNoOut(h.DeleteRole))
+		vpr.GET("/resources", HdlNoOut(h.ListResources))
+		vpr.POST("/resource", HdlNoOut(h.CreateResource))
+		vpr.DELETE("/resource", HdlNoOut(h.DeleteResource))
+		vpr.POST("/assign-role", HdlNoOut(h.AssignRole))
+		vpr.POST("/revoke-role", HdlNoOut(h.RevokeRole))
+		vpr.POST("/grant-perm", HdlNoOut(h.GrantPerm))
+		vpr.POST("/revoke-perm", HdlNoOut(h.RevokePerm))
 	}
 }
 
