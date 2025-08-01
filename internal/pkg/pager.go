@@ -1,19 +1,20 @@
 package pkg
 
-import "gorm.io/gorm"
+import (
+	pkgpbv1 "github.com/skyrocket-qy/protos/gen/pkgpb/v1"
+	"gorm.io/gorm"
+)
 
-type Pager struct {
-	Number int `json:"number" validate:"required"`
-	Size   int `json:"size"   validate:"required"`
-}
-
-func ApplyPager(pager *Pager) func(db *gorm.DB) *gorm.DB {
+func ApplyPager(pager *pkgpbv1.Pager) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if pager == nil {
 			return db
 		}
+
+		size := int(pager.Size)
+		number := int(pager.Number)
 		return db.
-			Offset(pager.Size * (pager.Number - 1)).
-			Limit(pager.Size)
+			Offset(size * (number - 1)).
+			Limit(size)
 	}
 }

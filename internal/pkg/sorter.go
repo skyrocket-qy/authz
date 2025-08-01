@@ -3,15 +3,11 @@ package pkg
 import (
 	"strings"
 
+	pkgpbv1 "github.com/skyrocket-qy/protos/gen/pkgpb/v1"
 	"gorm.io/gorm"
 )
 
-type Sorter struct {
-	Field string `json:"field" validate:"required"`
-	Asc   bool   `json:"asc"   validate:"required"`
-}
-
-func ApplySorter(seqSorters []Sorter, dfSort ...Sorter) func(db *gorm.DB) *gorm.DB {
+func ApplySorter(seqSorters []*pkgpbv1.Sorter, dfSort ...*pkgpbv1.Sorter) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if len(seqSorters) == 0 {
 			if len(dfSort) == 0 {

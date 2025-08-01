@@ -18,7 +18,7 @@ User, Role(include Admin), Perm, resource
 */
 
 type RbacLogic interface {
-	ListUsers(c context.Context) ([]*authzpbv1.User, error)
+	ListUsers(c context.Context, in *authzpbv1.ListUsersIn) (out *authzpbv1.ListUsersOut, err error)
 	UpdateUser(c context.Context, in *authzpbv1.UpdateUserIn) error
 	DeleteUser(c context.Context, id uint64) error
 
@@ -59,19 +59,42 @@ func (r *RbacLogicImpl) db(c context.Context) *gorm.DB {
 	return r.pgdb.WithContext(c)
 }
 
-// TODO: add listoptions
 func (r *RbacLogicImpl) ListUsers(c context.Context, in *authzpbv1.ListUsersIn) (
 	out *authzpbv1.ListUsersOut, err error,
 ) {
-	filterExprs := map[string]string{
-		"org": "JOIN orgs ON ",
+	filterExprs := map[string][]string{
+		"orgs.name": {
+			"JOIN user_orgs ON user_orgs.user_id = users.id",
+			"JOIN orgs ON orgs.id = user_orgs.org_id",
+		},
+		"user_auths.type": {
+			"JOIN user_auths ON user_auths.user_id = users.id",
+		},
 	}
 
 	validFilterFields := []string{"created_at", "email", "name", "is_email_confirmed", "is_active",
-		"auth_type", "org_name"}
+		"user_auths.type", "orgs.name"}
+
+	filterScope, err := pkg.ApplyFilter(in.Filters, validFilterFields, filterExprs)
+	if err != nil {
+		return nil, err
+	}
+
+	cnt := int64(0)
+	if err := r.db(c).Model(&model.User{}).Scopes(filterScope).Count(&cnt).Error; err != nil {
+		return nil, err
+	}
 
 	userMds := []*model.User{}
-	if err := r.db(c).Preload("Orgs").Preload("UserAuths").Find(&userMds).Error; err != nil {
+	if err := r.db(c).
+		Scopes(
+			filterScope,
+			pkg.ApplyPager(in.Pager),
+			pkg.ApplySorter(in.Sorters),
+		).
+		Preload("Orgs").
+		Preload("UserAuths").
+		Find(&userMds).Error; err != nil {
 		return nil, err
 	}
 
@@ -91,12 +114,15 @@ func (r *RbacLogicImpl) ListUsers(c context.Context, in *authzpbv1.ListUsersIn) 
 		}
 
 		for _, userAuth := range userMd.UserAuths {
-			user.AuthTypes = append(user.AuthTypes, userAuth.AuthType)
+			user.AuthTypes = append(user.AuthTypes, userAuth.Type)
 		}
 
 		users[i] = user
 	}
-	return users, nil
+	return &authzpbv1.ListUsersOut{
+		Users: users,
+		Count: cnt,
+	}, nil
 }
 
 func (r *RbacLogicImpl) UpdateUser(c context.Context, in *authzpbv1.UpdateUserIn) error {

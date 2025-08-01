@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 
 	pkgpbv1 "github.com/skyrocket-qy/protos/gen/pkgpb/v1"
 	"gorm.io/gorm"
@@ -18,7 +19,10 @@ var opTemplate = map[pkgpbv1.Operator]string{
 	pkgpbv1.Operator_OPERATOR_BETWEEN: "%s BETWEEN ? AND ?",
 }
 
-func ApplyFilter(filters []*pkgpbv1.Filter, validFields []string) (func(db *gorm.DB) *gorm.DB, error) {
+func ApplyFilter(filters []*pkgpbv1.Filter, validFields []string, filterExprs map[string][]string) (
+	func(db *gorm.DB) *gorm.DB, error,
+) {
+	visited := map[string]struct{}{}
 	for _, ft := range filters {
 		if ft.Field == "" {
 			return nil, errors.New("field is empty")
@@ -27,6 +31,11 @@ func ApplyFilter(filters []*pkgpbv1.Filter, validFields []string) (func(db *gorm
 		if !slices.Contains(validFields, ft.Field) {
 			return nil, fmt.Errorf("invalid field: %v", ft.Field)
 		}
+
+		if _, ok := visited[ft.Field]; ok {
+			return nil, fmt.Errorf("duplicate field: %v", ft.Field)
+		}
+		visited[ft.Field] = struct{}{}
 
 		switch ft.Op {
 		case pkgpbv1.Operator_OPERATOR_EQ,
@@ -51,8 +60,18 @@ func ApplyFilter(filters []*pkgpbv1.Filter, validFields []string) (func(db *gorm
 	}
 
 	return func(db *gorm.DB) *gorm.DB {
+		joinVisited := map[string]struct{}{}
 		for _, ft := range filters {
-			column := ft.Field
+			if expr, ok := filterExprs[ft.Field]; ok {
+				for _, join := range expr {
+					if _, seen := joinVisited[join]; !seen {
+						db = db.Joins(join)
+						joinVisited[join] = struct{}{}
+					}
+				}
+			}
+
+			column := quoteIfNeeded(ft.Field)
 			tmpl, _ := opTemplate[ft.Op]
 
 			switch ft.Op {
@@ -68,4 +87,15 @@ func ApplyFilter(filters []*pkgpbv1.Filter, validFields []string) (func(db *gorm
 		}
 		return db
 	}, nil
+}
+
+func quoteIfNeeded(field string) string {
+	if strings.Contains(field, ".") {
+		parts := strings.Split(field, ".")
+		for i, p := range parts {
+			parts[i] = "`" + p + "`"
+		}
+		return strings.Join(parts, ".")
+	}
+	return "`" + field + "`"
 }

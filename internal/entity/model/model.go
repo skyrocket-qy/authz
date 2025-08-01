@@ -24,7 +24,7 @@ type User struct {
 
 type UserAuth struct {
 	Id         uint64  `gorm:"primaryKey"`
-	AuthType   string  `gorm:"type:varchar(20);not null"` // "password", "google", "github", etc.
+	Type       string  `gorm:"type:varchar(20);not null"` // "password", "google", "github", etc.
 	ProviderId *string `gorm:"type:varchar(255)"`         // OAuth user ID / sub claim
 
 	UserId uint `gorm:"not null"`
