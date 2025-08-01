@@ -16,7 +16,7 @@ require (
 	github.com/segmentio/kafka-go v0.4.48
 	github.com/skyrocket-qy/erx v0.3.20
 	github.com/skyrocket-qy/gox v1.2.29
-	github.com/skyrocket-qy/protos v0.1.16
+	github.com/skyrocket-qy/protos v0.1.17
 	github.com/skyrocket-qy/srand v0.1.0
 	github.com/spf13/cobra v1.9.1
 	github.com/swaggo/files v1.0.1
