@@ -7,17 +7,26 @@ import (
 	"sync/atomic"
 )
 
+type Lifecycle interface {
+	Add(fn Closer)
+	Shutdown(ctx context.Context) error
+}
+
 type Closer func() error
 
-type Lifecycle struct {
+type SimpleLifecycle struct {
 	closers []Closer
 }
 
-func (l *Lifecycle) Add(fn Closer) {
+func NewSimpleLifecycle() *SimpleLifecycle {
+	return &SimpleLifecycle{}
+}
+
+func (l *SimpleLifecycle) Add(fn Closer) {
 	l.closers = append(l.closers, fn)
 }
 
-func (l *Lifecycle) Shutdown(ctx context.Context) error {
+func (l *SimpleLifecycle) Shutdown(ctx context.Context) error {
 	for i := len(l.closers) - 1; i >= 0; i-- {
 		if err := l.closers[i](); err != nil {
 			return err
@@ -40,6 +49,7 @@ func (l *GoLifecycle) Add(app any, fn Closer, deps ...any) {
 	l.appCloser[app] = fn
 }
 
+// TODO: wrap sync.map, and cycle should check on add time, not on shutdown
 func (l *GoLifecycle) Shutdown() error {
 	var indegree sync.Map
 	for app := range l.appCloser {

@@ -24,7 +24,7 @@ func (z *zerologWriter) Printf(format string, v ...any) {
 	log.Info().Msgf(format, v...)
 }
 
-func New() (db *gorm.DB, err error) {
+func New(lc pkg.Lifecycle) (db *gorm.DB, err error) {
 	initOnce.Do(func() {
 		log.Info().Msg("New db")
 
@@ -64,18 +64,18 @@ func New() (db *gorm.DB, err error) {
 		}
 	})
 
+	lc.Add(func() error {
+		if db == nil {
+			return nil
+		}
+
+		sqlDB, err := db.DB()
+		if err != nil {
+			return err
+		}
+
+		return sqlDB.Close()
+	})
+
 	return db, err
-}
-
-func Close(db *gorm.DB) error {
-	if db == nil {
-		return nil
-	}
-
-	sqlDB, err := db.DB()
-	if err != nil {
-		return err
-	}
-
-	return sqlDB.Close()
 }
