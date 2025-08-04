@@ -3,6 +3,7 @@ package logic
 import (
 	"authz/internal/entity"
 	"authz/internal/entity/model"
+	"authz/internal/pkg"
 	"context"
 
 	"github.com/redis/go-redis/v9"
@@ -39,6 +40,50 @@ func NewZanzibarLogic(db *gorm.DB, rdb *redis.Client) *ZanzibarLogicImpl {
 
 func (r *ZanzibarLogicImpl) db(c context.Context) *gorm.DB {
 	return r.pgdb.WithContext(c)
+}
+
+func (r *RbacLogicImpl) List(c context.Context, in *authzpbv1.ListTuplesIn) (
+	out *authzpbv1.ListTuplesOut, err error,
+) {
+	validFilterFields := []string{"sbj_ns", "sbj_id", "relation", "obj_ns", "obj_id"}
+
+	filterScope, err := pkg.ApplyFilter(in.Filters, validFilterFields, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	cnt := int64(0)
+	if err := r.db(c).Model(&model.Tuple{}).Scopes(filterScope).Count(&cnt).Error; err != nil {
+		return nil, err
+	}
+
+	tupleModels := []*model.Tuple{}
+	if err := r.db(c).
+		Scopes(
+			filterScope,
+			pkg.ApplyPager(in.Pager),
+			pkg.ApplySorter(in.Sorters),
+		).
+		Preload("Orgs").
+		Preload("UserAuths").
+		Find(&tupleModels).Error; err != nil {
+		return nil, err
+	}
+
+	tuples := make([]*authzpbv1.Tuple, 0, len(tupleModels))
+	for i, tuple := range tupleModels {
+		tuples[i] = &authzpbv1.Tuple{
+			SbjNs: tuple.SbjNs,
+			SbjId: tuple.SbjId,
+			Rel:   tuple.Relation,
+			ObjNs: tuple.ObjNs,
+			ObjId: tuple.ObjId,
+		}
+	}
+	return &authzpbv1.ListTuplesOut{
+		Users: tuples,
+		Count: cnt,
+	}, nil
 }
 
 // TODO: pagination and limit , sorter
