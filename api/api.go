@@ -43,6 +43,13 @@ func RegisterAPIHandlers(r *gin.Engine, h *rest.Handler, checkAuth gin.HandlerFu
 		vpr.POST("/revoke-role", HdlNoOut(h.RevokeRole))
 		vpr.POST("/grant-perm", HdlNoOut(h.GrantPerm))
 		vpr.POST("/revoke-perm", HdlNoOut(h.RevokePerm))
+
+		tr := vpr.Group("/tuples")
+		{
+			tr.GET("/", Hdl(h.ListTuples))
+			tr.POST("/", HdlNoOut(h.CreateTuple))
+			tr.DELETE("/", HdlNoOut(h.DeleteTuples))
+		}
 	}
 }
 

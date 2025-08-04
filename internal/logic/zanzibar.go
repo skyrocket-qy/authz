@@ -42,7 +42,7 @@ func (r *ZanzibarLogicImpl) db(c context.Context) *gorm.DB {
 	return r.pgdb.WithContext(c)
 }
 
-func (r *RbacLogicImpl) List(c context.Context, in *authzpbv1.ListTuplesIn) (
+func (r *ZanzibarLogicImpl) List(c context.Context, in *authzpbv1.ListTuplesIn) (
 	out *authzpbv1.ListTuplesOut, err error,
 ) {
 	validFilterFields := []string{"sbj_ns", "sbj_id", "relation", "obj_ns", "obj_id"}

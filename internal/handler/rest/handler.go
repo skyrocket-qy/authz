@@ -102,8 +102,16 @@ func (d *Handler) CreateTuple(c *gin.Context, tuple *authzpbv1.Tuple) error {
 	return d.zLogic.Create(c, tuple)
 }
 
-func (d *Handler) FindTuples(c *gin.Context, filter *authzpbv1.TupleFilter) ([]*authzpbv1.Tuple, error) {
+func (d *Handler) FindTuples(c *gin.Context, filter *authzpbv1.TupleFilter) (
+	[]*authzpbv1.Tuple, error,
+) {
 	return d.zLogic.Find(c, filter)
+}
+
+func (d *Handler) ListTuples(c *gin.Context, in *authzpbv1.ListTuplesIn) (
+	[]*authzpbv1.ListTuplesOut, error,
+) {
+	return d.zLogic.List(c, in)
 }
 
 func (d *Handler) DeleteTuples(c *gin.Context, filter *authzpbv1.TupleFilter) error {
