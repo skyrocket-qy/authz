@@ -14,8 +14,8 @@ import (
 
 type ZanzibarLogic interface {
 	Create(c context.Context, tuple *authzpbv1.Tuple) error
-	Find(c context.Context, filter *entity.TupleFilter) ([]*authzpbv1.Tuple, error)
-	Delete(c context.Context, filter *entity.TupleFilter) error
+	Find(c context.Context, filter *authzpbv1.TupleFilter) ([]*authzpbv1.Tuple, error)
+	Delete(c context.Context, filter *authzpbv1.TupleFilter) error
 
 	Check(c context.Context, sbj *entity.Instance, rel string, obj *entity.Instance) (bool, error)
 	Lookup(c context.Context, sbj *entity.Instance, rel string) ([]*entity.Instance, error)
@@ -41,11 +41,11 @@ func (r *ZanzibarLogicImpl) db(c context.Context) *gorm.DB {
 }
 
 // TODO: pagination and limit , sorter
-func (r *ZanzibarLogicImpl) Find(c context.Context, filter *entity.TupleFilter) (
+func (r *ZanzibarLogicImpl) Find(c context.Context, filter *authzpbv1.TupleFilter) (
 	[]*authzpbv1.Tuple, error,
 ) {
 	tuples := []*model.Tuple{}
-	if err := r.db(c).Scopes(filter.Apply()).Find(&tuples).Error; err != nil {
+	if err := r.db(c).Scopes(ApplyTupleFilter(filter)).Find(&tuples).Error; err != nil {
 		return nil, err
 	}
 
@@ -96,11 +96,11 @@ func (r *ZanzibarLogicImpl) Create(c context.Context, tuple *authzpbv1.Tuple) er
 	return nil
 }
 
-func (r *ZanzibarLogicImpl) Delete(c context.Context, filter *entity.TupleFilter) error {
+func (r *ZanzibarLogicImpl) Delete(c context.Context, filter *authzpbv1.TupleFilter) error {
 	return r.db(c).Transaction(func(tx *gorm.DB) error {
 		var toDelete []model.Tuple
 
-		if err := tx.Scopes(filter.Apply()).
+		if err := tx.Scopes(ApplyTupleFilter(filter)).
 			Clauses(clause.Locking{Strength: "UPDATE"}).
 			Find(&toDelete).Error; err != nil {
 			return err
@@ -124,7 +124,7 @@ func (r *ZanzibarLogicImpl) Delete(c context.Context, filter *entity.TupleFilter
 			changelogs = append(changelogs, model.ChangeLog{Tuple: data})
 		}
 
-		if err := tx.Scopes(filter.Apply()).Unscoped().Delete(&model.Tuple{}).Error; err != nil {
+		if err := tx.Scopes(ApplyTupleFilter(filter)).Unscoped().Delete(&model.Tuple{}).Error; err != nil {
 			return err
 		}
 
@@ -271,3 +271,25 @@ func (r *ZanzibarLogicImpl) Expand(c context.Context, perm string, obj *entity.I
 
 // 	return nil
 // }
+
+func ApplyTupleFilter(f *authzpbv1.TupleFilter) func(*gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if f.SbjNs != nil {
+			db = db.Where("sbj_ns = ?", *f.SbjNs)
+		}
+		if f.SbjId != nil {
+			db = db.Where("sbj_id = ?", *f.SbjId)
+		}
+		if f.Rel != nil {
+			db = db.Where("relation = ?", *f.Rel)
+		}
+		if f.ObjNs != nil {
+			db = db.Where("obj_ns = ?", *f.ObjNs)
+		}
+		if f.ObjId != nil {
+			db = db.Where("obj_id = ?", *f.ObjId)
+		}
+
+		return db
+	}
+}

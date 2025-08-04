@@ -26,17 +26,17 @@ func RegisterAPIHandlers(r *gin.Engine, h *rest.Handler, checkAuth gin.HandlerFu
 
 	pR := r.Group("/")
 	pR.Use(checkAuth)
-
+	print("1il")
 	vpr := pR.Group("/v1")
 	{
 		vpr.GET("/users", Hdl(h.ListUsers))
 		vpr.PUT("/user", HdlNoOut(h.UpdateUser))
 		vpr.DELETE("/user", HdlNoOut(h.DeleteUser))
-		vpr.GET("/roles", HdlNoOut(h.ListRoles))
+		vpr.GET("/roles", Hdl(h.ListRoles))
 		vpr.POST("/role", HdlNoOut(h.CreateRole))
 		vpr.PUT("/role", HdlNoOut(h.UpdateRole))
 		vpr.DELETE("/role", HdlNoOut(h.DeleteRole))
-		vpr.GET("/resources", HdlNoOut(h.ListResources))
+		vpr.GET("/resources", Hdl(h.ListResources))
 		vpr.POST("/resource", HdlNoOut(h.CreateResource))
 		vpr.DELETE("/resource", HdlNoOut(h.DeleteResource))
 		vpr.POST("/assign-role", HdlNoOut(h.AssignRole))

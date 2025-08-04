@@ -1,7 +1,6 @@
 package logic
 
 import (
-	"authz/internal/entity"
 	"authz/internal/entity/model"
 	"authz/internal/pkg"
 	"context"
@@ -20,28 +19,28 @@ User, Role(include Admin), Perm, resource
 type RbacLogic interface {
 	ListUsers(c context.Context, in *authzpbv1.ListUsersIn) (out *authzpbv1.ListUsersOut, err error)
 	UpdateUser(c context.Context, in *authzpbv1.UpdateUserIn) error
-	DeleteUser(c context.Context, id uint64) error
+	DeleteUser(c context.Context, id *authzpbv1.DeleteUserIn) error
 
-	CreateRole(c context.Context, name string) error
-	ListRoles(c context.Context) ([]*authzpbv1.Role, error)
-	UpdateRole(c context.Context, role *authzpbv1.Role) error
-	DeleteRole(c context.Context, id uint64) error
+	CreateRole(c context.Context, in *authzpbv1.CreateRoleIn) error
+	ListRoles(c context.Context, in *authzpbv1.ListRolesIn) (*authzpbv1.ListRolesOut, error)
+	UpdateRole(c context.Context, in *authzpbv1.UpdateRoleIn) error
+	DeleteRole(c context.Context, in *authzpbv1.DeleteRoleIn) error
 
 	// GetUsersWithRole(ctx context.Context, role string) ([]string, error)
 	// GetUsersWithPerm(ctx context.Context, perm string, res string) ([]string, error)
 
 	// ListPerms(c context.Context) ([]*authzpbv1.Perm, error)
 
-	CreateResource(c context.Context, ns, name string) error
-	ListResources(c context.Context) ([]*authzpbv1.Resource, error)
+	CreateResource(c context.Context, in *authzpbv1.CreateResourceIn) error
+	ListResources(c context.Context, in *authzpbv1.ListResourcesIn) (*authzpbv1.ListResourcesOut, error)
 	// UpdateResource(c context.Context, in *authzpbv1.Resource) error
-	DeleteResource(c context.Context, id uint64) error
+	DeleteResource(c context.Context, in *authzpbv1.DeleteResourceIn) error
 
-	AssignRole(c context.Context, userId uint64, roleId uint64) error
-	RevokeRole(c context.Context, userId uint64, roleId uint64) error
+	AssignRole(c context.Context, in *authzpbv1.AssignRoleIn) error
+	RevokeRole(c context.Context, in *authzpbv1.RevokeRoleIn) error
 
-	GrantPerm(c context.Context, roleId uint64, perm string, resId uint64) error
-	RevokePerm(c context.Context, roleId uint64, perm string, resId uint64) error
+	GrantPerm(c context.Context, in *authzpbv1.GrantPermIn) error
+	RevokePerm(c context.Context, in *authzpbv1.RevokePermIn) error
 }
 
 var _ RbacLogic = (*RbacLogicImpl)(nil)
@@ -149,7 +148,9 @@ func (r *RbacLogicImpl) CreateRole(c context.Context, in *authzpbv1.CreateRoleIn
 	return r.db(c).Create(&model.Role{Name: in.Name}).Error
 }
 
-func (r *RbacLogicImpl) ListRoles(c context.Context, in *authzpbv1.ListRolesIn) (*authzpbv1.ListRolesOut, error) {
+func (r *RbacLogicImpl) ListRoles(c context.Context, in *authzpbv1.ListRolesIn) (
+	out *authzpbv1.ListRolesOut, err error,
+) {
 	roleMds := []*model.Role{}
 	if err := r.db(c).Find(&roleMds).Error; err != nil {
 		return nil, err
@@ -163,7 +164,7 @@ func (r *RbacLogicImpl) ListRoles(c context.Context, in *authzpbv1.ListRolesIn) 
 		})
 	}
 
-	return roles, nil
+	return &authzpbv1.ListRolesOut{Roles: roles}, nil
 }
 
 func (r *RbacLogicImpl) UpdateRole(c context.Context, in *authzpbv1.UpdateRoleIn) error {
@@ -173,15 +174,15 @@ func (r *RbacLogicImpl) UpdateRole(c context.Context, in *authzpbv1.UpdateRoleIn
 }
 
 func (r *RbacLogicImpl) DeleteRole(c context.Context, in *authzpbv1.DeleteRoleIn) error {
-	return r.db(c).Delete(&model.Role{}, in.id).Error
+	return r.db(c).Delete(&model.Role{}, in.Id).Error
 }
 
 func (r *RbacLogicImpl) CreateResource(c context.Context, in *authzpbv1.CreateResourceIn) error {
-	return r.db(c).Create(&model.Resource{Ns: in.ns, Name: in.name}).Error
+	return r.db(c).Create(&model.Resource{Ns: in.Ns, Name: in.Name}).Error
 }
 
 func (r *RbacLogicImpl) ListResources(c context.Context, in *authzpbv1.ListResourcesIn) (
-	*authzpbv1.ListResourcesOut, error,
+	out *authzpbv1.ListResourcesOut, err error,
 ) {
 	resMds := []*model.Resource{}
 	if err := r.db(c).Find(&resMds).Error; err != nil {
@@ -196,7 +197,7 @@ func (r *RbacLogicImpl) ListResources(c context.Context, in *authzpbv1.ListResou
 		})
 	}
 
-	return resources, nil
+	return &authzpbv1.ListResourcesOut{Resources: resources}, nil
 }
 
 // func (r *RbacLogicImpl) UpdateResource(c context.Context, res *authzpbv1.Resource) error {
@@ -207,63 +208,63 @@ func (r *RbacLogicImpl) ListResources(c context.Context, in *authzpbv1.ListResou
 // }
 
 func (r *RbacLogicImpl) DeleteResource(c context.Context, in *authzpbv1.DeleteResourceIn) error {
-	return r.db(c).Delete(&model.Resource{}, in.id).Error
+	return r.db(c).Delete(&model.Resource{}, in.Id).Error
 }
 
 func (r *RbacLogicImpl) AssignRole(c context.Context, in *authzpbv1.AssignRoleIn) error {
 	return r.zbLogic.Create(c,
 		&authzpbv1.Tuple{
 			SbjNs: "user",
-			SbjId: strconv.FormatUint(in.userId, 64),
+			SbjId: strconv.FormatUint(in.UserId, 64),
 			Rel:   "member",
 			ObjNs: "role",
-			ObjId: strconv.FormatUint(in.roleId, 64),
+			ObjId: strconv.FormatUint(in.RoleId, 64),
 		},
 	)
 }
 
 func (r *RbacLogicImpl) RevokeRole(c context.Context, in *authzpbv1.RevokeRoleIn) error {
 	return r.zbLogic.Delete(c,
-		&entity.TupleFilter{
-			SbjNs:    pkg.Str("user"),
-			SbjId:    pkg.Str(strconv.FormatUint(in.userId, 64)),
-			Relation: pkg.Str("member"),
-			ObjNs:    pkg.Str("role"),
-			ObjId:    pkg.Str(strconv.FormatUint(in.roleId, 64)),
+		&authzpbv1.TupleFilter{
+			SbjNs: pkg.Str("user"),
+			SbjId: pkg.Str(strconv.FormatUint(in.UserId, 64)),
+			Rel:   pkg.Str("member"),
+			ObjNs: pkg.Str("role"),
+			ObjId: pkg.Str(strconv.FormatUint(in.RoleId, 64)),
 		},
 	)
 }
 
 func (r *RbacLogicImpl) GrantPerm(c context.Context, in *authzpbv1.GrantPermIn) error {
 	res := model.Resource{}
-	if err := r.db(c).Where("id = ?", in.resId).Take(&res).Error; err != nil {
+	if err := r.db(c).Where("id = ?", in.ResourceId).Take(&res).Error; err != nil {
 		return err
 	}
 
 	return r.zbLogic.Create(c,
 		&authzpbv1.Tuple{
 			SbjNs: "role",
-			SbjId: strconv.FormatUint(in.roleId, 64),
-			Rel:   in.perm,
+			SbjId: strconv.FormatUint(in.RoleId, 64),
+			Rel:   in.Perm,
 			ObjNs: res.Ns,
-			ObjId: strconv.FormatUint(in.resId, 64),
+			ObjId: strconv.FormatUint(in.ResourceId, 64),
 		},
 	)
 }
 
 func (r *RbacLogicImpl) RevokePerm(c context.Context, in *authzpbv1.RevokePermIn) error {
 	res := model.Resource{}
-	if err := r.db(c).Where("id = ?", in.resId).Take(&res).Error; err != nil {
+	if err := r.db(c).Where("id = ?", in.ResourceId).Take(&res).Error; err != nil {
 		return err
 	}
 
 	return r.zbLogic.Delete(c,
-		&entity.TupleFilter{
-			SbjNs:    pkg.Str("role"),
-			SbjId:    pkg.Str(strconv.FormatUint(in.roleId, 64)),
-			Relation: &in.perm,
-			ObjNs:    &res.Ns,
-			ObjId:    pkg.Str(strconv.FormatUint(in.resId, 64)),
+		&authzpbv1.TupleFilter{
+			SbjNs: pkg.Str("role"),
+			SbjId: pkg.Str(strconv.FormatUint(in.RoleId, 64)),
+			Rel:   &in.Perm,
+			ObjNs: &res.Ns,
+			ObjId: pkg.Str(strconv.FormatUint(in.ResourceId, 64)),
 		},
 	)
 }

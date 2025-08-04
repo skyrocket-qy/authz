@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"authz/api"
-	"authz/internal/handler"
+	"authz/internal/handler/rest"
 	"authz/internal/pkg"
 	"authz/internal/service/database"
 	"authz/internal/service/logger"
@@ -111,7 +111,7 @@ func RunServer(cmd *cobra.Command, args []string) {
 			database.New,
 			redis.New,
 			NewGinEngine,
-			handler.NewHandler,
+			rest.NewHandler,
 		),
 		fx.Invoke(
 			validate.New,

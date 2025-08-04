@@ -56,42 +56,56 @@ func (d *Handler) CreateRole(c *gin.Context, in *authzpbv1.CreateRoleIn) error {
 	return d.rbacLogic.CreateRole(c, in)
 }
 
-func (d *Handler) ListRoles(c *gin.Context) ([]*authzpbv1.Role, error) {
-	return d.rbacLogic.ListRoles(c)
+func (d *Handler) ListRoles(c *gin.Context, in *authzpbv1.ListRolesIn) (*authzpbv1.ListRolesOut, error) {
+	return d.rbacLogic.ListRoles(c, in)
 }
 
-func (d *Handler) UpdateRole(c *gin.Context, role *authzpbv1.Role) error {
-	return d.rbacLogic.UpdateRole(c, role)
+func (d *Handler) UpdateRole(c *gin.Context, in *authzpbv1.UpdateRoleIn) error {
+	return d.rbacLogic.UpdateRole(c, in)
 }
 
-func (d *Handler) DeleteRole(c *gin.Context, id uint64) error {
-	return d.rbacLogic.DeleteRole(c, id)
+func (d *Handler) DeleteRole(c *gin.Context, in *authzpbv1.DeleteRoleIn) error {
+	return d.rbacLogic.DeleteRole(c, in)
 }
 
-func (d *Handler) CreateResource(c *gin.Context, ns, name string) error {
-	return d.rbacLogic.CreateResource(c, ns, name)
+func (d *Handler) CreateResource(c *gin.Context, in *authzpbv1.CreateResourceIn) error {
+	return d.rbacLogic.CreateResource(c, in)
 }
 
-func (d *Handler) ListResources(c *gin.Context) ([]*authzpbv1.Resource, error) {
-	return d.rbacLogic.ListResources(c)
+func (d *Handler) ListResources(c *gin.Context, in *authzpbv1.ListResourcesIn) (
+	*authzpbv1.ListResourcesOut, error,
+) {
+	return d.rbacLogic.ListResources(c, in)
 }
 
-func (d *Handler) DeleteResource(c *gin.Context, id uint64) error {
-	return d.rbacLogic.DeleteResource(c, id)
+func (d *Handler) DeleteResource(c *gin.Context, in *authzpbv1.DeleteResourceIn) error {
+	return d.rbacLogic.DeleteResource(c, in)
 }
 
-func (d *Handler) AssignRole(c *gin.Context, userId uint64, roleId uint64) error {
-	return d.rbacLogic.AssignRole(c, userId, roleId)
+func (d *Handler) AssignRole(c *gin.Context, in *authzpbv1.AssignRoleIn) error {
+	return d.rbacLogic.AssignRole(c, in)
 }
 
-func (d *Handler) RevokeRole(c *gin.Context, userId uint64, roleId uint64) error {
-	return d.rbacLogic.RevokeRole(c, userId, roleId)
+func (d *Handler) RevokeRole(c *gin.Context, in *authzpbv1.RevokeRoleIn) error {
+	return d.rbacLogic.RevokeRole(c, in)
 }
 
-func (d *Handler) GrantPerm(c *gin.Context, roleId uint64, perm string, resId uint64) error {
-	return d.rbacLogic.GrantPerm(c, roleId, perm, resId)
+func (d *Handler) GrantPerm(c *gin.Context, in *authzpbv1.GrantPermIn) error {
+	return d.rbacLogic.GrantPerm(c, in)
 }
 
-func (d *Handler) RevokePerm(c *gin.Context, roleId uint64, perm string, resId uint64) error {
-	return d.rbacLogic.RevokePerm(c, roleId, perm, resId)
+func (d *Handler) RevokePerm(c *gin.Context, in *authzpbv1.RevokePermIn) error {
+	return d.rbacLogic.RevokePerm(c, in)
+}
+
+func (d *Handler) CreateTuple(c *gin.Context, tuple *authzpbv1.Tuple) error {
+	return d.zLogic.Create(c, tuple)
+}
+
+func (d *Handler) FindTuples(c *gin.Context, filter *authzpbv1.TupleFilter) ([]*authzpbv1.Tuple, error) {
+	return d.zLogic.Find(c, filter)
+}
+
+func (d *Handler) DeleteTuples(c *gin.Context, filter *authzpbv1.TupleFilter) error {
+	return d.zLogic.Delete(c, filter)
 }

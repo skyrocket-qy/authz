@@ -1,2 +1,3 @@
 - hot-reload with air lib
 - db resolver if do read-write separation
+- manual life cycle management
