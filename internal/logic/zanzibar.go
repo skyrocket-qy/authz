@@ -14,6 +14,7 @@ import (
 
 type ZanzibarLogic interface {
 	Create(c context.Context, tuple *authzpbv1.Tuple) error
+	List(c context.Context, in *authzpbv1.ListTuplesIn) (*authzpbv1.ListTuplesOut, error)
 	Find(c context.Context, filter *authzpbv1.TupleFilter) ([]*authzpbv1.Tuple, error)
 	Delete(c context.Context, filter *authzpbv1.TupleFilter) error
 
