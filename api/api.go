@@ -4,7 +4,6 @@ import (
 	"authz/internal/handler/rest"
 	"authz/internal/handler/rest/middleware"
 	"authz/internal/pkg"
-	"fmt"
 	"net/http"
 	"reflect"
 
@@ -78,10 +77,8 @@ func Hdl[Req, Resp proto.Message](a func(c *gin.Context, req Req) (resp Resp, er
 			return
 		}
 
-		// c.JSON(http.StatusOK, jsonBytes)
-		// c.Header("Content-Type", "application/json")
-		c.Data(http.StatusOK, "application/json", jsonBytes)
-		// c.Writer.Write(bytes)
+		c.Status(http.StatusOK)
+		c.Writer.Write(jsonBytes)
 	}
 }
 
@@ -109,7 +106,6 @@ func ShouldBindProto(c *gin.Context, req proto.Message) bool {
 		return false
 	}
 
-	fmt.Println(data, req)
 	if err := protojson.Unmarshal(data, req); err != nil {
 		pkg.Bind(c, erx.W(err).SetCode(pkg.ErrBadRequest))
 		return false
