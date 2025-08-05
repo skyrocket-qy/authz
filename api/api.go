@@ -59,6 +59,7 @@ func Hdl[Req, Resp proto.Message](a func(c *gin.Context, req Req) (resp Resp, er
 ) {
 	return func(c *gin.Context) {
 		var req Req
+		// TODO: this method is not performant, but for generic wrapper, it seems the only way
 		req = reflect.New(reflect.TypeOf(req).Elem()).Interface().(Req)
 
 		if !ShouldBindProto(c, req) {
