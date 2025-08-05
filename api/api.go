@@ -10,6 +10,8 @@ import (
 	"github.com/skyrocket-qy/erx"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 func RegisterAPIHandlers(r *gin.Engine, h *rest.Handler, checkAuth gin.HandlerFunc) {
@@ -53,10 +55,12 @@ func RegisterAPIHandlers(r *gin.Engine, h *rest.Handler, checkAuth gin.HandlerFu
 	}
 }
 
-func Hdl[Req, Resp any](a func(c *gin.Context, req Req) (resp Resp, err error)) func(*gin.Context) {
+func Hdl[Req, Resp proto.Message](a func(c *gin.Context, req Req) (resp Resp, err error)) func(
+	*gin.Context,
+) {
 	return func(c *gin.Context) {
-		var req Req
-		if !ShouldBindJson(c, &req) {
+		req := any(new(Req)).(Req)
+		if !ShouldBindProto(c, req) {
 			return
 		}
 
@@ -66,15 +70,21 @@ func Hdl[Req, Resp any](a func(c *gin.Context, req Req) (resp Resp, err error)) 
 			return
 		}
 
-		c.JSON(http.StatusOK, out)
-	}
+		bytes, err := proto.Marshal(out)
+		if err != nil {
+			pkg.Bind(c, err)
+			return
+		}
 
+		c.Status(http.StatusOK)
+		c.Writer.Write(bytes)
+	}
 }
 
-func HdlNoOut[Req any](a func(c *gin.Context, req Req) error) func(*gin.Context) {
+func HdlNoOut[Req proto.Message](a func(c *gin.Context, req Req) error) func(*gin.Context) {
 	return func(c *gin.Context) {
 		var req Req
-		if !ShouldBindJson(c, &req) {
+		if !ShouldBindProto(c, req) {
 			return
 		}
 
@@ -88,10 +98,17 @@ func HdlNoOut[Req any](a func(c *gin.Context, req Req) error) func(*gin.Context)
 
 }
 
-func ShouldBindJson(c *gin.Context, req any) bool {
-	if err := c.ShouldBindJSON(req); err != nil {
+func ShouldBindProto(c *gin.Context, req proto.Message) bool {
+	data, err := c.GetRawData()
+	if err != nil {
 		pkg.Bind(c, erx.W(err).SetCode(pkg.ErrBadRequest))
 		return false
 	}
+
+	if err := protojson.Unmarshal(data, req); err != nil {
+		pkg.Bind(c, erx.W(err).SetCode(pkg.ErrBadRequest))
+		return false
+	}
+
 	return true
 }
