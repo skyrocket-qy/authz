@@ -100,7 +100,7 @@ func startRestServer(lc pkg.Lifecycle) {
 
 	e := NewGinEngine()
 	api.RegisterAPIHandlers(e, h, middleware.Jwt())
-	server := NewHttpServer(lc)
+	server := NewHttpServer(lc, e)
 
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -121,10 +121,10 @@ func startRestServer(lc pkg.Lifecycle) {
 	}
 }
 
-func NewHttpServer(lc pkg.Lifecycle) *http.Server {
+func NewHttpServer(lc pkg.Lifecycle, handler http.Handler) *http.Server {
 	server := &http.Server{
 		Addr:              ":8080",
-		Handler:           NewGinEngine(),
+		Handler:           handler,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      10 * time.Second,
 		IdleTimeout:       120 * time.Second,

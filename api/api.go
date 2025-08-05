@@ -4,7 +4,9 @@ import (
 	"authz/internal/handler/rest"
 	"authz/internal/handler/rest/middleware"
 	"authz/internal/pkg"
+	"fmt"
 	"net/http"
+	"reflect"
 
 	"github.com/gin-gonic/gin"
 	"github.com/skyrocket-qy/erx"
@@ -25,10 +27,8 @@ func RegisterAPIHandlers(r *gin.Engine, h *rest.Handler, checkAuth gin.HandlerFu
 		vr.GET("/ping", h.Ping)
 		vr.GET("/healthy", h.Healthy)
 	}
-
 	pR := r.Group("/")
-	pR.Use(checkAuth)
-	print("1il")
+	// pR.Use(checkAuth)
 	vpr := pR.Group("/v1")
 	{
 		vpr.POST("/list-users", Hdl(h.ListUsers))
@@ -59,7 +59,9 @@ func Hdl[Req, Resp proto.Message](a func(c *gin.Context, req Req) (resp Resp, er
 	*gin.Context,
 ) {
 	return func(c *gin.Context) {
-		req := any(new(Req)).(Req)
+		var req Req
+		req = reflect.New(reflect.TypeOf(req).Elem()).Interface().(Req)
+
 		if !ShouldBindProto(c, req) {
 			return
 		}
@@ -70,14 +72,16 @@ func Hdl[Req, Resp proto.Message](a func(c *gin.Context, req Req) (resp Resp, er
 			return
 		}
 
-		bytes, err := proto.Marshal(out)
+		jsonBytes, err := protojson.Marshal(out)
 		if err != nil {
 			pkg.Bind(c, err)
 			return
 		}
 
-		c.Status(http.StatusOK)
-		c.Writer.Write(bytes)
+		// c.JSON(http.StatusOK, jsonBytes)
+		// c.Header("Content-Type", "application/json")
+		c.Data(http.StatusOK, "application/json", jsonBytes)
+		// c.Writer.Write(bytes)
 	}
 }
 
@@ -105,6 +109,7 @@ func ShouldBindProto(c *gin.Context, req proto.Message) bool {
 		return false
 	}
 
+	fmt.Println(data, req)
 	if err := protojson.Unmarshal(data, req); err != nil {
 		pkg.Bind(c, erx.W(err).SetCode(pkg.ErrBadRequest))
 		return false

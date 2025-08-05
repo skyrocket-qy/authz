@@ -109,7 +109,7 @@ func (d *Handler) FindTuples(c *gin.Context, filter *authzpbv1.TupleFilter) (
 }
 
 func (d *Handler) ListTuples(c *gin.Context, in *authzpbv1.ListTuplesIn) (
-	[]*authzpbv1.ListTuplesOut, error,
+	*authzpbv1.ListTuplesOut, error,
 ) {
 	return d.zLogic.List(c, in)
 }
