@@ -4,6 +4,7 @@ go 1.24.5
 
 require (
 	ariga.io/atlas-provider-gorm v0.5.3
+	connectrpc.com/connect v1.18.1
 	github.com/caarlos0/env/v11 v11.3.1
 	github.com/gin-gonic/gin v1.10.1
 	github.com/go-playground/validator/v10 v10.20.0
@@ -17,7 +18,7 @@ require (
 	github.com/segmentio/kafka-go v0.4.48
 	github.com/skyrocket-qy/erx v0.3.20
 	github.com/skyrocket-qy/gox v1.2.29
-	github.com/skyrocket-qy/protos v0.1.20
+	github.com/skyrocket-qy/protos v0.1.22
 	github.com/skyrocket-qy/srand v0.1.0
 	github.com/spf13/cobra v1.9.1
 	github.com/swaggo/files v1.0.1

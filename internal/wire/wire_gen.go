@@ -7,6 +7,7 @@
 package wire
 
 import (
+	"authz/internal/handler/connect"
 	"authz/internal/handler/rest"
 	"authz/internal/logic"
 	"authz/internal/pkg"
@@ -16,7 +17,7 @@ import (
 
 // Injectors from wire.go:
 
-func NewHandler(lifecycle pkg.Lifecycle) (*rest.Handler, error) {
+func NewRestHandler(lifecycle pkg.Lifecycle) (*rest.Handler, error) {
 	db, err := database.New(lifecycle)
 	if err != nil {
 		return nil, err
@@ -25,5 +26,17 @@ func NewHandler(lifecycle pkg.Lifecycle) (*rest.Handler, error) {
 	zanzibarLogicImpl := logic.NewZanzibarLogic(db, client)
 	rbacLogicImpl := logic.NewRbacLogic(zanzibarLogicImpl)
 	handler := rest.NewHandler(zanzibarLogicImpl, rbacLogicImpl)
+	return handler, nil
+}
+
+func NewConnectHandler(lifecycle pkg.Lifecycle) (*connect.Handler, error) {
+	db, err := database.New(lifecycle)
+	if err != nil {
+		return nil, err
+	}
+	client := redis.New(lifecycle)
+	zanzibarLogicImpl := logic.NewZanzibarLogic(db, client)
+	rbacLogicImpl := logic.NewRbacLogic(zanzibarLogicImpl)
+	handler := connect.NewHandler(zanzibarLogicImpl, rbacLogicImpl)
 	return handler, nil
 }

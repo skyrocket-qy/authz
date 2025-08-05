@@ -72,7 +72,27 @@ func RunServer(cmd *cobra.Command, args []string) {
 	logger.InitLogger()
 	lc := pkg.NewSimpleLifecycle()
 
-	h, err := wire.NewHandler(lc)
+	startRestServer(lc)
+}
+
+func startConnectServer(lc pkg.Lifecycle) {
+	// connectH, err := wire.NewConnectHandler(lc)
+	// if err != nil {
+	// 	log.Error().Msg(err.Error())
+	// 	return
+	// }
+	// path, handler := authzpbv1connect.NewAuthzServiceHandler(connectH)
+	// mux := http.NewServeMux()
+	// mux.Handle(path, handler)
+	// http.ListenAndServe(
+	// 	"localhost:8080",
+	// 	// Use h2c so we can serve HTTP/2 without TLS.
+	// 	h2c.NewHandler(mux, &http2.Server{}),
+	// )
+}
+
+func startRestServer(lc pkg.Lifecycle) {
+	h, err := wire.NewRestHandler(lc)
 	if err != nil {
 		log.Error().Msg(err.Error())
 		return
