@@ -83,7 +83,7 @@ func Hdl[Req, Resp proto.Message](a func(c *gin.Context, req Req) (resp Resp, er
 
 func HdlNoOut[Req proto.Message](a func(c *gin.Context, req Req) error) func(*gin.Context) {
 	return func(c *gin.Context) {
-		var req Req
+		req := any(new(Req)).(Req)
 		if !ShouldBindProto(c, req) {
 			return
 		}
