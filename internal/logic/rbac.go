@@ -60,7 +60,6 @@ func (r *RbacLogicImpl) db(c context.Context) *gorm.DB {
 func (r *RbacLogicImpl) ListUsers(c context.Context, in *authzpbv1.ListUsersIn) (
 	out *authzpbv1.ListUsersOut, err error,
 ) {
-	return &authzpbv1.ListUsersOut{Count: 1}, nil
 	filterExprs := map[string][]string{
 		"orgs.name": {
 			"JOIN user_orgs ON user_orgs.user_id = users.id",
@@ -97,7 +96,7 @@ func (r *RbacLogicImpl) ListUsers(c context.Context, in *authzpbv1.ListUsersIn) 
 		return nil, err
 	}
 
-	users := make([]*authzpbv1.User, 0, len(userMds))
+	users := make([]*authzpbv1.User, len(userMds))
 	for i, userMd := range userMds {
 		user := &authzpbv1.User{
 			Id:               userMd.Id,
@@ -156,7 +155,7 @@ func (r *RbacLogicImpl) ListRoles(c context.Context, in *authzpbv1.ListRolesIn) 
 		return nil, err
 	}
 
-	roles := make([]*authzpbv1.Role, 0, len(roleMds))
+	roles := make([]*authzpbv1.Role, len(roleMds))
 	for _, roleMd := range roleMds {
 		roles = append(roles, &authzpbv1.Role{
 			Id:   roleMd.Id,
@@ -189,7 +188,7 @@ func (r *RbacLogicImpl) ListResources(c context.Context, in *authzpbv1.ListResou
 		return nil, err
 	}
 
-	resources := make([]*authzpbv1.Resource, 0, len(resMds))
+	resources := make([]*authzpbv1.Resource, len(resMds))
 	for _, resMd := range resMds {
 		resources = append(resources, &authzpbv1.Resource{
 			Ns:   resMd.Ns,
@@ -215,10 +214,10 @@ func (r *RbacLogicImpl) AssignRole(c context.Context, in *authzpbv1.AssignRoleIn
 	return r.zbLogic.Create(c,
 		&authzpbv1.Tuple{
 			SbjNs: "user",
-			SbjId: strconv.FormatUint(in.UserId, 64),
+			SbjId: strconv.FormatUint(in.UserId, 10),
 			Rel:   "member",
 			ObjNs: "role",
-			ObjId: strconv.FormatUint(in.RoleId, 64),
+			ObjId: strconv.FormatUint(in.RoleId, 10),
 		},
 	)
 }
@@ -227,10 +226,10 @@ func (r *RbacLogicImpl) RevokeRole(c context.Context, in *authzpbv1.RevokeRoleIn
 	return r.zbLogic.Delete(c,
 		&authzpbv1.TupleFilter{
 			SbjNs: pkg.Str("user"),
-			SbjId: pkg.Str(strconv.FormatUint(in.UserId, 64)),
+			SbjId: pkg.Str(strconv.FormatUint(in.UserId, 10)),
 			Rel:   pkg.Str("member"),
 			ObjNs: pkg.Str("role"),
-			ObjId: pkg.Str(strconv.FormatUint(in.RoleId, 64)),
+			ObjId: pkg.Str(strconv.FormatUint(in.RoleId, 10)),
 		},
 	)
 }
@@ -244,10 +243,10 @@ func (r *RbacLogicImpl) GrantPerm(c context.Context, in *authzpbv1.GrantPermIn) 
 	return r.zbLogic.Create(c,
 		&authzpbv1.Tuple{
 			SbjNs: "role",
-			SbjId: strconv.FormatUint(in.RoleId, 64),
+			SbjId: strconv.FormatUint(in.RoleId, 10),
 			Rel:   in.Perm,
 			ObjNs: res.Ns,
-			ObjId: strconv.FormatUint(in.ResourceId, 64),
+			ObjId: strconv.FormatUint(in.ResourceId, 10),
 		},
 	)
 }
@@ -261,10 +260,10 @@ func (r *RbacLogicImpl) RevokePerm(c context.Context, in *authzpbv1.RevokePermIn
 	return r.zbLogic.Delete(c,
 		&authzpbv1.TupleFilter{
 			SbjNs: pkg.Str("role"),
-			SbjId: pkg.Str(strconv.FormatUint(in.RoleId, 64)),
+			SbjId: pkg.Str(strconv.FormatUint(in.RoleId, 10)),
 			Rel:   &in.Perm,
 			ObjNs: &res.Ns,
-			ObjId: pkg.Str(strconv.FormatUint(in.ResourceId, 64)),
+			ObjId: pkg.Str(strconv.FormatUint(in.ResourceId, 10)),
 		},
 	)
 }
