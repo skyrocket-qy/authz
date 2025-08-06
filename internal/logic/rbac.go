@@ -33,7 +33,6 @@ type RbacLogic interface {
 
 	CreateResource(c context.Context, in *authzpbv1.CreateResourceIn) error
 	ListResources(c context.Context, in *authzpbv1.ListResourcesIn) (*authzpbv1.ListResourcesOut, error)
-	// UpdateResource(c context.Context, in *authzpbv1.Resource) error
 	DeleteResource(c context.Context, in *authzpbv1.DeleteResourceIn) error
 
 	AssignRole(c context.Context, in *authzpbv1.AssignRoleIn) error
