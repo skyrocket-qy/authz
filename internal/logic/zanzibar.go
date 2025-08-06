@@ -81,8 +81,8 @@ func (r *ZanzibarLogicImpl) List(c context.Context, in *authzpbv1.ListTuplesIn) 
 		}
 	}
 	return &authzpbv1.ListTuplesOut{
-		// Users: tuples,
-		// Count: cnt,
+		Tuples: tuples,
+		Total:  cnt,
 	}, nil
 }
 
