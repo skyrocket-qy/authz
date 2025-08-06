@@ -5,6 +5,7 @@ import (
 	"authz/internal/entity/model"
 	"authz/internal/pkg"
 	"context"
+	"fmt"
 
 	"github.com/redis/go-redis/v9"
 	authzpbv1 "github.com/skyrocket-qy/protos/gen/authzpb/v1"
@@ -108,6 +109,7 @@ func (r *ZanzibarLogicImpl) Find(c context.Context, filter *authzpbv1.TupleFilte
 }
 
 func (r *ZanzibarLogicImpl) Create(c context.Context, tuple *authzpbv1.Tuple) error {
+	fmt.Println("gg")
 	tupleModel := model.Tuple{
 		SbjNs:    tuple.SbjNs,
 		SbjId:    tuple.SbjId,

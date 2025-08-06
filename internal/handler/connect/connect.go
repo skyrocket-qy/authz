@@ -174,15 +174,14 @@ func (h *Handler) ListTuples(
 }
 
 func (h *Handler) CreateTuple(
-	ctx context.Context, req *connect.Request[authzpbv1.Tuple]) (
-	*connect.Response[emptypb.Empty], error,
-) {
+	ctx context.Context, req *connect.Request[authzpbv1.Tuple],
+) (*connect.Response[emptypb.Empty], error) {
 	err := h.zLogic.Create(ctx, req.Msg)
-	if err == nil {
+	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	return nil, nil
+	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
 func (h *Handler) DeleteTuples(
@@ -194,5 +193,5 @@ func (h *Handler) DeleteTuples(
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	return nil, nil
+	return connect.NewResponse(&emptypb.Empty{}), nil
 }

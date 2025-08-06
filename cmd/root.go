@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/rs/cors"
 	"github.com/rs/zerolog/log"
 	"github.com/skyrocket-qy/gox/logx"
 	"github.com/skyrocket-qy/protos/gen/authzpb/v1/authzpbv1connect"
@@ -86,11 +87,21 @@ func startConnectServer(lc pkg.Lifecycle) {
 	}
 	path, handler := authzpbv1connect.NewAuthzServiceHandler(connectH)
 	mux := http.NewServeMux()
+
 	mux.Handle(path, handler)
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:3000"}, // Or "*" for dev
+		AllowCredentials: true,
+		AllowedHeaders:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
+	})
+
+	handlerWithCors := c.Handler(mux)
+	h2cHandler := h2c.NewHandler(handlerWithCors, &http2.Server{})
 	http.ListenAndServe(
 		"localhost:8080",
 		// Use h2c so we can serve HTTP/2 without TLS.
-		h2c.NewHandler(mux, &http2.Server{}),
+		h2cHandler,
 	)
 }
 
