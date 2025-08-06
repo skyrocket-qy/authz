@@ -5,13 +5,12 @@ import (
 	"authz/internal/entity/model"
 	"authz/internal/pkg"
 	"context"
-	"fmt"
+	"strings"
 
 	"github.com/redis/go-redis/v9"
 	authzpbv1 "github.com/skyrocket-qy/protos/gen/authzpb/v1"
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 type ZanzibarLogic interface {
@@ -109,7 +108,6 @@ func (r *ZanzibarLogicImpl) Find(c context.Context, filter *authzpbv1.TupleFilte
 }
 
 func (r *ZanzibarLogicImpl) Create(c context.Context, tuple *authzpbv1.Tuple) error {
-	fmt.Println("gg")
 	tupleModel := model.Tuple{
 		SbjNs:    tuple.SbjNs,
 		SbjId:    tuple.SbjId,
@@ -142,42 +140,36 @@ func (r *ZanzibarLogicImpl) Create(c context.Context, tuple *authzpbv1.Tuple) er
 	return nil
 }
 
-func (r *ZanzibarLogicImpl) Delete(c context.Context, filter *authzpbv1.TupleFilter) error {
+func (r *ZanzibarLogicImpl) Delete(c context.Context, tuples []*authzpbv1.Tuple) error {
+	changelogs := make([]model.ChangeLog, len(tuples))
+	for i, tuple := range tuples {
+		data, err := proto.Marshal(tuple)
+		if err != nil {
+			return err
+		}
+
+		changelogs[i] = model.ChangeLog{Tuple: data}
+	}
+
 	return r.db(c).Transaction(func(tx *gorm.DB) error {
-		var toDelete []model.Tuple
+		values := make([]any, 0, len(tuples)*5)
+		placeholders := make([]string, len(tuples))
 
-		if err := tx.Scopes(ApplyTupleFilter(filter)).
-			Clauses(clause.Locking{Strength: "UPDATE"}).
-			Find(&toDelete).Error; err != nil {
+		for i, t := range tuples {
+			placeholders[i] = "(?, ?, ?, ?, ?)"
+			values = append(values, t.SbjNs, t.SbjId, t.Rel, t.ObjNs, t.ObjId)
+		}
+
+		query := `
+			DELETE FROM tuples
+			WHERE (sbj_ns, sbj_id, rel, obj_ns, obj_id) IN (` + strings.Join(placeholders, ",") + `)
+		`
+		if err := tx.Unscoped().Exec(query, values...).Error; err != nil {
 			return err
 		}
 
-		var changelogs []model.ChangeLog
-		for _, tuple := range toDelete {
-			tupleProto := &authzpbv1.Tuple{
-				SbjNs: tuple.SbjNs,
-				SbjId: tuple.SbjId,
-				Rel:   tuple.Relation,
-				ObjNs: tuple.ObjNs,
-				ObjId: tuple.ObjId,
-			}
-
-			data, err := proto.Marshal(tupleProto)
-			if err != nil {
-				return err
-			}
-
-			changelogs = append(changelogs, model.ChangeLog{Tuple: data})
-		}
-
-		if err := tx.Scopes(ApplyTupleFilter(filter)).Unscoped().Delete(&model.Tuple{}).Error; err != nil {
+		if err := tx.Create(&changelogs).Error; err != nil {
 			return err
-		}
-
-		if len(changelogs) > 0 {
-			if err := tx.Create(&changelogs).Error; err != nil {
-				return err
-			}
 		}
 
 		return nil
