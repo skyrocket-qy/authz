@@ -64,13 +64,11 @@ func (r *ZanzibarLogicImpl) List(c context.Context, in *authzpbv1.ListTuplesIn) 
 			pkg.ApplyPager(in.Pager),
 			pkg.ApplySorter(in.Sorters),
 		).
-		Preload("Orgs").
-		Preload("UserAuths").
 		Find(&tupleModels).Error; err != nil {
 		return nil, err
 	}
 
-	tuples := make([]*authzpbv1.Tuple, 0, len(tupleModels))
+	tuples := make([]*authzpbv1.Tuple, len(tupleModels))
 	for i, tuple := range tupleModels {
 		tuples[i] = &authzpbv1.Tuple{
 			SbjNs: tuple.SbjNs,
