@@ -5,19 +5,22 @@ import (
 	"authz/internal/entity/model"
 	"authz/internal/pkg"
 	"context"
+	"errors"
 	"strings"
 
 	"github.com/redis/go-redis/v9"
 	authzpbv1 "github.com/skyrocket-qy/protos/gen/authzpb/v1"
+	pkgpbv1 "github.com/skyrocket-qy/protos/gen/pkgpb/v1"
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type ZanzibarLogic interface {
 	Create(c context.Context, tuple *authzpbv1.Tuple) error
 	List(c context.Context, in *authzpbv1.ListTuplesIn) (*authzpbv1.ListTuplesOut, error)
 	Find(c context.Context, filter *authzpbv1.TupleFilter) ([]*authzpbv1.Tuple, error)
-	Delete(c context.Context, in *authzpbv1.DeleteTupleIn) error
+	Delete(c context.Context, in *authzpbv1.DeleteTuplesIn) error
 
 	Check(c context.Context, sbj *entity.Instance, rel string, obj *entity.Instance) (bool, error)
 	Lookup(c context.Context, sbj *entity.Instance, rel string) ([]*entity.Instance, error)
@@ -47,23 +50,36 @@ func (r *ZanzibarLogicImpl) List(c context.Context, in *authzpbv1.ListTuplesIn) 
 ) {
 	validFilterFields := []string{"sbj_ns", "sbj_id", "relation", "obj_ns", "obj_id"}
 
+	if in.Cursor == nil {
+		return nil, errors.New("cursor is nil")
+	}
+
+	pager := in.Cursor
+	cursorVal := pager.Val
+
 	filterScope, err := pkg.ApplyFilter(in.Filters, validFilterFields, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	cnt := int64(0)
-	if err := r.db(c).Model(&model.Tuple{}).Scopes(filterScope).Count(&cnt).Error; err != nil {
-		return nil, err
-	}
-
 	tupleModels := []*model.Tuple{}
-	if err := r.db(c).
+	tx := r.db(c).
+		Limit(int(pager.Size)).
 		Scopes(
 			filterScope,
-			pkg.ApplyPager(in.Pager),
 			pkg.ApplySorter(in.Sorters),
-		).
+		)
+
+	if cursorVal != nil {
+		nextCursorData := &pkgpbv1.CursorData{}
+		if err := proto.Unmarshal(cursorVal, nextCursorData); err != nil {
+			return nil, err
+		}
+
+		tx = tx.Scopes(pkg.ApplyCursor(nextCursorData))
+	}
+
+	if err := tx.
 		Find(&tupleModels).Error; err != nil {
 		return nil, err
 	}
@@ -78,10 +94,46 @@ func (r *ZanzibarLogicImpl) List(c context.Context, in *authzpbv1.ListTuplesIn) 
 			ObjId: tuple.ObjId,
 		}
 	}
-	return &authzpbv1.ListTuplesOut{
+
+	out = &authzpbv1.ListTuplesOut{
 		Tuples: tuples,
-		Total:  cnt,
-	}, nil
+	}
+
+	if len(tuples) == 0 {
+		return out, nil
+	}
+
+	lastTuple := tuples[len(tuples)-1]
+	cursorData := &pkgpbv1.CursorData{
+		Fields: make([]*pkgpbv1.Field, len(in.Sorters)),
+	}
+	for i, sorter := range in.Sorters {
+		field := &pkgpbv1.Field{
+			Asc: sorter.Asc,
+			Col: sorter.Field,
+		}
+		switch sorter.Field {
+		case "sbj_ns":
+			field.Val = lastTuple.SbjNs
+		case "sbj_id":
+			field.Val = lastTuple.SbjId
+		case "relation":
+			field.Val = lastTuple.Rel
+		case "obj_ns":
+			field.Val = lastTuple.ObjNs
+		case "obj_id":
+			field.Val = lastTuple.ObjId
+		}
+
+		cursorData.Fields[i] = field
+	}
+
+	out.NextCursor, err = proto.Marshal(cursorData)
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
 }
 
 // TODO: pagination and limit , sorter
@@ -140,7 +192,47 @@ func (r *ZanzibarLogicImpl) Create(c context.Context, tuple *authzpbv1.Tuple) er
 	return nil
 }
 
-func (r *ZanzibarLogicImpl) Delete(c context.Context, in *authzpbv1.DeleteTupleIn) error {
+func (r *ZanzibarLogicImpl) Delete(c context.Context, in *authzpbv1.DeleteTuplesIn) error {
+	if in.Filter != nil {
+		filter := in.Filter
+		return r.db(c).Transaction(func(tx *gorm.DB) error {
+			var toDelete []*model.Tuple
+			if err := tx.Scopes(ApplyTupleFilter(filter)).
+				Clauses(clause.Locking{Strength: "UPDATE"}).
+				Find(&toDelete).Error; err != nil {
+				return err
+			}
+
+			if err := tx.Unscoped().Delete(toDelete).Error; err != nil {
+				return err
+			}
+
+			changelogs := make([]model.ChangeLog, len(toDelete))
+			for i, tupleModel := range toDelete {
+				tuple := &authzpbv1.Tuple{
+					SbjNs: tupleModel.SbjNs,
+					SbjId: tupleModel.SbjId,
+					Rel:   tupleModel.Relation,
+					ObjNs: tupleModel.ObjNs,
+					ObjId: tupleModel.ObjId,
+				}
+
+				data, err := proto.Marshal(tuple)
+				if err != nil {
+					return err
+				}
+
+				changelogs[i] = model.ChangeLog{Tuple: data}
+			}
+
+			if err := tx.Create(changelogs).Error; err != nil {
+				return err
+			}
+
+			return nil
+		})
+	}
+
 	changelogs := make([]model.ChangeLog, len(in.Tuples))
 	for i, tuple := range in.Tuples {
 		data, err := proto.Marshal(tuple)

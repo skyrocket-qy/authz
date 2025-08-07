@@ -224,7 +224,7 @@ func (r *RbacLogicImpl) AssignRole(c context.Context, in *authzpbv1.AssignRoleIn
 
 func (r *RbacLogicImpl) RevokeRole(c context.Context, in *authzpbv1.RevokeRoleIn) error {
 	return r.zbLogic.Delete(c,
-		&authzpbv1.DeleteTupleIn{
+		&authzpbv1.DeleteTuplesIn{
 			Tuples: []*authzpbv1.Tuple{
 				{
 					SbjNs: "user",
@@ -262,7 +262,7 @@ func (r *RbacLogicImpl) RevokePerm(c context.Context, in *authzpbv1.RevokePermIn
 	}
 
 	return r.zbLogic.Delete(c,
-		&authzpbv1.DeleteTupleIn{
+		&authzpbv1.DeleteTuplesIn{
 			Tuples: []*authzpbv1.Tuple{
 				{
 					SbjNs: "role",

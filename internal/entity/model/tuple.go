@@ -24,6 +24,7 @@ package model
 // }
 
 type Tuple struct {
+	Id       uint64 `gorm:"primaryKey"`
 	SbjNs    string `gorm:"uniqueIndex:idx_tuple;not null"`
 	SbjId    string `gorm:"uniqueIndex:idx_tuple;not null"`
 	Relation string `gorm:"uniqueIndex:idx_tuple;not null"`

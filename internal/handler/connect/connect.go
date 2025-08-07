@@ -185,7 +185,7 @@ func (h *Handler) CreateTuple(
 }
 
 func (h *Handler) DeleteTuples(
-	ctx context.Context, req *connect.Request[authzpbv1.DeleteTupleIn]) (
+	ctx context.Context, req *connect.Request[authzpbv1.DeleteTuplesIn]) (
 	*connect.Response[emptypb.Empty], error,
 ) {
 	err := h.zLogic.Delete(ctx, req.Msg)

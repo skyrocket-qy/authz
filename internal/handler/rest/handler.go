@@ -114,6 +114,6 @@ func (d *Handler) ListTuples(c *gin.Context, in *authzpbv1.ListTuplesIn) (
 	return d.zLogic.List(c, in)
 }
 
-func (d *Handler) DeleteTuples(c *gin.Context, in *authzpbv1.DeleteTupleIn) error {
+func (d *Handler) DeleteTuples(c *gin.Context, in *authzpbv1.DeleteTuplesIn) error {
 	return d.zLogic.Delete(c, in)
 }
