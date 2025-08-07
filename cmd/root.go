@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"time"
 
+	"connectrpc.com/connect"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/cors"
 	"github.com/rs/zerolog/log"
@@ -85,7 +86,9 @@ func startConnectServer(lc pkg.Lifecycle) {
 		log.Error().Msg(err.Error())
 		return
 	}
-	path, handler := authzpbv1connect.NewAuthzServiceHandler(connectH)
+	path, handler := authzpbv1connect.NewAuthzServiceHandler(connectH,
+		connect.WithCompressMinBytes(512),
+	)
 	mux := http.NewServeMux()
 
 	mux.Handle(path, handler)
