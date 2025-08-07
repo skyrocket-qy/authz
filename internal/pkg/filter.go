@@ -11,12 +11,12 @@ import (
 )
 
 var opTemplate = map[pkgpbv1.Operator]string{
-	pkgpbv1.Operator_OPERATOR_EQ:      "%s = ?",
-	pkgpbv1.Operator_OPERATOR_GT:      "%s > ?",
-	pkgpbv1.Operator_OPERATOR_GTE:     "%s >= ?",
-	pkgpbv1.Operator_OPERATOR_LT:      "%s < ?",
-	pkgpbv1.Operator_OPERATOR_LTE:     "%s <= ?",
-	pkgpbv1.Operator_OPERATOR_BETWEEN: "%s BETWEEN ? AND ?",
+	pkgpbv1.Operator_EQ:      "%s = ?",
+	pkgpbv1.Operator_GT:      "%s > ?",
+	pkgpbv1.Operator_GTE:     "%s >= ?",
+	pkgpbv1.Operator_LT:      "%s < ?",
+	pkgpbv1.Operator_LTE:     "%s <= ?",
+	pkgpbv1.Operator_BETWEEN: "%s BETWEEN ? AND ?",
 }
 
 func ApplyFilter(filters []*pkgpbv1.Filter, validFields []string, filterExprs map[string][]string) (
@@ -38,15 +38,15 @@ func ApplyFilter(filters []*pkgpbv1.Filter, validFields []string, filterExprs ma
 		visited[ft.Field] = struct{}{}
 
 		switch ft.Op {
-		case pkgpbv1.Operator_OPERATOR_EQ,
-			pkgpbv1.Operator_OPERATOR_GT,
-			pkgpbv1.Operator_OPERATOR_GTE,
-			pkgpbv1.Operator_OPERATOR_LT,
-			pkgpbv1.Operator_OPERATOR_LTE:
+		case pkgpbv1.Operator_EQ,
+			pkgpbv1.Operator_GT,
+			pkgpbv1.Operator_GTE,
+			pkgpbv1.Operator_LT,
+			pkgpbv1.Operator_LTE:
 			if len(ft.Values) != 1 {
 				return nil, fmt.Errorf("%v filter requires one value", ft.Op)
 			}
-		case pkgpbv1.Operator_OPERATOR_BETWEEN:
+		case pkgpbv1.Operator_BETWEEN:
 			if len(ft.Values) != 2 {
 				return nil, errors.New("between filter requires two values")
 			}
@@ -75,7 +75,7 @@ func ApplyFilter(filters []*pkgpbv1.Filter, validFields []string, filterExprs ma
 			tmpl, _ := opTemplate[ft.Op]
 
 			switch ft.Op {
-			case pkgpbv1.Operator_OPERATOR_BETWEEN:
+			case pkgpbv1.Operator_BETWEEN:
 				if len(ft.Values) >= 2 {
 					db = db.Where(fmt.Sprintf(tmpl, column), ft.Values[0], ft.Values[1])
 				}
