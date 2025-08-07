@@ -193,8 +193,9 @@ func (r *ZanzibarLogicImpl) Create(c context.Context, tuple *authzpbv1.Tuple) er
 }
 
 func (r *ZanzibarLogicImpl) Delete(c context.Context, in *authzpbv1.DeleteTuplesIn) error {
-	if in.Filter != nil {
-		filter := in.Filter
+	switch req := in.Mode.(type) {
+	case *authzpbv1.DeleteTuplesIn_Filter:
+		filter := req.Filter
 		return r.db(c).Transaction(func(tx *gorm.DB) error {
 			var toDelete []*model.Tuple
 			if err := tx.Scopes(ApplyTupleFilter(filter)).
@@ -231,41 +232,51 @@ func (r *ZanzibarLogicImpl) Delete(c context.Context, in *authzpbv1.DeleteTuples
 
 			return nil
 		})
-	}
+	case *authzpbv1.DeleteTuplesIn_Tuples:
+		tuples := req.Tuples.Tuples
+		changelogs := make([]model.ChangeLog, len(tuples))
+		for i, tuple := range tuples {
+			data, err := proto.Marshal(tuple)
+			if err != nil {
+				return err
+			}
 
-	changelogs := make([]model.ChangeLog, len(in.Tuples))
-	for i, tuple := range in.Tuples {
-		data, err := proto.Marshal(tuple)
-		if err != nil {
-			return err
+			changelogs[i] = model.ChangeLog{Tuple: data}
 		}
 
-		changelogs[i] = model.ChangeLog{Tuple: data}
-	}
+		return r.db(c).Transaction(func(tx *gorm.DB) error {
+			values := make([]any, 0, len(tuples)*5)
+			placeholders := make([]string, len(tuples))
 
-	return r.db(c).Transaction(func(tx *gorm.DB) error {
-		values := make([]any, 0, len(in.Tuples)*5)
-		placeholders := make([]string, len(in.Tuples))
+			for i, t := range tuples {
+				placeholders[i] = "(?, ?, ?, ?, ?)"
+				values = append(values, t.SbjNs, t.SbjId, t.Rel, t.ObjNs, t.ObjId)
+			}
 
-		for i, t := range in.Tuples {
-			placeholders[i] = "(?, ?, ?, ?, ?)"
-			values = append(values, t.SbjNs, t.SbjId, t.Rel, t.ObjNs, t.ObjId)
-		}
-
-		query := `
+			query := `
 			DELETE FROM tuples
 			WHERE (sbj_ns, sbj_id, rel, obj_ns, obj_id) IN (` + strings.Join(placeholders, ",") + `)
-		`
-		if err := tx.Unscoped().Exec(query, values...).Error; err != nil {
+			`
+			if err := tx.Unscoped().Exec(query, values...).Error; err != nil {
+				return err
+			}
+
+			if err := tx.Create(&changelogs).Error; err != nil {
+				return err
+			}
+
+			return nil
+		})
+
+	case *authzpbv1.DeleteTuplesIn_Ids:
+		if err := r.db(c).Unscoped().
+			Where("id IN ?", req.Ids.Ids).
+			Delete(&model.Tuple{}).Error; err != nil {
 			return err
 		}
+	}
 
-		if err := tx.Create(&changelogs).Error; err != nil {
-			return err
-		}
-
-		return nil
-	})
+	return errors.New("mode type error")
 }
 
 func (r *ZanzibarLogicImpl) Check(c context.Context, user *entity.Instance, perm string,
