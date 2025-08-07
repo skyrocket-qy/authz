@@ -224,12 +224,16 @@ func (r *RbacLogicImpl) AssignRole(c context.Context, in *authzpbv1.AssignRoleIn
 
 func (r *RbacLogicImpl) RevokeRole(c context.Context, in *authzpbv1.RevokeRoleIn) error {
 	return r.zbLogic.Delete(c,
-		&authzpbv1.TupleFilter{
-			SbjNs: pkg.Str("user"),
-			SbjId: pkg.Str(strconv.FormatUint(in.UserId, 10)),
-			Rel:   pkg.Str("member"),
-			ObjNs: pkg.Str("role"),
-			ObjId: pkg.Str(strconv.FormatUint(in.RoleId, 10)),
+		&authzpbv1.DeleteTupleIn{
+			Tuples: []*authzpbv1.Tuple{
+				{
+					SbjNs: "user",
+					SbjId: strconv.FormatUint(in.UserId, 10),
+					Rel:   "member",
+					ObjNs: "role",
+					ObjId: strconv.FormatUint(in.RoleId, 10),
+				},
+			},
 		},
 	)
 }
@@ -258,12 +262,16 @@ func (r *RbacLogicImpl) RevokePerm(c context.Context, in *authzpbv1.RevokePermIn
 	}
 
 	return r.zbLogic.Delete(c,
-		&authzpbv1.TupleFilter{
-			SbjNs: pkg.Str("role"),
-			SbjId: pkg.Str(strconv.FormatUint(in.RoleId, 10)),
-			Rel:   &in.Perm,
-			ObjNs: &res.Ns,
-			ObjId: pkg.Str(strconv.FormatUint(in.ResourceId, 10)),
+		&authzpbv1.DeleteTupleIn{
+			Tuples: []*authzpbv1.Tuple{
+				{
+					SbjNs: "role",
+					SbjId: strconv.FormatUint(in.RoleId, 10),
+					Rel:   in.Perm,
+					ObjNs: res.Ns,
+					ObjId: strconv.FormatUint(in.ResourceId, 10),
+				},
+			},
 		},
 	)
 }

@@ -17,7 +17,7 @@ type ZanzibarLogic interface {
 	Create(c context.Context, tuple *authzpbv1.Tuple) error
 	List(c context.Context, in *authzpbv1.ListTuplesIn) (*authzpbv1.ListTuplesOut, error)
 	Find(c context.Context, filter *authzpbv1.TupleFilter) ([]*authzpbv1.Tuple, error)
-	Delete(c context.Context, filter *authzpbv1.TupleFilter) error
+	Delete(c context.Context, in *authzpbv1.DeleteTupleIn) error
 
 	Check(c context.Context, sbj *entity.Instance, rel string, obj *entity.Instance) (bool, error)
 	Lookup(c context.Context, sbj *entity.Instance, rel string) ([]*entity.Instance, error)
@@ -140,9 +140,9 @@ func (r *ZanzibarLogicImpl) Create(c context.Context, tuple *authzpbv1.Tuple) er
 	return nil
 }
 
-func (r *ZanzibarLogicImpl) Delete(c context.Context, tuples []*authzpbv1.Tuple) error {
-	changelogs := make([]model.ChangeLog, len(tuples))
-	for i, tuple := range tuples {
+func (r *ZanzibarLogicImpl) Delete(c context.Context, in *authzpbv1.DeleteTupleIn) error {
+	changelogs := make([]model.ChangeLog, len(in.Tuples))
+	for i, tuple := range in.Tuples {
 		data, err := proto.Marshal(tuple)
 		if err != nil {
 			return err
@@ -152,10 +152,10 @@ func (r *ZanzibarLogicImpl) Delete(c context.Context, tuples []*authzpbv1.Tuple)
 	}
 
 	return r.db(c).Transaction(func(tx *gorm.DB) error {
-		values := make([]any, 0, len(tuples)*5)
-		placeholders := make([]string, len(tuples))
+		values := make([]any, 0, len(in.Tuples)*5)
+		placeholders := make([]string, len(in.Tuples))
 
-		for i, t := range tuples {
+		for i, t := range in.Tuples {
 			placeholders[i] = "(?, ?, ?, ?, ?)"
 			values = append(values, t.SbjNs, t.SbjId, t.Rel, t.ObjNs, t.ObjId)
 		}
