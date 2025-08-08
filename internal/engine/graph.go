@@ -146,7 +146,7 @@ func (e *ZanzibarEngineImpl) Lookup(c context.Context, sbj *entity.Instance, rel
 	return nil, nil
 }
 
-func (e *ZanzibarEngineImpl) Expand(c context.Context, perm string, obj *entity.Instance) (
+func (e *ZanzibarEngineImpl) Expand(c context.Context, rel string, obj *entity.Instance) (
 	sbjs []*entity.Instance, err error,
 ) {
 
