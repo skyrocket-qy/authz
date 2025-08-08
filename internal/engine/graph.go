@@ -71,16 +71,16 @@ func (e *ZanzibarEngineImpl) Check(c context.Context, user *entity.Instance, per
 	if !ok {
 		return false, fmt.Errorf("unknown namespace: %s", obj.Ns)
 	}
-	rewrite, ok := ns.Relations[perm]
+	relation, ok := ns.Relations[perm]
 	if !ok {
 		return false, fmt.Errorf("unknown relation: %s", perm)
 	}
 
-	if rewrite == nil {
+	if relation == nil {
 		return false, nil
 	}
 
-	return e.evalUsersetRewrite(c, rewrite, user, obj), nil
+	return e.evalUsersetRewrite(c, &relation.UsersetRewrite, user, obj), nil
 }
 
 func (e *ZanzibarEngineImpl) evalUsersetRewrite(c context.Context, rewrite *schema.UsersetRewrite,

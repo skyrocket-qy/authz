@@ -5,6 +5,7 @@ import (
 	"authz/internal/entity"
 	"authz/internal/entity/model"
 	"authz/internal/pkg"
+	"authz/internal/schema"
 	"context"
 	"errors"
 	"strings"
@@ -34,6 +35,7 @@ type ZanzibarLogicImpl struct {
 	pgdb    *gorm.DB
 	rdb     *redis.Client
 	zEngine engine.ZanzibarEngine
+	schema  *schema.Schema
 }
 
 func NewZanzibarLogic(db *gorm.DB, rdb *redis.Client) *ZanzibarLogicImpl {
