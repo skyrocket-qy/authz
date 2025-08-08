@@ -57,14 +57,6 @@ func NewZanzibarEngine(c context.Context, db *gorm.DB, kafkaR *kafka.Reader, rds
 	return &engine, nil
 }
 
-func (e *ZanzibarEngineImpl) checkRel(c context.Context, sbj *entity.Instance, rel string,
-	obj *entity.Instance) (
-	bool, error,
-) {
-
-	return false, nil
-}
-
 func (e *ZanzibarEngineImpl) Check(c context.Context, user *entity.Instance, perm string,
 	obj *entity.Instance) (bool, error,
 ) {

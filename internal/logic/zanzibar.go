@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"authz/internal/engine"
 	"authz/internal/entity"
 	"authz/internal/entity/model"
 	"authz/internal/pkg"
@@ -30,8 +31,9 @@ type ZanzibarLogic interface {
 var _ ZanzibarLogic = (*ZanzibarLogicImpl)(nil)
 
 type ZanzibarLogicImpl struct {
-	pgdb *gorm.DB
-	rdb  *redis.Client
+	pgdb    *gorm.DB
+	rdb     *redis.Client
+	zEngine engine.ZanzibarEngine
 }
 
 func NewZanzibarLogic(db *gorm.DB, rdb *redis.Client) *ZanzibarLogicImpl {
@@ -269,7 +271,7 @@ func (r *ZanzibarLogicImpl) Delete(c context.Context, in *authzpbv1.DeleteTuples
 		})
 
 	case *authzpbv1.DeleteTuplesIn_Ids:
-		if err := r.db(c).Unscoped().
+		if err := r.db(c).
 			Where("id IN ?", req.Ids.Ids).
 			Delete(&model.Tuple{}).Error; err != nil {
 			return err
@@ -282,7 +284,7 @@ func (r *ZanzibarLogicImpl) Delete(c context.Context, in *authzpbv1.DeleteTuples
 func (r *ZanzibarLogicImpl) Check(c context.Context, user *entity.Instance, perm string,
 	obj *entity.Instance) (bool, error,
 ) {
-	return false, nil
+	return r.zEngine.Check(c, user, perm, obj)
 }
 
 // What are all the objs that sbj has rel on

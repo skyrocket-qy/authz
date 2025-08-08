@@ -3,6 +3,8 @@ package cfg
 var Cfg Config
 
 type Config struct {
+	MaxCheckDepth int `env:"MAX_CHECK_DEPTH"`
+
 	SchemaPath string `env:"SCHEMA_PATH"`
 	Port       int    `env:"PORT"`
 	Db         struct {

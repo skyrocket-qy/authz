@@ -7,10 +7,14 @@ type Schema struct {
 }
 
 type Namespace struct {
-	Relations map[string]*Relation `yaml:"relations"`
+	AllowSubjectNamespaces []string             `yaml:"allow_subject_namespaces,omitempty"`
+	Relations              map[string]*Relation `yaml:"relations"`
 }
 
-type Relation = UsersetRewrite
+type Relation struct {
+	AllowSubjectNamespaces []string `yaml:"allow_subject_namespaces,omitempty"`
+	UsersetRewrite
+}
 
 // Recursive AST-like structure
 type UsersetRewrite struct {
@@ -76,6 +80,7 @@ func (r *UsersetRewrite) Validate() error {
 }
 
 type Userset struct {
+	// Namespace *string `yaml:"namespace"`
 	Relation string `yaml:"relation"` // e.g. "owner""
 }
 
@@ -89,6 +94,6 @@ type ComputedUserset struct {
 }
 
 type TupleToUserset struct {
-	Tupleset        *Userset         `yaml:"tupleset"`         // e.g. parent
-	ComputedUserset *ComputedUserset `yaml:"computed_userset"` // e.g. viewer
+	Tupleset        *Userset         `yaml:"tupleset,omitempty"`
+	ComputedUserset *ComputedUserset `yaml:"computed_userset"`
 }

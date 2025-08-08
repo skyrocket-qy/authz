@@ -1,6 +1,6 @@
 namespaces:
   object:
-    allow_subject_namespaces: [role] # if not set, means all allowed
+    allow_subject_namespaces: [role]
     relations:
       read:
         union:
@@ -16,10 +16,26 @@ namespaces:
         tuple_to_userset:
           computed_userset:
             relation: member
+
   role:
     relations:
       member:
         allow_subject_namespaces: [user]
-        computed_userset:
-          relation: member
+        union:
+          - computed_userset:
+              relation: member
+          - tuple_to_userset:
+              tupleset:
+                relation: parent
+              computed_userset:
+                relation: member
+      parent:
+        allow_subject_namespaces: [role]
+        union:
+          - computed_userset:
+              relation: parent
+          - tuple_to_userset:
+              computed_userset:
+                relation: parent
+
   user: {}
