@@ -16,8 +16,8 @@ import (
 
 type ZanzibarEngine interface {
 	Check(c context.Context, sbj *entity.Instance, rel string, obj *entity.Instance) (bool, error)
-	// Lookup(c context.Context, sbj *entity.Instance, rel string) ([]*entity.Instance, error)
-	// Expand(c context.Context, rel string, obj *entity.Instance) ([]*entity.Instance, error)
+	Lookup(c context.Context, sbj *entity.Instance, rel string) ([]*entity.Instance, error)
+	Expand(c context.Context, rel string, obj *entity.Instance) ([]*entity.Instance, error)
 }
 
 var _ ZanzibarEngine = (*ZanzibarEngineImpl)(nil)
@@ -141,13 +141,12 @@ func (e *ZanzibarEngineImpl) hasDirectTuple(user *entity.Instance, rel string, o
 	return false
 }
 
-func (e *ZanzibarEngineImpl) lookup(c context.Context, sbj *entity.Instance, perm string) (
-	[]*entity.Instance, error,
-) {
+func (e *ZanzibarEngineImpl) Lookup(c context.Context, sbj *entity.Instance, rel string) (
+	[]*entity.Instance, error) {
 	return nil, nil
 }
 
-func (e *ZanzibarEngineImpl) expand(c context.Context, perm string, obj *entity.Instance) (
+func (e *ZanzibarEngineImpl) Expand(c context.Context, perm string, obj *entity.Instance) (
 	sbjs []*entity.Instance, err error,
 ) {
 
