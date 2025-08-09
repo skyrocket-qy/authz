@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/redis/go-redis/v9"
-	"github.com/skyrocket-qy/gox/logx"
 	authzpbv1 "github.com/skyrocket-qy/protos/gen/authzpb/v1"
 	pkgpbv1 "github.com/skyrocket-qy/protos/gen/pkgpb/v1"
 	"google.golang.org/protobuf/proto"
@@ -288,8 +287,6 @@ func (r *ZanzibarLogicImpl) Delete(c context.Context, in *authzpbv1.DeleteTuples
 func (r *ZanzibarLogicImpl) Check(c context.Context, in *authzpbv1.CheckIn) (
 	*authzpbv1.CheckOut, error,
 ) {
-	logx.Info("check")
-
 	user := &entity.Instance{
 		Ns: in.SbjNs,
 		Id: in.SbjId,

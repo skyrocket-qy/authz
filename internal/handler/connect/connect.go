@@ -201,7 +201,7 @@ func (h *Handler) Check(
 	*connect.Response[authzpbv1.CheckOut], error,
 ) {
 	res, err := h.zLogic.Check(ctx, req.Msg)
-	if err == nil {
+	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 

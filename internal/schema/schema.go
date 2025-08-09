@@ -1,9 +1,33 @@
 package schema
 
-import "errors"
+import (
+	"errors"
+)
 
 type Schema struct {
 	Namespaces map[string]*Namespace `yaml:"namespaces"`
+}
+
+func (s *Schema) Build() {
+	for _, ns := range s.Namespaces {
+		for name, rel := range ns.Relations {
+			if rel.TupleToUserset != nil {
+				rel.TupleToUserset.Build(name)
+			}
+
+			if rel.Union != nil {
+				for _, rewrite := range rel.Union {
+					rewrite.Build(name)
+				}
+			}
+
+			if rel.Intersection != nil {
+				for _, rewrite := range rel.Intersection {
+					rewrite.Build(name)
+				}
+			}
+		}
+	}
 }
 
 type Namespace struct {
@@ -42,6 +66,18 @@ type ComputedUserset struct {
 type TupleToUserset struct {
 	Tupleset        *Userset         `yaml:"tupleset,omitempty"`
 	ComputedUserset *ComputedUserset `yaml:"computed_userset"`
+}
+
+func (t *TupleToUserset) Build(rel string) {
+	if t.Tupleset == nil {
+		t.Tupleset = &Userset{Relation: rel}
+	}
+}
+
+func (u *UsersetRewrite) Build(rel string) {
+	if u.TupleToUserset != nil {
+		u.TupleToUserset.Build(rel)
+	}
 }
 
 func (r *UsersetRewrite) Validate() error {

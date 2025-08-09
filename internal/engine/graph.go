@@ -63,8 +63,7 @@ func NewZanzibarEngine(c context.Context, db *gorm.DB, rds *redis.Client) (
 	if err != nil {
 		panic(err)
 	}
-
-	fmt.Printf("%#v\n", s)
+	s.Build()
 
 	engine.schema = &s
 
@@ -77,9 +76,9 @@ func (e *ZanzibarEngineImpl) Check(c context.Context, user *entity.Instance, per
 	e.mutex.RLock()
 	defer e.mutex.RUnlock()
 
-	if e.hasDirectTuple(user, perm, obj) {
-		return true, nil
-	}
+	// if e.hasDirectTuple(user, perm, obj) {
+	// 	return true, nil
+	// }
 
 	ns, ok := e.schema.Namespaces[obj.Ns]
 	if !ok {
@@ -100,12 +99,10 @@ func (e *ZanzibarEngineImpl) Check(c context.Context, user *entity.Instance, per
 func (e *ZanzibarEngineImpl) evalUsersetRewrite(c context.Context, rewrite *schema.UsersetRewrite,
 	user *entity.Instance, obj *entity.Instance) bool {
 	switch {
-
 	case rewrite.ComputedUserSet != nil:
 		return e.hasDirectTuple(user, rewrite.ComputedUserSet.Relation, obj)
 
 	case rewrite.TupleToUserset != nil:
-		// Find tuples that point to intermediate objects
 		relSbj, ok := e.graph[*obj]
 		if !ok {
 			return false

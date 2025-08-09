@@ -18,6 +18,8 @@ func main() {
 		panic(err)
 	}
 
+	s.Build()
+
 	mypp := pp.New()
 	mypp.SetOmitEmpty(true)
 	mypp.Print(&s)
