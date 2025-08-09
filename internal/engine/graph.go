@@ -76,10 +76,6 @@ func (e *ZanzibarEngineImpl) Check(c context.Context, user *entity.Instance, per
 	e.mutex.RLock()
 	defer e.mutex.RUnlock()
 
-	// if e.hasDirectTuple(user, perm, obj) {
-	// 	return true, nil
-	// }
-
 	ns, ok := e.schema.Namespaces[obj.Ns]
 	if !ok {
 		return false, fmt.Errorf("unknown namespace: %s", obj.Ns)
