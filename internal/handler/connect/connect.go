@@ -195,3 +195,15 @@ func (h *Handler) DeleteTuples(
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
+
+func (h *Handler) Check(
+	ctx context.Context, req *connect.Request[authzpbv1.CheckIn]) (
+	*connect.Response[authzpbv1.CheckOut], error,
+) {
+	res, err := h.zLogic.Check(ctx, req.Msg)
+	if err == nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(res), nil
+}

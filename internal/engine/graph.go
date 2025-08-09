@@ -38,11 +38,11 @@ type ZanzibarEngineImpl struct {
 	mutex sync.RWMutex
 }
 
-func NewZanzibarEngine(c context.Context, db *gorm.DB, kafkaR *kafka.Reader, rds *redis.Client) (
+func NewZanzibarEngine(c context.Context, db *gorm.DB, rds *redis.Client) (
 	*ZanzibarEngineImpl, error,
 ) {
 	engine := ZanzibarEngineImpl{
-		kafkaR:     kafkaR,
+		// kafkaR:     kafkaR,
 		db:         db,
 		rds:        rds,
 		graph:      make(map[entity.Instance]map[string]map[entity.Instance]struct{}),

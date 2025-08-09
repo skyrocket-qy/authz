@@ -7,35 +7,28 @@
 package wire
 
 import (
+	"authz/internal/engine"
 	"authz/internal/handler/connect"
-	"authz/internal/handler/rest"
 	"authz/internal/logic"
 	"authz/internal/pkg"
 	"authz/internal/service/database"
 	"authz/internal/service/redis"
+	"context"
 )
 
 // Injectors from wire.go:
 
-func NewRestHandler(lifecycle pkg.Lifecycle) (*rest.Handler, error) {
+func NewConnectHandler(contextContext context.Context, lifecycle pkg.Lifecycle) (*connect.Handler, error) {
 	db, err := database.New(lifecycle)
 	if err != nil {
 		return nil, err
 	}
 	client := redis.New(lifecycle)
-	zanzibarLogicImpl := logic.NewZanzibarLogic(db, client)
-	rbacLogicImpl := logic.NewRbacLogic(zanzibarLogicImpl)
-	handler := rest.NewHandler(zanzibarLogicImpl, rbacLogicImpl)
-	return handler, nil
-}
-
-func NewConnectHandler(lifecycle pkg.Lifecycle) (*connect.Handler, error) {
-	db, err := database.New(lifecycle)
+	zanzibarEngineImpl, err := engine.NewZanzibarEngine(contextContext, db, client)
 	if err != nil {
 		return nil, err
 	}
-	client := redis.New(lifecycle)
-	zanzibarLogicImpl := logic.NewZanzibarLogic(db, client)
+	zanzibarLogicImpl := logic.NewZanzibarLogic(db, client, zanzibarEngineImpl)
 	rbacLogicImpl := logic.NewRbacLogic(zanzibarLogicImpl)
 	handler := connect.NewHandler(zanzibarLogicImpl, rbacLogicImpl)
 	return handler, nil

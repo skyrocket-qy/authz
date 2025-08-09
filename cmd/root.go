@@ -1,17 +1,12 @@
 package cmd
 
 import (
-	"authz/api"
-	"authz/internal/handler/rest/middleware"
 	"authz/internal/pkg"
 	"authz/internal/service/logger"
 	"authz/internal/wire"
 	"context"
 	"fmt"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"connectrpc.com/connect"
@@ -81,7 +76,7 @@ func RunServer(cmd *cobra.Command, args []string) {
 }
 
 func startConnectServer(lc pkg.Lifecycle) {
-	connectH, err := wire.NewConnectHandler(lc)
+	connectH, err := wire.NewConnectHandler(context.TODO(), lc)
 	if err != nil {
 		log.Error().Msg(err.Error())
 		return
@@ -108,35 +103,35 @@ func startConnectServer(lc pkg.Lifecycle) {
 	)
 }
 
-func startRestServer(lc pkg.Lifecycle) {
-	h, err := wire.NewRestHandler(lc)
-	if err != nil {
-		log.Error().Msg(err.Error())
-		return
-	}
+// func startRestServer(lc pkg.Lifecycle) {
+// 	h, err := wire.NewRestHandler(lc)
+// 	if err != nil {
+// 		log.Error().Msg(err.Error())
+// 		return
+// 	}
 
-	e := NewGinEngine()
-	api.RegisterAPIHandlers(e, h, middleware.Jwt())
-	server := NewHttpServer(lc, e)
+// 	e := NewGinEngine()
+// 	api.RegisterAPIHandlers(e, h, middleware.Jwt())
+// 	server := NewHttpServer(lc, e)
 
-	go func() {
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Printf("HTTP server ListenAndServe: %v", err)
-		}
-	}()
+// 	go func() {
+// 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+// 			log.Printf("HTTP server ListenAndServe: %v", err)
+// 		}
+// 	}()
 
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
-	<-quit
-	log.Info().Msg("Shutting down server...")
+// 	quit := make(chan os.Signal, 1)
+// 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+// 	<-quit
+// 	log.Info().Msg("Shutting down server...")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+// 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+// 	defer cancel()
 
-	if err := lc.Shutdown(ctx); err != nil {
-		log.Fatal().Msg(err.Error())
-	}
-}
+// 	if err := lc.Shutdown(ctx); err != nil {
+// 		log.Fatal().Msg(err.Error())
+// 	}
+// }
 
 func NewHttpServer(lc pkg.Lifecycle, handler http.Handler) *http.Server {
 	server := &http.Server{

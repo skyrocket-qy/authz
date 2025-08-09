@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/redis/go-redis/v9"
+	"github.com/skyrocket-qy/gox/logx"
 	authzpbv1 "github.com/skyrocket-qy/protos/gen/authzpb/v1"
 	pkgpbv1 "github.com/skyrocket-qy/protos/gen/pkgpb/v1"
 	"google.golang.org/protobuf/proto"
@@ -24,7 +25,7 @@ type ZanzibarLogic interface {
 	Find(c context.Context, filter *authzpbv1.TupleFilter) ([]*authzpbv1.Tuple, error)
 	Delete(c context.Context, in *authzpbv1.DeleteTuplesIn) error
 
-	Check(c context.Context, sbj *entity.Instance, rel string, obj *entity.Instance) (bool, error)
+	Check(c context.Context, in *authzpbv1.CheckIn) (*authzpbv1.CheckOut, error)
 	Lookup(c context.Context, sbj *entity.Instance, rel string) ([]*entity.Instance, error)
 	Expand(c context.Context, relation string, obj *entity.Instance) ([]entity.Instance, error)
 }
@@ -38,7 +39,7 @@ type ZanzibarLogicImpl struct {
 	schema  *schema.Schema
 }
 
-func NewZanzibarLogic(db *gorm.DB, rdb *redis.Client) *ZanzibarLogicImpl {
+func NewZanzibarLogic(db *gorm.DB, rdb *redis.Client, zEngine engine.ZanzibarEngine) *ZanzibarLogicImpl {
 	return &ZanzibarLogicImpl{
 		pgdb: db,
 		rdb:  rdb,
@@ -283,10 +284,28 @@ func (r *ZanzibarLogicImpl) Delete(c context.Context, in *authzpbv1.DeleteTuples
 	return errors.New("mode type error")
 }
 
-func (r *ZanzibarLogicImpl) Check(c context.Context, user *entity.Instance, perm string,
-	obj *entity.Instance) (bool, error,
+func (r *ZanzibarLogicImpl) Check(c context.Context, in *authzpbv1.CheckIn) (
+	*authzpbv1.CheckOut, error,
 ) {
-	return r.zEngine.Check(c, user, perm, obj)
+	logx.Info("check")
+
+	user := &entity.Instance{
+		Ns: in.SbjNs,
+		Id: in.SbjId,
+	}
+
+	perm := in.Rel
+	obj := &entity.Instance{
+		Ns: in.ObjNs,
+		Id: in.ObjId,
+	}
+
+	ok, err := r.zEngine.Check(c, user, perm, obj)
+	if err != nil {
+		return nil, err
+	}
+
+	return &authzpbv1.CheckOut{IsAllowed: ok}, nil
 }
 
 // What are all the objs that sbj has rel on
