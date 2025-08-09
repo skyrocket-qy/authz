@@ -5,12 +5,14 @@ import (
 	"authz/internal/entity/model"
 	"context"
 	"fmt"
+	"os"
 	"sync"
 
 	"authz/internal/schema"
 
 	"github.com/redis/go-redis/v9"
 	"github.com/segmentio/kafka-go"
+	"gopkg.in/yaml.v2"
 	"gorm.io/gorm"
 )
 
@@ -41,6 +43,7 @@ type ZanzibarEngineImpl struct {
 func NewZanzibarEngine(c context.Context, db *gorm.DB, rds *redis.Client) (
 	*ZanzibarEngineImpl, error,
 ) {
+
 	engine := ZanzibarEngineImpl{
 		// kafkaR:     kafkaR,
 		db:         db,
@@ -53,6 +56,17 @@ func NewZanzibarEngine(c context.Context, db *gorm.DB, rds *redis.Client) (
 	if err := engine.build(c); err != nil {
 		return nil, err
 	}
+
+	s := schema.Schema{}
+	f, _ := os.ReadFile("internal/schema/rbac.yaml")
+	err := yaml.Unmarshal(f, &s)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("%#v\n", s)
+
+	engine.schema = &s
 
 	return &engine, nil
 }

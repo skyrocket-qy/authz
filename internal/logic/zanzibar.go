@@ -41,8 +41,9 @@ type ZanzibarLogicImpl struct {
 
 func NewZanzibarLogic(db *gorm.DB, rdb *redis.Client, zEngine engine.ZanzibarEngine) *ZanzibarLogicImpl {
 	return &ZanzibarLogicImpl{
-		pgdb: db,
-		rdb:  rdb,
+		pgdb:    db,
+		rdb:     rdb,
+		zEngine: zEngine,
 	}
 }
 

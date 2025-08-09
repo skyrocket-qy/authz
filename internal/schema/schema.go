@@ -13,7 +13,7 @@ type Namespace struct {
 
 type Relation struct {
 	AllowSubjectNamespaces []string `yaml:"allow_subject_namespaces,omitempty"`
-	UsersetRewrite
+	UsersetRewrite         `yaml:",inline"`
 }
 
 // Recursive AST-like structure
@@ -23,6 +23,25 @@ type UsersetRewrite struct {
 	Exclusion       *ExclusionNode    `yaml:"exclusion,omitempty"`
 	ComputedUserSet *ComputedUserset  `yaml:"computed_userset,omitempty"`
 	TupleToUserset  *TupleToUserset   `yaml:"tuple_to_userset,omitempty"`
+}
+
+type Userset struct {
+	// Namespace *string `yaml:"namespace"`
+	Relation string `yaml:"relation"` // e.g. "owner""
+}
+
+type ExclusionNode struct {
+	Base     *UsersetRewrite `yaml:"base"`
+	Subtract *UsersetRewrite `yaml:"subtract"`
+}
+
+type ComputedUserset struct {
+	Relation string `yaml:"relation"`
+}
+
+type TupleToUserset struct {
+	Tupleset        *Userset         `yaml:"tupleset,omitempty"`
+	ComputedUserset *ComputedUserset `yaml:"computed_userset"`
 }
 
 func (r *UsersetRewrite) Validate() error {
@@ -77,23 +96,4 @@ func (r *UsersetRewrite) Validate() error {
 		return errors.New("at least one rewrite type must be set in UsersetRewrite")
 	}
 	return nil
-}
-
-type Userset struct {
-	// Namespace *string `yaml:"namespace"`
-	Relation string `yaml:"relation"` // e.g. "owner""
-}
-
-type ExclusionNode struct {
-	Base     *UsersetRewrite `yaml:"base"`
-	Subtract *UsersetRewrite `yaml:"subtract"`
-}
-
-type ComputedUserset struct {
-	Relation string `yaml:"relation"`
-}
-
-type TupleToUserset struct {
-	Tupleset        *Userset         `yaml:"tupleset,omitempty"`
-	ComputedUserset *ComputedUserset `yaml:"computed_userset"`
 }

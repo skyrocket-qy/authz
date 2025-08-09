@@ -12,7 +12,7 @@ import (
 func main() {
 	s := schema.Schema{}
 
-	f, _ := os.ReadFile("schema.yaml")
+	f, _ := os.ReadFile("internal/schema/rbac.yaml")
 	err := yaml.Unmarshal(f, &s)
 	if err != nil {
 		panic(err)
