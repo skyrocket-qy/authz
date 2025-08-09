@@ -159,7 +159,7 @@ func (r *RbacLogicImpl) ListRoles(c context.Context, in *rbacpb.ListRolesIn) (
 		return nil, err
 	}
 
-	roles := make([]*rbacpb.Role, len(roleMds))
+	roles := make([]*rbacpb.Role, 0, len(roleMds))
 	for _, roleMd := range roleMds {
 		roles = append(roles, &rbacpb.Role{
 			Id:   roleMd.Id,
