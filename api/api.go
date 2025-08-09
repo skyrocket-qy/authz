@@ -26,32 +26,32 @@ func RegisterAPIHandlers(r *gin.Engine, h *rest.Handler, checkAuth gin.HandlerFu
 		vr.GET("/ping", h.Ping)
 		vr.GET("/healthy", h.Healthy)
 	}
-	pR := r.Group("/")
+	// pR := r.Group("/")
 	// pR.Use(checkAuth)
-	vpr := pR.Group("/v1")
-	{
-		vpr.POST("/list-users", Hdl(h.ListUsers))
-		vpr.PUT("/user", HdlNoOut(h.UpdateUser))
-		vpr.DELETE("/user", HdlNoOut(h.DeleteUser))
-		vpr.POST("/list-roles", Hdl(h.ListRoles))
-		vpr.POST("/role", HdlNoOut(h.CreateRole))
-		vpr.PUT("/role", HdlNoOut(h.UpdateRole))
-		vpr.DELETE("/role", HdlNoOut(h.DeleteRole))
-		vpr.POST("/list-resources", Hdl(h.ListResources))
-		vpr.POST("/resource", HdlNoOut(h.CreateResource))
-		vpr.DELETE("/resource", HdlNoOut(h.DeleteResource))
-		vpr.POST("/assign-role", HdlNoOut(h.AssignRole))
-		vpr.POST("/revoke-role", HdlNoOut(h.RevokeRole))
-		vpr.POST("/grant-perm", HdlNoOut(h.GrantPerm))
-		vpr.POST("/revoke-perm", HdlNoOut(h.RevokePerm))
+	// vpr := pR.Group("/v1")
+	// {
+	// 	vpr.POST("/list-users", Hdl(h.ListUsers))
+	// 	vpr.PUT("/user", HdlNoOut(h.UpdateUser))
+	// 	vpr.DELETE("/user", HdlNoOut(h.DeleteUser))
+	// 	vpr.POST("/list-roles", Hdl(h.ListRoles))
+	// 	vpr.POST("/role", HdlNoOut(h.CreateRole))
+	// 	vpr.PUT("/role", HdlNoOut(h.UpdateRole))
+	// 	vpr.DELETE("/role", HdlNoOut(h.DeleteRole))
+	// 	vpr.POST("/list-resources", Hdl(h.ListResources))
+	// 	vpr.POST("/resource", HdlNoOut(h.CreateResource))
+	// 	vpr.DELETE("/resource", HdlNoOut(h.DeleteResource))
+	// 	vpr.POST("/assign-role", HdlNoOut(h.AssignRole))
+	// 	vpr.POST("/revoke-role", HdlNoOut(h.RevokeRole))
+	// 	vpr.POST("/grant-perm", HdlNoOut(h.GrantPerm))
+	// 	vpr.POST("/revoke-perm", HdlNoOut(h.RevokePerm))
 
-		tr := vpr.Group("/tuples")
-		{
-			tr.POST("/list", Hdl(h.ListTuples))
-			tr.POST("/", HdlNoOut(h.CreateTuple))
-			tr.DELETE("/", HdlNoOut(h.DeleteTuples))
-		}
-	}
+	// 	tr := vpr.Group("/tuples")
+	// 	{
+	// 		tr.POST("/list", Hdl(h.ListTuples))
+	// 		tr.POST("/", HdlNoOut(h.CreateTuple))
+	// 		tr.DELETE("/", HdlNoOut(h.DeleteTuples))
+	// 	}
+	// }
 }
 
 func Hdl[Req, Resp proto.Message](a func(c *gin.Context, req Req) (resp Resp, err error)) func(

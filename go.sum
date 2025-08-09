@@ -204,8 +204,8 @@ github.com/skyrocket-qy/erx v0.3.20 h1:9DHOAtD1VmNC16fuOwzxgoPiRKxVN/iPH0dFfrF3s
 github.com/skyrocket-qy/erx v0.3.20/go.mod h1:VNuuSMK0LFEe1KkHrtqNUnDpCv2mA0TyzN2j8sz0LEY=
 github.com/skyrocket-qy/gox v1.2.29 h1:oNKcjtNFPsSczAHVOZPI1x7Uw3b6D2k2Jp3W8QR6O8I=
 github.com/skyrocket-qy/gox v1.2.29/go.mod h1:V6eYakPO73Y2xHDLf1SKn0BxyExpcuaNPstxDgHANgU=
-github.com/skyrocket-qy/protos v0.1.35 h1:gtPUmhmvAGQQGZlegZGFPOwOoNfFMgcrYuqGnQiSf6g=
-github.com/skyrocket-qy/protos v0.1.35/go.mod h1:BfcArsgU7HMSJK+A/FHrVOo5IenOve9Rx2vQQbV7TQs=
+github.com/skyrocket-qy/protos v0.1.36 h1:Je4sgQNC/uSUKpeerizIw3SBaaysVz6cMdoaTZZ8k9o=
+github.com/skyrocket-qy/protos v0.1.36/go.mod h1:BfcArsgU7HMSJK+A/FHrVOo5IenOve9Rx2vQQbV7TQs=
 github.com/skyrocket-qy/srand v0.1.0 h1:tz0nTtzIRAILn/zRjznZpxHHRtGXCFLTQYbO57ItnrY=
 github.com/skyrocket-qy/srand v0.1.0/go.mod h1:fmp+W5WFo+e2f7jUWt9dYDkgpjst1bFrFud7RIz0WUQ=
 github.com/spf13/cobra v1.9.1 h1:CXSaggrXdbHK9CF+8ywj8Amf7PBRmPCOJugH954Nnlo=

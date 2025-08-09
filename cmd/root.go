@@ -14,6 +14,7 @@ import (
 	"github.com/rs/cors"
 	"github.com/rs/zerolog/log"
 	"github.com/skyrocket-qy/gox/logx"
+	"github.com/skyrocket-qy/protos/gen/authzpb/rbacpb/rbacpbconnect"
 	"github.com/skyrocket-qy/protos/gen/authzpb/v1/authzpbv1connect"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/http2"
@@ -84,9 +85,12 @@ func startConnectServer(lc pkg.Lifecycle) {
 	path, handler := authzpbv1connect.NewAuthzServiceHandler(connectH,
 		connect.WithCompressMinBytes(512),
 	)
+
+	rbacPath, rbacH := rbacpbconnect.NewRbacServiceHandler(connectH, connect.WithCompressMinBytes(512))
 	mux := http.NewServeMux()
 
 	mux.Handle(path, handler)
+	mux.Handle(rbacPath, rbacH)
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000"}, // Or "*" for dev
 		AllowCredentials: true,

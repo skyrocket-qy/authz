@@ -6,6 +6,7 @@ import (
 	"context"
 	"strconv"
 
+	rbacpb "github.com/skyrocket-qy/protos/gen/authzpb/rbacpb"
 	authzpbv1 "github.com/skyrocket-qy/protos/gen/authzpb/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
@@ -17,29 +18,29 @@ User, Role(include Admin), Perm, resource
 */
 
 type RbacLogic interface {
-	ListUsers(c context.Context, in *authzpbv1.ListUsersIn) (out *authzpbv1.ListUsersOut, err error)
-	UpdateUser(c context.Context, in *authzpbv1.UpdateUserIn) error
-	DeleteUser(c context.Context, id *authzpbv1.DeleteUserIn) error
+	ListUsers(c context.Context, in *rbacpb.ListUsersIn) (out *rbacpb.ListUsersOut, err error)
+	UpdateUser(c context.Context, in *rbacpb.UpdateUserIn) error
+	DeleteUser(c context.Context, id *rbacpb.DeleteUserIn) error
 
-	CreateRole(c context.Context, in *authzpbv1.CreateRoleIn) error
-	ListRoles(c context.Context, in *authzpbv1.ListRolesIn) (*authzpbv1.ListRolesOut, error)
-	UpdateRole(c context.Context, in *authzpbv1.UpdateRoleIn) error
-	DeleteRole(c context.Context, in *authzpbv1.DeleteRoleIn) error
+	CreateRole(c context.Context, in *rbacpb.CreateRoleIn) error
+	ListRoles(c context.Context, in *rbacpb.ListRolesIn) (*rbacpb.ListRolesOut, error)
+	UpdateRole(c context.Context, in *rbacpb.UpdateRoleIn) error
+	DeleteRole(c context.Context, in *rbacpb.DeleteRoleIn) error
 
 	// GetUsersWithRole(ctx context.Context, role string) ([]string, error)
 	// GetUsersWithPerm(ctx context.Context, perm string, res string) ([]string, error)
 
-	// ListPerms(c context.Context) ([]*authzpbv1.Perm, error)
+	// ListPerms(c context.Context) ([]*rbacpb.Perm, error)
 
-	CreateResource(c context.Context, in *authzpbv1.CreateResourceIn) error
-	ListResources(c context.Context, in *authzpbv1.ListResourcesIn) (*authzpbv1.ListResourcesOut, error)
-	DeleteResource(c context.Context, in *authzpbv1.DeleteResourceIn) error
+	CreateResource(c context.Context, in *rbacpb.CreateResourceIn) error
+	ListResources(c context.Context, in *rbacpb.ListResourcesIn) (*rbacpb.ListResourcesOut, error)
+	DeleteResource(c context.Context, in *rbacpb.DeleteResourceIn) error
 
-	AssignRole(c context.Context, in *authzpbv1.AssignRoleIn) error
-	RevokeRole(c context.Context, in *authzpbv1.RevokeRoleIn) error
+	AssignRole(c context.Context, in *rbacpb.AssignRoleIn) error
+	RevokeRole(c context.Context, in *rbacpb.RevokeRoleIn) error
 
-	GrantPerm(c context.Context, in *authzpbv1.GrantPermIn) error
-	RevokePerm(c context.Context, in *authzpbv1.RevokePermIn) error
+	GrantPerm(c context.Context, in *rbacpb.GrantPermIn) error
+	RevokePerm(c context.Context, in *rbacpb.RevokePermIn) error
 }
 
 var _ RbacLogic = (*RbacLogicImpl)(nil)
@@ -49,16 +50,19 @@ type RbacLogicImpl struct {
 	zbLogic ZanzibarLogic
 }
 
-func NewRbacLogic(zbLogic ZanzibarLogic) *RbacLogicImpl {
-	return &RbacLogicImpl{zbLogic: zbLogic}
+func NewRbacLogic(zbLogic ZanzibarLogic, pgdb *gorm.DB) *RbacLogicImpl {
+	return &RbacLogicImpl{
+		zbLogic: zbLogic,
+		pgdb:    pgdb,
+	}
 }
 
 func (r *RbacLogicImpl) db(c context.Context) *gorm.DB {
 	return r.pgdb.WithContext(c)
 }
 
-func (r *RbacLogicImpl) ListUsers(c context.Context, in *authzpbv1.ListUsersIn) (
-	out *authzpbv1.ListUsersOut, err error,
+func (r *RbacLogicImpl) ListUsers(c context.Context, in *rbacpb.ListUsersIn) (
+	out *rbacpb.ListUsersOut, err error,
 ) {
 	filterExprs := map[string][]string{
 		"orgs.name": {
@@ -96,9 +100,9 @@ func (r *RbacLogicImpl) ListUsers(c context.Context, in *authzpbv1.ListUsersIn) 
 		return nil, err
 	}
 
-	users := make([]*authzpbv1.User, len(userMds))
+	users := make([]*rbacpb.User, len(userMds))
 	for i, userMd := range userMds {
-		user := &authzpbv1.User{
+		user := &rbacpb.User{
 			Id:               userMd.Id,
 			Name:             userMd.Name,
 			Email:            userMd.Email,
@@ -117,13 +121,13 @@ func (r *RbacLogicImpl) ListUsers(c context.Context, in *authzpbv1.ListUsersIn) 
 
 		users[i] = user
 	}
-	return &authzpbv1.ListUsersOut{
+	return &rbacpb.ListUsersOut{
 		Users: users,
 		Count: cnt,
 	}, nil
 }
 
-func (r *RbacLogicImpl) UpdateUser(c context.Context, in *authzpbv1.UpdateUserIn) error {
+func (r *RbacLogicImpl) UpdateUser(c context.Context, in *rbacpb.UpdateUserIn) error {
 	updates := map[string]any{}
 	if in.IsActive != nil {
 		updates["is_active"] = in.IsActive
@@ -139,78 +143,78 @@ func (r *RbacLogicImpl) UpdateUser(c context.Context, in *authzpbv1.UpdateUserIn
 	return nil
 }
 
-func (r *RbacLogicImpl) DeleteUser(c context.Context, in *authzpbv1.DeleteUserIn) error {
+func (r *RbacLogicImpl) DeleteUser(c context.Context, in *rbacpb.DeleteUserIn) error {
 	return r.db(c).Delete(&model.User{}, in.Id).Error
 }
 
-func (r *RbacLogicImpl) CreateRole(c context.Context, in *authzpbv1.CreateRoleIn) error {
+func (r *RbacLogicImpl) CreateRole(c context.Context, in *rbacpb.CreateRoleIn) error {
 	return r.db(c).Create(&model.Role{Name: in.Name}).Error
 }
 
-func (r *RbacLogicImpl) ListRoles(c context.Context, in *authzpbv1.ListRolesIn) (
-	out *authzpbv1.ListRolesOut, err error,
+func (r *RbacLogicImpl) ListRoles(c context.Context, in *rbacpb.ListRolesIn) (
+	out *rbacpb.ListRolesOut, err error,
 ) {
 	roleMds := []*model.Role{}
 	if err := r.db(c).Find(&roleMds).Error; err != nil {
 		return nil, err
 	}
 
-	roles := make([]*authzpbv1.Role, len(roleMds))
+	roles := make([]*rbacpb.Role, len(roleMds))
 	for _, roleMd := range roleMds {
-		roles = append(roles, &authzpbv1.Role{
+		roles = append(roles, &rbacpb.Role{
 			Id:   roleMd.Id,
 			Name: roleMd.Name,
 		})
 	}
 
-	return &authzpbv1.ListRolesOut{Roles: roles}, nil
+	return &rbacpb.ListRolesOut{Roles: roles}, nil
 }
 
-func (r *RbacLogicImpl) UpdateRole(c context.Context, in *authzpbv1.UpdateRoleIn) error {
+func (r *RbacLogicImpl) UpdateRole(c context.Context, in *rbacpb.UpdateRoleIn) error {
 	return r.db(c).Model(&model.Role{}).Where("id = ?", in.Id).Updates(map[string]any{
 		"name": in.Name,
 	}).Error
 }
 
-func (r *RbacLogicImpl) DeleteRole(c context.Context, in *authzpbv1.DeleteRoleIn) error {
+func (r *RbacLogicImpl) DeleteRole(c context.Context, in *rbacpb.DeleteRoleIn) error {
 	return r.db(c).Delete(&model.Role{}, in.Id).Error
 }
 
-func (r *RbacLogicImpl) CreateResource(c context.Context, in *authzpbv1.CreateResourceIn) error {
+func (r *RbacLogicImpl) CreateResource(c context.Context, in *rbacpb.CreateResourceIn) error {
 	return r.db(c).Create(&model.Resource{Ns: in.Ns, Name: in.Name}).Error
 }
 
-func (r *RbacLogicImpl) ListResources(c context.Context, in *authzpbv1.ListResourcesIn) (
-	out *authzpbv1.ListResourcesOut, err error,
+func (r *RbacLogicImpl) ListResources(c context.Context, in *rbacpb.ListResourcesIn) (
+	out *rbacpb.ListResourcesOut, err error,
 ) {
 	resMds := []*model.Resource{}
 	if err := r.db(c).Find(&resMds).Error; err != nil {
 		return nil, err
 	}
 
-	resources := make([]*authzpbv1.Resource, len(resMds))
+	resources := make([]*rbacpb.Resource, len(resMds))
 	for _, resMd := range resMds {
-		resources = append(resources, &authzpbv1.Resource{
+		resources = append(resources, &rbacpb.Resource{
 			Ns:   resMd.Ns,
 			Name: resMd.Name,
 		})
 	}
 
-	return &authzpbv1.ListResourcesOut{Resources: resources}, nil
+	return &rbacpb.ListResourcesOut{Resources: resources}, nil
 }
 
-// func (r *RbacLogicImpl) UpdateResource(c context.Context, res *authzpbv1.Resource) error {
+// func (r *RbacLogicImpl) UpdateResource(c context.Context, res *rbacpb.Resource) error {
 // 	return r.db(c).Model(&model.Resource{}).Where("id = ?", res.Id).Updates(map[string]any{
 // 		"ns":   res.Ns,
 // 		"name": res.Name,
 // 	}).Error
 // }
 
-func (r *RbacLogicImpl) DeleteResource(c context.Context, in *authzpbv1.DeleteResourceIn) error {
+func (r *RbacLogicImpl) DeleteResource(c context.Context, in *rbacpb.DeleteResourceIn) error {
 	return r.db(c).Delete(&model.Resource{}, in.Id).Error
 }
 
-func (r *RbacLogicImpl) AssignRole(c context.Context, in *authzpbv1.AssignRoleIn) error {
+func (r *RbacLogicImpl) AssignRole(c context.Context, in *rbacpb.AssignRoleIn) error {
 	return r.zbLogic.Create(c,
 		&authzpbv1.Tuple{
 			SbjNs: "user",
@@ -222,7 +226,7 @@ func (r *RbacLogicImpl) AssignRole(c context.Context, in *authzpbv1.AssignRoleIn
 	)
 }
 
-func (r *RbacLogicImpl) RevokeRole(c context.Context, in *authzpbv1.RevokeRoleIn) error {
+func (r *RbacLogicImpl) RevokeRole(c context.Context, in *rbacpb.RevokeRoleIn) error {
 	return r.zbLogic.Delete(c,
 		&authzpbv1.DeleteTuplesIn{
 			Mode: &authzpbv1.DeleteTuplesIn_Tuples{
@@ -242,7 +246,7 @@ func (r *RbacLogicImpl) RevokeRole(c context.Context, in *authzpbv1.RevokeRoleIn
 	)
 }
 
-func (r *RbacLogicImpl) GrantPerm(c context.Context, in *authzpbv1.GrantPermIn) error {
+func (r *RbacLogicImpl) GrantPerm(c context.Context, in *rbacpb.GrantPermIn) error {
 	res := model.Resource{}
 	if err := r.db(c).Where("id = ?", in.ResourceId).Take(&res).Error; err != nil {
 		return err
@@ -259,7 +263,7 @@ func (r *RbacLogicImpl) GrantPerm(c context.Context, in *authzpbv1.GrantPermIn) 
 	)
 }
 
-func (r *RbacLogicImpl) RevokePerm(c context.Context, in *authzpbv1.RevokePermIn) error {
+func (r *RbacLogicImpl) RevokePerm(c context.Context, in *rbacpb.RevokePermIn) error {
 	res := model.Resource{}
 	if err := r.db(c).Where("id = ?", in.ResourceId).Take(&res).Error; err != nil {
 		return err

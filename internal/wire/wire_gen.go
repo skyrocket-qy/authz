@@ -29,7 +29,7 @@ func NewConnectHandler(contextContext context.Context, lifecycle pkg.Lifecycle) 
 		return nil, err
 	}
 	zanzibarLogicImpl := logic.NewZanzibarLogic(db, client, zanzibarEngineImpl)
-	rbacLogicImpl := logic.NewRbacLogic(zanzibarLogicImpl)
+	rbacLogicImpl := logic.NewRbacLogic(zanzibarLogicImpl, db)
 	handler := connect.NewHandler(zanzibarLogicImpl, rbacLogicImpl)
 	return handler, nil
 }
