@@ -4,9 +4,7 @@
 package wire
 
 import (
-	"authz/internal/engine"
-	"authz/internal/handler/connect"
-	"authz/internal/logic"
+	"authz/internal/engine/rbac"
 	"authz/internal/pkg"
 	"authz/internal/schema"
 	"authz/internal/service/database"
@@ -16,32 +14,19 @@ import (
 	"github.com/google/wire"
 )
 
-// func NewRestHandler(pkg.Lifecycle) (*rest.Handler, error) {
-// 	wire.Build(
-// 		database.New,
-// 		redis.New,
-// 		logic.NewZanzibarLogic,
-// 		wire.Bind(new(logic.ZanzibarLogic), new(*logic.ZanzibarLogicImpl)),
-// 		logic.NewRbacLogic,
-// 		wire.Bind(new(logic.RbacLogic), new(*logic.RbacLogicImpl)),
-// 		rest.NewHandler,
-// 	)
-// 	return nil, nil
-// }
-
-func NewConnectHandler(context.Context, pkg.Lifecycle) (*connect.Handler, error) {
+func NewRbacHandler(context.Context, pkg.Lifecycle) (*rbac.Handler, error) {
 	wire.Build(
 		database.New,
 		redis.New,
 		schema.NewSchema,
 
-		engine.NewZanzibarEngine,
-		wire.Bind(new(engine.ZanzibarEngine), new(*engine.ZanzibarEngineImpl)),
-		logic.NewZanzibarLogic,
-		wire.Bind(new(logic.ZanzibarLogic), new(*logic.ZanzibarLogicImpl)),
-		logic.NewRbacLogic,
-		wire.Bind(new(logic.RbacLogic), new(*logic.RbacLogicImpl)),
-		connect.NewHandler,
+		rbac.NewZanzibarEngine,
+		wire.Bind(new(rbac.ZanzibarEngine), new(*rbac.ZanzibarEngineImpl)),
+		rbac.NewZanzibarLogic,
+		wire.Bind(new(rbac.ZanzibarLogic), new(*rbac.ZanzibarLogicImpl)),
+		rbac.NewRbacLogic,
+		wire.Bind(new(rbac.RbacLogic), new(*rbac.RbacLogicImpl)),
+		rbac.NewHandler,
 	)
 	return nil, nil
 }

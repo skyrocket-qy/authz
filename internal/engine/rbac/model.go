@@ -1,4 +1,4 @@
-package model
+package rbac
 
 import (
 	"time"
@@ -18,7 +18,6 @@ type User struct {
 	Name             string  `gorm:"unique;type:varchar(255);not null"`
 	IsActive         bool    `gorm:"default:true"`
 
-	Orgs      []*Org      `gorm:"many2many:user_orgs;"`
 	UserAuths []*UserAuth `gorm:"foreignKey:UserId"`
 }
 
@@ -28,12 +27,6 @@ type UserAuth struct {
 	ProviderId *string `gorm:"type:varchar(255)"`         // OAuth user ID / sub claim
 
 	UserId uint `gorm:"not null"`
-}
-
-type Org struct {
-	gorm.Model
-	Name  string  `gorm:"unique;type:varchar(255);not null"`
-	Users []*User `gorm:"many2many:user_orgs;"`
 }
 
 // metadata

@@ -7,6 +7,9 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"connectrpc.com/connect"
@@ -17,8 +20,6 @@ import (
 	"github.com/skyrocket-qy/protos/gen/authzpb/rbacpb/rbacpbconnect"
 	"github.com/skyrocket-qy/protos/gen/authzpb/v1/authzpbv1connect"
 	"github.com/spf13/cobra"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 )
 
 // rootCmd represents the base command when called without any subcommands.
@@ -39,8 +40,8 @@ func Execute() {
 }
 
 func init() {
-	Cmd.Flags().
-		StringVarP(&pkg.Env, `env`, "e", "local", `default: local`)
+	Cmd.Flags().StringVarP(&pkg.Env, `env`, "e", "local", `default: local`)
+	Cmd.Flags().StringP("engine", `g`, "rbac", "default: rbac")
 
 	Cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
 		validEnvs := map[string]bool{"local": true, "dev": true, "prod": true, "stage": true}
@@ -77,7 +78,7 @@ func RunServer(cmd *cobra.Command, args []string) {
 }
 
 func startConnectServer(lc pkg.Lifecycle) {
-	connectH, err := wire.NewConnectHandler(context.TODO(), lc)
+	connectH, err := wire.NewRbacHandler(context.TODO(), lc)
 	if err != nil {
 		log.Error().Msg(err.Error())
 		return
@@ -99,43 +100,32 @@ func startConnectServer(lc pkg.Lifecycle) {
 	})
 
 	handlerWithCors := c.Handler(mux)
-	h2cHandler := h2c.NewHandler(handlerWithCors, &http2.Server{})
-	http.ListenAndServe(
-		"localhost:8080",
-		// Use h2c so we can serve HTTP/2 without TLS.
-		h2cHandler,
-	)
+	server := NewHttpServer(lc, handlerWithCors)
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+
+	// Run the server in a goroutine so the main thread can listen for signals.
+	go func() {
+		log.Info().Msgf("Starting server on %s", server.Addr)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal().Err(err).Msg("Could not start server")
+		}
+	}()
+
+	// Block the main function until an OS signal is received.
+	<-stop
+	log.Info().Msg("Received interrupt signal, initiating graceful shutdown...")
+
+	// Call the lifecycle shutdown method with a timeout.
+	// The server.Shutdown() call is registered in NewHttpServer and will be executed here.
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	lc.Shutdown(ctx)
+
+	log.Info().Msg("Server gracefully shut down.")
+
 }
-
-// func startRestServer(lc pkg.Lifecycle) {
-// 	h, err := wire.NewRestHandler(lc)
-// 	if err != nil {
-// 		log.Error().Msg(err.Error())
-// 		return
-// 	}
-
-// 	e := NewGinEngine()
-// 	api.RegisterAPIHandlers(e, h, middleware.Jwt())
-// 	server := NewHttpServer(lc, e)
-
-// 	go func() {
-// 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-// 			log.Printf("HTTP server ListenAndServe: %v", err)
-// 		}
-// 	}()
-
-// 	quit := make(chan os.Signal, 1)
-// 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
-// 	<-quit
-// 	log.Info().Msg("Shutting down server...")
-
-// 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-// 	defer cancel()
-
-// 	if err := lc.Shutdown(ctx); err != nil {
-// 		log.Fatal().Msg(err.Error())
-// 	}
-// }
 
 func NewHttpServer(lc pkg.Lifecycle, handler http.Handler) *http.Server {
 	server := &http.Server{

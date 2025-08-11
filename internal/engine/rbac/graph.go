@@ -1,12 +1,11 @@
-package engine
+package rbac
 
 import (
-	"authz/internal/entity"
-	"authz/internal/entity/model"
 	"context"
 	"fmt"
 	"sync"
 
+	"authz/internal/entity"
 	"authz/internal/schema"
 
 	"github.com/redis/go-redis/v9"
@@ -14,6 +13,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// zanzibar in memory
 type ZanzibarEngine interface {
 	Check(c context.Context, sbj *entity.Instance, rel string, obj *entity.Instance) (bool, error)
 	Lookup(c context.Context, sbj *entity.Instance, rel string) ([]*entity.Instance, error)
@@ -151,7 +151,7 @@ func (e *ZanzibarEngineImpl) Expand(c context.Context, rel string, obj *entity.I
 }
 
 func (e *ZanzibarEngineImpl) build(c context.Context) error {
-	tuples := []model.Tuple{}
+	tuples := []Tuple{}
 	if err := e.db.WithContext(c).Find(&tuples).Error; err != nil {
 		return err
 	}

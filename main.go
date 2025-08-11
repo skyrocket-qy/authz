@@ -2,7 +2,7 @@ package main
 
 import (
 	"authz/cmd"
-	_ "authz/docs/openapi"
+	// _ "authz/docs/openapi"
 
 	_ "ariga.io/atlas-provider-gorm/gormschema"
 )

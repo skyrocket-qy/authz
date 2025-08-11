@@ -7,9 +7,7 @@
 package wire
 
 import (
-	"authz/internal/engine"
-	"authz/internal/handler/connect"
-	"authz/internal/logic"
+	"authz/internal/engine/rbac"
 	"authz/internal/pkg"
 	"authz/internal/schema"
 	"authz/internal/service/database"
@@ -19,7 +17,7 @@ import (
 
 // Injectors from wire.go:
 
-func NewConnectHandler(contextContext context.Context, lifecycle pkg.Lifecycle) (*connect.Handler, error) {
+func NewRbacHandler(contextContext context.Context, lifecycle pkg.Lifecycle) (*rbac.Handler, error) {
 	db, err := database.New(lifecycle)
 	if err != nil {
 		return nil, err
@@ -29,12 +27,12 @@ func NewConnectHandler(contextContext context.Context, lifecycle pkg.Lifecycle) 
 	if err != nil {
 		return nil, err
 	}
-	zanzibarEngineImpl, err := engine.NewZanzibarEngine(contextContext, db, client, schemaSchema)
+	zanzibarEngineImpl, err := rbac.NewZanzibarEngine(contextContext, db, client, schemaSchema)
 	if err != nil {
 		return nil, err
 	}
-	zanzibarLogicImpl := logic.NewZanzibarLogic(db, client, zanzibarEngineImpl, schemaSchema)
-	rbacLogicImpl := logic.NewRbacLogic(zanzibarLogicImpl, db, schemaSchema)
-	handler := connect.NewHandler(zanzibarLogicImpl, rbacLogicImpl)
+	zanzibarLogicImpl := rbac.NewZanzibarLogic(db, client, zanzibarEngineImpl, schemaSchema)
+	rbacLogicImpl := rbac.NewRbacLogic(zanzibarLogicImpl, db, schemaSchema)
+	handler := rbac.NewHandler(zanzibarLogicImpl, rbacLogicImpl)
 	return handler, nil
 }

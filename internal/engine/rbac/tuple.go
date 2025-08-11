@@ -1,4 +1,4 @@
-package model
+package rbac
 
 // Don't use fkey for performance consideration
 // type Tuple struct {

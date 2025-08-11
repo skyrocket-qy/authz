@@ -1,7 +1,6 @@
-package connect
+package rbac
 
 import (
-	"authz/internal/logic"
 	"context"
 
 	"connectrpc.com/connect"
@@ -14,11 +13,11 @@ import (
 var _ rbacpbconnect.RbacServiceHandler = (*Handler)(nil)
 
 type Handler struct {
-	zLogic    logic.ZanzibarLogic
-	rbacLogic logic.RbacLogic
+	zLogic    ZanzibarLogic
+	rbacLogic RbacLogic
 }
 
-func NewHandler(zLogic logic.ZanzibarLogic, rbacLogic logic.RbacLogic) *Handler {
+func NewHandler(zLogic ZanzibarLogic, rbacLogic RbacLogic) *Handler {
 	return &Handler{
 		zLogic:    zLogic,
 		rbacLogic: rbacLogic,
@@ -212,27 +211,47 @@ func (h *Handler) Check(
 	return connect.NewResponse(res), nil
 }
 
-func (h *Handler) ListResourceType(context.Context, *connect.Request[rbacpb.ListResourceTypeIn]) (
+func (h *Handler) ListResourceType(c context.Context, in *connect.Request[rbacpb.ListResourceTypeIn]) (
 	*connect.Response[rbacpb.ListResourceTypeOut], error,
 ) {
-	return nil, nil
+	res, err := h.rbacLogic.ListResourceTypes(c)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(res), nil
 }
 
-func (h *Handler) ListResourcesByType(context.Context, *connect.Request[rbacpb.ListResourcesByTypeIn]) (
+func (h *Handler) ListResourcesByType(c context.Context, in *connect.Request[rbacpb.ListResourcesByTypeIn]) (
 	*connect.Response[rbacpb.ListResourcesByTypeOut], error,
 ) {
-	return nil, nil
+	res, err := h.rbacLogic.ListResourcesByType(c, in.Msg)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(res), nil
 }
 
-func (h *Handler) ListPermissionByResource(context.Context,
-	*connect.Request[rbacpb.ListPermissionByResourceIn]) (
+func (h *Handler) ListPermissionByResource(c context.Context,
+	in *connect.Request[rbacpb.ListPermissionByResourceIn]) (
 	*connect.Response[rbacpb.ListPermissionByResourceOut], error,
 ) {
-	return nil, nil
+	res, err := h.rbacLogic.ListPermissionByResource(c, in.Msg)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(res), nil
 }
 
-func (h *Handler) GetRole(context.Context, *connect.Request[rbacpb.GetRoleIn]) (
+func (h *Handler) GetRole(c context.Context, in *connect.Request[rbacpb.GetRoleIn]) (
 	*connect.Response[rbacpb.GetRoleOut], error,
 ) {
-	return nil, nil
+	res, err := h.rbacLogic.GetRole(c, in.Msg)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(res), nil
 }

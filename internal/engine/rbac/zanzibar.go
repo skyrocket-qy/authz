@@ -1,9 +1,7 @@
-package logic
+package rbac
 
 import (
-	"authz/internal/engine"
 	"authz/internal/entity"
-	"authz/internal/entity/model"
 	"authz/internal/pkg"
 	"authz/internal/schema"
 	"context"
@@ -36,11 +34,11 @@ var _ ZanzibarLogic = (*ZanzibarLogicImpl)(nil)
 type ZanzibarLogicImpl struct {
 	pgdb    *gorm.DB
 	rdb     *redis.Client
-	zEngine engine.ZanzibarEngine
+	zEngine ZanzibarEngine
 	schema  *schema.Schema
 }
 
-func NewZanzibarLogic(db *gorm.DB, rdb *redis.Client, zEngine engine.ZanzibarEngine,
+func NewZanzibarLogic(db *gorm.DB, rdb *redis.Client, zEngine ZanzibarEngine,
 	s *schema.Schema) *ZanzibarLogicImpl {
 	return &ZanzibarLogicImpl{
 		pgdb:    db,
@@ -71,7 +69,7 @@ func (r *ZanzibarLogicImpl) List(c context.Context, in *authzpbv1.ListTuplesIn) 
 		return nil, err
 	}
 
-	tupleModels := []*model.Tuple{}
+	tupleModels := []*Tuple{}
 	tx := r.db(c).
 		Limit(int(pager.Size)).
 		Scopes(
@@ -149,7 +147,7 @@ func (r *ZanzibarLogicImpl) List(c context.Context, in *authzpbv1.ListTuplesIn) 
 func (r *ZanzibarLogicImpl) Find(c context.Context, filter *authzpbv1.TupleFilter) (
 	[]*authzpbv1.Tuple, error,
 ) {
-	tuples := []*model.Tuple{}
+	tuples := []*Tuple{}
 	if err := r.db(c).Scopes(ApplyTupleFilter(filter)).Find(&tuples).Error; err != nil {
 		return nil, err
 	}
@@ -169,7 +167,7 @@ func (r *ZanzibarLogicImpl) Find(c context.Context, filter *authzpbv1.TupleFilte
 }
 
 func (r *ZanzibarLogicImpl) Create(c context.Context, tuple *authzpbv1.Tuple) error {
-	tupleModel := model.Tuple{
+	tupleModel := Tuple{
 		SbjNs:    tuple.SbjNs,
 		SbjId:    tuple.SbjId,
 		Relation: tuple.Rel,
@@ -187,7 +185,7 @@ func (r *ZanzibarLogicImpl) Create(c context.Context, tuple *authzpbv1.Tuple) er
 			return err
 		}
 
-		if err := tx.Create(&model.ChangeLog{
+		if err := tx.Create(&ChangeLog{
 			Tuple: tupleBytes,
 		}).Error; err != nil {
 			return err
@@ -206,7 +204,7 @@ func (r *ZanzibarLogicImpl) Delete(c context.Context, in *authzpbv1.DeleteTuples
 	case *authzpbv1.DeleteTuplesIn_Filter:
 		filter := req.Filter
 		return r.db(c).Transaction(func(tx *gorm.DB) error {
-			var toDelete []*model.Tuple
+			var toDelete []*Tuple
 			if err := tx.Scopes(ApplyTupleFilter(filter)).
 				Clauses(clause.Locking{Strength: "UPDATE"}).
 				Find(&toDelete).Error; err != nil {
@@ -217,7 +215,7 @@ func (r *ZanzibarLogicImpl) Delete(c context.Context, in *authzpbv1.DeleteTuples
 				return err
 			}
 
-			changelogs := make([]model.ChangeLog, len(toDelete))
+			changelogs := make([]ChangeLog, len(toDelete))
 			for i, tupleModel := range toDelete {
 				tuple := &authzpbv1.Tuple{
 					SbjNs: tupleModel.SbjNs,
@@ -232,7 +230,7 @@ func (r *ZanzibarLogicImpl) Delete(c context.Context, in *authzpbv1.DeleteTuples
 					return err
 				}
 
-				changelogs[i] = model.ChangeLog{Tuple: data}
+				changelogs[i] = ChangeLog{Tuple: data}
 			}
 
 			if err := tx.Create(changelogs).Error; err != nil {
@@ -243,14 +241,14 @@ func (r *ZanzibarLogicImpl) Delete(c context.Context, in *authzpbv1.DeleteTuples
 		})
 	case *authzpbv1.DeleteTuplesIn_Tuples:
 		tuples := req.Tuples.Tuples
-		changelogs := make([]model.ChangeLog, len(tuples))
+		changelogs := make([]ChangeLog, len(tuples))
 		for i, tuple := range tuples {
 			data, err := proto.Marshal(tuple)
 			if err != nil {
 				return err
 			}
 
-			changelogs[i] = model.ChangeLog{Tuple: data}
+			changelogs[i] = ChangeLog{Tuple: data}
 		}
 
 		return r.db(c).Transaction(func(tx *gorm.DB) error {
@@ -280,7 +278,7 @@ func (r *ZanzibarLogicImpl) Delete(c context.Context, in *authzpbv1.DeleteTuples
 	case *authzpbv1.DeleteTuplesIn_Ids:
 		if err := r.db(c).
 			Where("id IN ?", req.Ids.Ids).
-			Delete(&model.Tuple{}).Error; err != nil {
+			Delete(&Tuple{}).Error; err != nil {
 			return err
 		}
 	}
@@ -353,7 +351,7 @@ func (r *ZanzibarLogicImpl) GetPermissions(c context.Context, sbj *authzpbv1.Ins
 	perms []*rbacpb.Permission, err error,
 ) {
 	// Step 1: Load direct tuples for subject
-	var tuples []*model.Tuple
+	var tuples []*Tuple
 	if err := r.db(c).Where("sbj_ns = ? AND sbj_id = ?", sbj.Ns, sbj.Id).Find(&tuples).Error; err != nil {
 		return nil, err
 	}
@@ -518,7 +516,7 @@ func (r *ZanzibarLogicImpl) rewriteIncludesDirect(resNs, resId string, ur *schem
 // 		SELECT sbj_ns_id AS id FROM relations
 // 	`
 // 	if err := r.db.WithContext(ctx).Where("id NOT IN (" + subquery + ")").
-// 		Delete(&model.Namespace{}).Error; err != nil {
+// 		Delete(&Namespace{}).Error; err != nil {
 // 		return err
 // 	}
 
@@ -532,7 +530,7 @@ func (r *ZanzibarLogicImpl) rewriteIncludesDirect(resNs, resId string, ur *schem
 // 		SELECT relation_id AS id FROM relations
 // 	`
 // 	if err := r.db.WithContext(ctx).Where("id NOT IN (" + subquery + ")").
-// 		Delete(&model.RelationDef{}).Error; err != nil {
+// 		Delete(&RelationDef{}).Error; err != nil {
 // 		return err
 // 	}
 
@@ -546,7 +544,7 @@ func (r *ZanzibarLogicImpl) rewriteIncludesDirect(resNs, resId string, ur *schem
 // 		SELECT sbj_id AS id FROM relations
 // 	`
 // 	if err := r.db.WithContext(ctx).Where("id NOT IN (" + subquery + ")").
-// 		Delete(&model.Instance{}).Error; err != nil {
+// 		Delete(&Instance{}).Error; err != nil {
 // 		return err
 // 	}
 
