@@ -3,6 +3,7 @@ package logic
 import (
 	"authz/internal/entity/model"
 	"authz/internal/pkg"
+	"authz/internal/schema"
 	"context"
 	"strconv"
 
@@ -28,7 +29,7 @@ type RbacLogic interface {
 	UpdateRole(c context.Context, in *rbacpb.UpdateRoleIn) error
 	DeleteRole(c context.Context, in *rbacpb.DeleteRoleIn) error
 
-	ListResourceType(context.Context, *rbacpb.ListResourceTypeIn) (
+	ListResourceTypes(context.Context) (
 		*rbacpb.ListResourceTypeOut, error,
 	)
 	ListResourcesByType(context.Context, *rbacpb.ListResourcesByTypeIn) (
@@ -53,9 +54,10 @@ var _ RbacLogic = (*RbacLogicImpl)(nil)
 type RbacLogicImpl struct {
 	pgdb    *gorm.DB
 	zbLogic ZanzibarLogic
+	schema  *schema.Schema
 }
 
-func NewRbacLogic(zbLogic ZanzibarLogic, pgdb *gorm.DB) *RbacLogicImpl {
+func NewRbacLogic(zbLogic ZanzibarLogic, pgdb *gorm.DB, schema *schema.Schema) *RbacLogicImpl {
 	return &RbacLogicImpl{
 		zbLogic: zbLogic,
 		pgdb:    pgdb,
@@ -316,20 +318,73 @@ func (r *RbacLogicImpl) GetRole(c context.Context, in *rbacpb.GetRoleIn) (*rbacp
 	return out, nil
 }
 
-func (r *RbacLogicImpl) ListResourceType(context.Context, *rbacpb.ListResourceTypeIn) (
+func (r *RbacLogicImpl) ListResourceTypes(context.Context) (
 	*rbacpb.ListResourceTypeOut, error,
 ) {
-	return nil, nil
+	s := r.schema
+	resNss := []string{}
+
+	for ns, data := range s.Namespaces {
+		if data.Type != "resource" {
+			continue
+		}
+		resNss = append(resNss, ns)
+	}
+
+	return &rbacpb.ListResourceTypeOut{Types: resNss}, nil
 }
 
-func (r *RbacLogicImpl) ListResourcesByType(context.Context, *rbacpb.ListResourcesByTypeIn) (
+func (r *RbacLogicImpl) ListResourcesByType(c context.Context, in *rbacpb.ListResourcesByTypeIn) (
 	*rbacpb.ListResourcesByTypeOut, error,
 ) {
-	return nil, nil
+	tuples := []*model.Tuple{}
+	if err := r.db(c).Where("obj_ns = ?", in.Type).Find(&tuples).Error; err != nil {
+		return nil, err
+	}
+
+	ids := map[string]struct{}{}
+	for _, tuple := range tuples {
+		ids[tuple.ObjId] = struct{}{}
+	}
+
+	out := &rbacpb.ListResourcesByTypeOut{}
+	for id := range ids {
+		out.Ids = append(out.Ids, id)
+	}
+
+	return out, nil
 }
 
-func (r *RbacLogicImpl) ListPermissionByResource(context.Context, *rbacpb.ListPermissionByResourceIn) (
+func (r *RbacLogicImpl) ListPermissionByResource(c context.Context, in *rbacpb.ListPermissionByResourceIn) (
 	*rbacpb.ListPermissionByResourceOut, error,
 ) {
-	return nil, nil
+	tuples := []*model.Tuple{}
+	if err := r.db(c).Where(
+		"sbj_ns = role AND sbj_id = ? AND obj_ns = ? AND obj_id = ?",
+		in.RoleId, in.Type, in.Id).
+		Find(&tuples).Error; err != nil {
+		return nil, err
+	}
+
+	out := &rbacpb.ListPermissionByResourceOut{}
+	relDatas := r.schema.Namespaces[in.Type].Relations
+	existedRels := map[string]struct{}{}
+	for _, tuple := range tuples {
+		existedRels[tuple.Relation] = struct{}{}
+	}
+
+	rels := map[string]struct{}{}
+	for rel, _ := range relDatas {
+		if _, ok := existedRels[rel]; ok {
+			continue
+		}
+
+		rels[rel] = struct{}{}
+	}
+
+	for rel := range rels {
+		out.Permissions = append(out.Permissions, rel)
+	}
+
+	return out, nil
 }
