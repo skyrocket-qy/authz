@@ -361,20 +361,20 @@ func (r *RbacLogicImpl) ListPermissionByResource(c context.Context, in *rbacpb.L
 	tuples := []*model.Tuple{}
 	if err := r.db(c).Where(
 		"sbj_ns = role AND sbj_id = ? AND obj_ns = ? AND obj_id = ?",
-		in.RoleId, in.Type, in.Id).
+		in.RoleId, in.ResourceNs, in.ResourceId).
 		Find(&tuples).Error; err != nil {
 		return nil, err
 	}
 
 	out := &rbacpb.ListPermissionByResourceOut{}
-	relDatas := r.schema.Namespaces[in.Type].Relations
+	relDatas := r.schema.Namespaces[in.ResourceNs].Relations
 	existedRels := map[string]struct{}{}
 	for _, tuple := range tuples {
 		existedRels[tuple.Relation] = struct{}{}
 	}
 
 	rels := map[string]struct{}{}
-	for rel, _ := range relDatas {
+	for rel := range relDatas {
 		if _, ok := existedRels[rel]; ok {
 			continue
 		}
