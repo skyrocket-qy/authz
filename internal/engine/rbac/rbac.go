@@ -398,9 +398,23 @@ func (r *RbacLogicImpl) ListResourcesByType(c context.Context, in *rbacpb.ListRe
 		ids[tuple.ObjId] = struct{}{}
 	}
 
-	out := &rbacpb.ListResourcesByTypeOut{}
-	for id := range ids {
-		out.Ids = append(out.Ids, id)
+	out := &rbacpb.ListResourcesByTypeOut{
+		Resources: []*rbacpb.ListResourcesByTypeData{},
+	}
+
+	for idStr := range ids {
+		id, _ := strconv.ParseUint(idStr, 10, 64)
+
+		res := Resource{}
+		// TODO: bad perf
+		if err := r.db(c).Where("id = ?", id).Take(&res).Error; err != nil {
+			return nil, err
+		}
+
+		out.Resources = append(out.Resources, &rbacpb.ListResourcesByTypeData{
+			Id:   id,
+			Name: res.Name,
+		})
 	}
 
 	return out, nil

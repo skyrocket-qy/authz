@@ -211,7 +211,7 @@ func (h *Handler) Check(
 	return connect.NewResponse(res), nil
 }
 
-func (h *Handler) ListResourceType(c context.Context, in *connect.Request[rbacpb.ListResourceTypeIn]) (
+func (h *Handler) ListResourceType(c context.Context, in *connect.Request[emptypb.Empty]) (
 	*connect.Response[rbacpb.ListResourceTypeOut], error,
 ) {
 	res, err := h.rbacLogic.ListResourceTypes(c)
