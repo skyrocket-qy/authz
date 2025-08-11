@@ -89,10 +89,10 @@ func startConnectServer(lc pkg.Lifecycle) {
 	rbacPath, rbacH := rbacpbconnect.NewRbacServiceHandler(connectH, connect.WithCompressMinBytes(512))
 	mux := http.NewServeMux()
 
-	mux.Handle(path, handler)
 	mux.Handle(rbacPath, rbacH)
+	mux.Handle(path, handler)
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000"}, // Or "*" for dev
+		AllowedOrigins:   []string{"*"}, // Or "*" for dev
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},

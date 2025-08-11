@@ -6,9 +6,12 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/skyrocket-qy/protos/gen/authzpb/rbacpb"
+	"github.com/skyrocket-qy/protos/gen/authzpb/rbacpb/rbacpbconnect"
 	authzpbv1 "github.com/skyrocket-qy/protos/gen/authzpb/v1"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
+
+var _ rbacpbconnect.RbacServiceHandler = (*Handler)(nil)
 
 type Handler struct {
 	zLogic    logic.ZanzibarLogic
@@ -207,4 +210,29 @@ func (h *Handler) Check(
 	}
 
 	return connect.NewResponse(res), nil
+}
+
+func (h *Handler) ListResourceType(context.Context, *connect.Request[rbacpb.ListResourceTypeIn]) (
+	*connect.Response[rbacpb.ListResourceTypeOut], error,
+) {
+	return nil, nil
+}
+
+func (h *Handler) ListResourcesByType(context.Context, *connect.Request[rbacpb.ListResourcesByTypeIn]) (
+	*connect.Response[rbacpb.ListResourcesByTypeOut], error,
+) {
+	return nil, nil
+}
+
+func (h *Handler) ListPermissionByResource(context.Context,
+	*connect.Request[rbacpb.ListPermissionByResourceIn]) (
+	*connect.Response[rbacpb.ListPermissionByResourceOut], error,
+) {
+	return nil, nil
+}
+
+func (h *Handler) GetRole(context.Context, *connect.Request[rbacpb.GetRoleIn]) (
+	*connect.Response[rbacpb.GetRoleOut], error,
+) {
+	return nil, nil
 }

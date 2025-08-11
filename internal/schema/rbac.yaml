@@ -1,5 +1,6 @@
 namespaces:
   object:
+    type: resource
     allow_subject_namespaces: [role] # if not set, means all allowed
     relations:
       read:

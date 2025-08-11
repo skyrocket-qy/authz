@@ -8,30 +8,9 @@ type Schema struct {
 	Namespaces map[string]*Namespace `yaml:"namespaces"`
 }
 
-func (s *Schema) Build() {
-	for _, ns := range s.Namespaces {
-		for name, rel := range ns.Relations {
-			if rel.TupleToUserset != nil {
-				rel.TupleToUserset.Build(name)
-			}
-
-			if rel.Union != nil {
-				for _, rewrite := range rel.Union {
-					rewrite.Build(name)
-				}
-			}
-
-			if rel.Intersection != nil {
-				for _, rewrite := range rel.Intersection {
-					rewrite.Build(name)
-				}
-			}
-		}
-	}
-}
-
 type Namespace struct {
 	AllowSubjectNamespaces []string             `yaml:"allow_subject_namespaces,omitempty"`
+	Type                   string               `yaml:"type"`
 	Relations              map[string]*Relation `yaml:"relations"`
 }
 
@@ -132,4 +111,26 @@ func (r *UsersetRewrite) Validate() error {
 		return errors.New("at least one rewrite type must be set in UsersetRewrite")
 	}
 	return nil
+}
+
+func (s *Schema) Build() {
+	for _, ns := range s.Namespaces {
+		for name, rel := range ns.Relations {
+			if rel.TupleToUserset != nil {
+				rel.TupleToUserset.Build(name)
+			}
+
+			if rel.Union != nil {
+				for _, rewrite := range rel.Union {
+					rewrite.Build(name)
+				}
+			}
+
+			if rel.Intersection != nil {
+				for _, rewrite := range rel.Intersection {
+					rewrite.Build(name)
+				}
+			}
+		}
+	}
 }

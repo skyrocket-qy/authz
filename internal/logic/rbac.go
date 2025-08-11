@@ -22,16 +22,21 @@ type RbacLogic interface {
 	UpdateUser(c context.Context, in *rbacpb.UpdateUserIn) error
 	DeleteUser(c context.Context, id *rbacpb.DeleteUserIn) error
 
+	GetRole(context.Context, *rbacpb.GetRoleIn) (*rbacpb.GetRoleOut, error)
 	CreateRole(c context.Context, in *rbacpb.CreateRoleIn) error
 	ListRoles(c context.Context, in *rbacpb.ListRolesIn) (*rbacpb.ListRolesOut, error)
 	UpdateRole(c context.Context, in *rbacpb.UpdateRoleIn) error
 	DeleteRole(c context.Context, in *rbacpb.DeleteRoleIn) error
 
-	// GetUsersWithRole(ctx context.Context, role string) ([]string, error)
-	// GetUsersWithPerm(ctx context.Context, perm string, res string) ([]string, error)
-
-	// ListPerms(c context.Context) ([]*rbacpb.Perm, error)
-
+	ListResourceType(context.Context, *rbacpb.ListResourceTypeIn) (
+		*rbacpb.ListResourceTypeOut, error,
+	)
+	ListResourcesByType(context.Context, *rbacpb.ListResourcesByTypeIn) (
+		*rbacpb.ListResourcesByTypeOut, error,
+	)
+	ListPermissionByResource(context.Context, *rbacpb.ListPermissionByResourceIn) (
+		*rbacpb.ListPermissionByResourceOut, error,
+	)
 	CreateResource(c context.Context, in *rbacpb.CreateResourceIn) error
 	ListResources(c context.Context, in *rbacpb.ListResourcesIn) (*rbacpb.ListResourcesOut, error)
 	DeleteResource(c context.Context, in *rbacpb.DeleteResourceIn) error
@@ -247,17 +252,17 @@ func (r *RbacLogicImpl) RevokeRole(c context.Context, in *rbacpb.RevokeRoleIn) e
 }
 
 func (r *RbacLogicImpl) GrantPerm(c context.Context, in *rbacpb.GrantPermIn) error {
-	res := model.Resource{}
-	if err := r.db(c).Where("id = ?", in.ResourceId).Take(&res).Error; err != nil {
-		return err
-	}
+	// res := model.Resource{}
+	// if err := r.db(c).Where("id = ?", in.ResourceId).Take(&res).Error; err != nil {
+	// 	return err
+	// }
 
 	return r.zbLogic.Create(c,
 		&authzpbv1.Tuple{
 			SbjNs: "role",
 			SbjId: strconv.FormatUint(in.RoleId, 10),
 			Rel:   in.Perm,
-			ObjNs: res.Ns,
+			ObjNs: "object",
 			ObjId: strconv.FormatUint(in.ResourceId, 10),
 		},
 	)
@@ -286,4 +291,45 @@ func (r *RbacLogicImpl) RevokePerm(c context.Context, in *rbacpb.RevokePermIn) e
 			},
 		},
 	)
+}
+
+func (r *RbacLogicImpl) GetRole(c context.Context, in *rbacpb.GetRoleIn) (*rbacpb.GetRoleOut, error) {
+	var role model.Role
+	if err := r.db(c).Where("id = ?", in.Id).Take(&role).Error; err != nil {
+		return nil, err
+	}
+
+	out := &rbacpb.GetRoleOut{
+		Ns:   "role",
+		Name: role.Name,
+	}
+
+	perms, err := r.zbLogic.GetPermissions(c, &authzpbv1.Instance{
+		Ns: "role",
+		Id: strconv.FormatUint(in.Id, 10),
+	}, "resource")
+	if err != nil {
+		return nil, err
+	}
+	out.Permissions = perms
+
+	return out, nil
+}
+
+func (r *RbacLogicImpl) ListResourceType(context.Context, *rbacpb.ListResourceTypeIn) (
+	*rbacpb.ListResourceTypeOut, error,
+) {
+	return nil, nil
+}
+
+func (r *RbacLogicImpl) ListResourcesByType(context.Context, *rbacpb.ListResourcesByTypeIn) (
+	*rbacpb.ListResourcesByTypeOut, error,
+) {
+	return nil, nil
+}
+
+func (r *RbacLogicImpl) ListPermissionByResource(context.Context, *rbacpb.ListPermissionByResourceIn) (
+	*rbacpb.ListPermissionByResourceOut, error,
+) {
+	return nil, nil
 }
