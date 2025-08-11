@@ -45,8 +45,9 @@ type UsersetRewrite struct {
 }
 
 type Userset struct {
-	// Namespace *string `yaml:"namespace"`
-	Relation string `yaml:"relation"` // e.g. "owner""
+	Namespace *string `yaml:"namespace"`
+	Id        string  `yaml:"id"`
+	Relation  string  `yaml:"relation"` // e.g. "owner""
 }
 
 type ExclusionNode struct {
