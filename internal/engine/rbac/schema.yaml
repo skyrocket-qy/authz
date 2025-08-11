@@ -17,6 +17,7 @@ namespaces:
         tuple_to_userset:
           computed_userset:
             relation: member
+
   role:
     relations:
       member:

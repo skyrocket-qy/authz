@@ -12,11 +12,6 @@ import (
 	"gorm.io/gorm"
 )
 
-/*
-Only 4 type
-User, Role(include Admin), Perm, resource
-*/
-
 type RbacLogic interface {
 	ListUsers(c context.Context, in *rbacpb.ListUsersIn) (out *rbacpb.ListUsersOut, err error)
 	UpdateUser(c context.Context, in *rbacpb.UpdateUserIn) error
@@ -315,7 +310,7 @@ func (r *RbacLogicImpl) GrantPerm(c context.Context, in *rbacpb.GrantPermIn) err
 			SbjNs: "role",
 			SbjId: strconv.FormatUint(in.RoleId, 10),
 			Rel:   in.Perm,
-			ObjNs: "object",
+			ObjNs: res.Ns,
 			ObjId: strconv.FormatUint(in.ResourceId, 10),
 		},
 	)

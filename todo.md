@@ -3,3 +3,4 @@
 - manual life cycle management
 - cache hot path
 - wildcard support
+- multiple schema load
