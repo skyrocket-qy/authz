@@ -8,6 +8,7 @@ import (
 	"authz/internal/handler/connect"
 	"authz/internal/logic"
 	"authz/internal/pkg"
+	"authz/internal/schema"
 	"authz/internal/service/database"
 	"authz/internal/service/redis"
 	"context"
@@ -32,6 +33,7 @@ func NewConnectHandler(context.Context, pkg.Lifecycle) (*connect.Handler, error)
 	wire.Build(
 		database.New,
 		redis.New,
+		schema.NewSchema,
 
 		engine.NewZanzibarEngine,
 		wire.Bind(new(engine.ZanzibarEngine), new(*engine.ZanzibarEngineImpl)),

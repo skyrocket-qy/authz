@@ -1,8 +1,24 @@
 package schema
 
 import (
+	"authz/internal/cfg"
 	"errors"
+	"os"
+
+	"gopkg.in/yaml.v3"
 )
+
+func NewSchema() (*Schema, error) {
+	s := Schema{}
+	f, _ := os.ReadFile(cfg.Cfg.SchemaPath)
+	err := yaml.Unmarshal(f, &s)
+	if err != nil {
+		return nil, err
+	}
+	s.Build()
+
+	return &s, nil
+}
 
 type Schema struct {
 	Namespaces map[string]*Namespace `yaml:"namespaces"`

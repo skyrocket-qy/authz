@@ -40,11 +40,13 @@ type ZanzibarLogicImpl struct {
 	schema  *schema.Schema
 }
 
-func NewZanzibarLogic(db *gorm.DB, rdb *redis.Client, zEngine engine.ZanzibarEngine) *ZanzibarLogicImpl {
+func NewZanzibarLogic(db *gorm.DB, rdb *redis.Client, zEngine engine.ZanzibarEngine,
+	s *schema.Schema) *ZanzibarLogicImpl {
 	return &ZanzibarLogicImpl{
 		pgdb:    db,
 		rdb:     rdb,
 		zEngine: zEngine,
+		schema:  s,
 	}
 }
 

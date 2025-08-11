@@ -210,13 +210,6 @@ func (r *RbacLogicImpl) ListResources(c context.Context, in *rbacpb.ListResource
 	return &rbacpb.ListResourcesOut{Resources: resources}, nil
 }
 
-// func (r *RbacLogicImpl) UpdateResource(c context.Context, res *rbacpb.Resource) error {
-// 	return r.db(c).Model(&model.Resource{}).Where("id = ?", res.Id).Updates(map[string]any{
-// 		"ns":   res.Ns,
-// 		"name": res.Name,
-// 	}).Error
-// }
-
 func (r *RbacLogicImpl) DeleteResource(c context.Context, in *rbacpb.DeleteResourceIn) error {
 	return r.db(c).Delete(&model.Resource{}, in.Id).Error
 }

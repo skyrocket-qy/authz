@@ -1,0 +1,98 @@
+# This schema models a Linux-like rwx (read, write, execute) permission system.
+# It computes effective permissions by checking grants for the file's owner, its group, and the public.
+namespaces:
+  user:
+    type: user
+    # Users are the basic subjects, no special relations needed here.
+    relations: {}
+
+  group:
+    type: group
+    relations:
+      # Defines which users are members of this group.
+      member:
+        allow_subject_namespaces:
+          - user
+
+  file:
+    type: file
+    relations:
+      # --- Base Ownership Relations ---
+      # Defines the single user who owns the file.
+      owner:
+        allow_subject_namespaces:
+          - user
+      # Defines the single group that owns the file.
+      owning_group:
+        allow_subject_namespaces:
+          - group
+
+      # --- Permission Grant Relations (like setting rwx bits) ---
+      # The existence of a tuple on these relations means the permission is granted.
+      # e.g., a tuple "file:A#owner_can_read@user:alice" means the owner (alice) has read permission.
+      owner_can_read: {}
+      owner_can_write: {}
+      owner_can_execute: {}
+
+      # e.g., a tuple "file:A#group_can_read@group:devs" means the owning group has read permission.
+      group_can_read:
+        allow_subject_namespaces: [group]
+      group_can_write:
+        allow_subject_namespaces: [group]
+      group_can_execute:
+        allow_subject_namespaces: [group]
+      
+      # e.g., a tuple "file:A#public_can_read@user:*" means everyone can read.
+      # The subject here would typically be a wildcard.
+      public_can_read: {}
+      public_can_write: {}
+      public_can_execute: {}
+
+
+      # --- Computed Effective Permissions ---
+      # These relations compute the final set of users who can perform an action.
+      reader:
+        union:
+          # 1. Add the user who is the owner, IF the owner_can_read permission is set for them.
+          - computed_userset:
+              relation: owner_can_read
+          # 2. Add the members of the group, IF the group_can_read permission is set for that group.
+          - tuple_to_userset:
+              tupleset:
+                relation: group_can_read
+              computed_userset:
+                relation: member
+          # 3. Add any users who have public read access.
+          - computed_userset:
+              relation: public_can_read
+
+      writer:
+        union:
+          # 1. Add the user who is the owner, IF the owner_can_write permission is set.
+          - computed_userset:
+              relation: owner_can_write
+          # 2. Add the members of the group, IF the group_can_write permission is set.
+          - tuple_to_userset:
+              tupleset:
+                relation: group_can_write
+              computed_userset:
+                relation: member
+          # 3. Add any users who have public write access.
+          - computed_userset:
+              relation: public_can_write
+
+      executor:
+        union:
+          # 1. Add the user who is the owner, IF the owner_can_execute permission is set.
+          - computed_userset:
+              relation: owner_can_execute
+          # 2. Add the members of the group, IF the group_can_execute permission is set.
+          - tuple_to_userset:
+              tupleset:
+                relation: group_can_execute
+              computed_userset:
+                relation: member
+          # 3. Add any users who have public execute access.
+          - computed_userset:
+              relation: public_can_execute
+

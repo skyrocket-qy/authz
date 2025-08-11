@@ -11,6 +11,7 @@ import (
 	"authz/internal/handler/connect"
 	"authz/internal/logic"
 	"authz/internal/pkg"
+	"authz/internal/schema"
 	"authz/internal/service/database"
 	"authz/internal/service/redis"
 	"context"
@@ -24,12 +25,16 @@ func NewConnectHandler(contextContext context.Context, lifecycle pkg.Lifecycle) 
 		return nil, err
 	}
 	client := redis.New(lifecycle)
-	zanzibarEngineImpl, err := engine.NewZanzibarEngine(contextContext, db, client)
+	schemaSchema, err := schema.NewSchema()
 	if err != nil {
 		return nil, err
 	}
-	zanzibarLogicImpl := logic.NewZanzibarLogic(db, client, zanzibarEngineImpl)
-	rbacLogicImpl := logic.NewRbacLogic(zanzibarLogicImpl, db)
+	zanzibarEngineImpl, err := engine.NewZanzibarEngine(contextContext, db, client, schemaSchema)
+	if err != nil {
+		return nil, err
+	}
+	zanzibarLogicImpl := logic.NewZanzibarLogic(db, client, zanzibarEngineImpl, schemaSchema)
+	rbacLogicImpl := logic.NewRbacLogic(zanzibarLogicImpl, db, schemaSchema)
 	handler := connect.NewHandler(zanzibarLogicImpl, rbacLogicImpl)
 	return handler, nil
 }

@@ -1,0 +1,106 @@
+# This schema models a hierarchical authorization system similar to a filesystem.
+# It defines four types of objects (namespaces): organizations, teams, folders, and files.
+# Permissions are inherited down the hierarchy (e.g., access to a folder grants access to its files).
+namespaces:
+  organization:
+    type: organization
+    relations:
+      # 'admin' can manage the organization (e.g., add/remove members).
+      admin: {}
+      # 'member' represents a user's membership in the organization.
+      member: {}
+
+  team:
+    type: team
+    relations:
+      # 'admin' can manage the team (e.g., add/remove members).
+      admin:
+        allow_subject_namespaces:
+          - organization#member # Team admins must be members of the parent org.
+      # 'member' of a team.
+      member:
+        allow_subject_namespaces:
+          - organization#member # Team members must be members of the parent org.
+
+  folder:
+    type: folder
+    relations:
+      # 'parent' defines the containing object, which can be an organization or another folder.
+      parent:
+        allow_subject_namespaces:
+          - organization
+          - folder
+      # 'owner' has full control over the folder.
+      owner:
+        allow_subject_namespaces:
+          - organization#member
+      # 'editor' can modify the folder and its contents.
+      # An editor is anyone who is an owner OR has been directly assigned the editor relation.
+      editor:
+        allow_subject_namespaces:
+          - organization#member
+          - team#member # Entire teams can be editors.
+        union:
+          - computed_userset:
+              relation: owner
+      # 'viewer' can see the folder and its contents.
+      # A viewer is anyone who:
+      #   1. Is an editor of the folder.
+      #   2. Is a viewer of the parent object (folder or organization).
+      #   3. Has been directly assigned the viewer relation.
+      viewer:
+        allow_subject_namespaces:
+          - organization#member
+          - team#member # Entire teams can be viewers.
+        union:
+          - computed_userset:
+              # Editors are implicitly viewers.
+              relation: editor
+          - tuple_to_userset:
+              # Inherit the 'viewer' permission from the parent.
+              # This rule finds the folder's 'parent' and checks if the user is a 'viewer' on that parent.
+              tupleset:
+                relation: parent
+              computed_userset:
+                relation: viewer
+
+  file:
+    type: file
+    relations:
+      # 'parent' defines the containing folder for the file.
+      parent:
+        allow_subject_namespaces:
+          - folder
+      # 'owner' has full control over the file.
+      owner:
+        allow_subject_namespaces:
+          - organization#member
+      # 'editor' can modify the file.
+      # An editor is anyone who is an owner OR has been directly assigned the editor relation.
+      editor:
+        allow_subject_namespaces:
+          - organization#member
+          - team#member
+        union:
+          - computed_userset:
+              relation: owner
+      # 'viewer' can see the file.
+      # A viewer is anyone who:
+      #   1. Is an editor of the file.
+      #   2. Is a viewer of the parent folder.
+      #   3. Has been directly assigned the viewer relation.
+      viewer:
+        allow_subject_namespaces:
+          - organization#member
+          - team#member
+        union:
+          - computed_userset:
+              # Editors are implicitly viewers.
+              relation: editor
+          - tuple_to_userset:
+              # Inherit the 'viewer' permission from the parent folder.
+              # This rule finds the file's 'parent' and checks if the user is a 'viewer' on that parent folder.
+              tupleset:
+                relation: parent
+              computed_userset:
+                relation: viewer
