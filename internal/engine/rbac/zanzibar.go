@@ -175,19 +175,8 @@ func (r *ZanzibarLogicImpl) Create(c context.Context, tuple *authzpbv1.Tuple) er
 		ObjId:    tuple.ObjId,
 	}
 
-	tupleBytes, err := proto.Marshal(tuple)
-	if err != nil {
-		return err
-	}
-
 	if err := r.db(c).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(&tupleModel).Error; err != nil {
-			return err
-		}
-
-		if err := tx.Create(&ChangeLog{
-			Data: tupleBytes,
-		}).Error; err != nil {
 			return err
 		}
 
@@ -215,41 +204,10 @@ func (r *ZanzibarLogicImpl) Delete(c context.Context, in *authzpbv1.DeleteTuples
 				return err
 			}
 
-			changelogs := make([]ChangeLog, len(toDelete))
-			for i, tupleModel := range toDelete {
-				tuple := &authzpbv1.Tuple{
-					SbjNs: tupleModel.SbjNs,
-					SbjId: tupleModel.SbjId,
-					Rel:   tupleModel.Relation,
-					ObjNs: tupleModel.ObjNs,
-					ObjId: tupleModel.ObjId,
-				}
-
-				data, err := proto.Marshal(tuple)
-				if err != nil {
-					return err
-				}
-
-				changelogs[i] = ChangeLog{Data: data}
-			}
-
-			if err := tx.Create(changelogs).Error; err != nil {
-				return err
-			}
-
 			return nil
 		})
 	case *authzpbv1.DeleteTuplesIn_Tuples:
 		tuples := req.Tuples.Tuples
-		changelogs := make([]ChangeLog, len(tuples))
-		for i, tuple := range tuples {
-			data, err := proto.Marshal(tuple)
-			if err != nil {
-				return err
-			}
-
-			changelogs[i] = ChangeLog{Data: data}
-		}
 
 		return r.db(c).Transaction(func(tx *gorm.DB) error {
 			values := make([]any, 0, len(tuples)*5)
@@ -265,10 +223,6 @@ func (r *ZanzibarLogicImpl) Delete(c context.Context, in *authzpbv1.DeleteTuples
 			WHERE (sbj_ns, sbj_id, rel, obj_ns, obj_id) IN (` + strings.Join(placeholders, ",") + `)
 			`
 			if err := tx.Unscoped().Exec(query, values...).Error; err != nil {
-				return err
-			}
-
-			if err := tx.Create(&changelogs).Error; err != nil {
 				return err
 			}
 

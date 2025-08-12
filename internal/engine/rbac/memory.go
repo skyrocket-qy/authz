@@ -17,7 +17,7 @@ import (
 	"gorm.io/gorm"
 )
 
-//TODO: add job to auto do graph make in db
+// TODO: prebuild the graph to reduce loading time
 
 // zanzibar in memory
 type ZanzibarEngine interface {
@@ -29,12 +29,11 @@ type ZanzibarEngine interface {
 var _ ZanzibarEngine = (*ZanzibarEngineImpl)(nil)
 
 type ZanzibarEngineImpl struct {
-	schema  *schema.Schema
-	kafkaR  *kafka.Reader
-	db      *gorm.DB
-	rds     *redis.Client
-	graph   map[entity.Instance]map[string]map[entity.Instance]struct{}
-	version uint64
+	schema *schema.Schema
+	kafkaR *kafka.Reader
+	db     *gorm.DB
+	rds    *redis.Client
+	graph  map[entity.Instance]map[string]map[entity.Instance]struct{}
 
 	mutex sync.RWMutex
 }
@@ -53,8 +52,6 @@ func NewZanzibarEngine(c context.Context, db *gorm.DB, rds *redis.Client, s *sch
 	if err := engine.build(c); err != nil {
 		return nil, err
 	}
-
-	fmt.Println(engine.graph)
 
 	go engine.sync()
 	engine.schema = s

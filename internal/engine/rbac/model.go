@@ -50,3 +50,8 @@ type Tuple struct {
 	ObjNs    string `gorm:"uniqueIndex:idx_tuple;not null" json:"obj_ns"`
 	ObjId    string `gorm:"uniqueIndex:idx_tuple;not null" json:"obj_id"`
 }
+
+type GraphCheckpoint struct {
+	LastChangeLogId uint64 `gorm:"primaryKey"` // up to which changelog was applied
+	Data            []byte // marshaled in-memory graph
+}
