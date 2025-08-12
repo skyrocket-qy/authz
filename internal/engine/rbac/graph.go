@@ -3,6 +3,7 @@ package rbac
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -52,6 +53,8 @@ func NewZanzibarEngine(c context.Context, db *gorm.DB, rds *redis.Client, s *sch
 	if err := engine.build(c); err != nil {
 		return nil, err
 	}
+
+	fmt.Println(engine.graph)
 
 	go engine.sync()
 	engine.schema = s
@@ -163,23 +166,17 @@ func (e *ZanzibarEngineImpl) build(c context.Context) error {
 		defer cancel()
 		m, err := r.ReadMessage(readCtx)
 		if err != nil {
-			if err == context.DeadlineExceeded {
-				// No new message arrived within timeout → break and finish build
-				break
+			if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+				return nil
 			}
-			if err == context.Canceled {
-				// graceful exit on context cancel or end of stream
-				break
-			}
-			return fmt.Errorf("error reading message: %w", err)
+
+			return fmt.Errorf("read message error: %w", err)
 		}
 
 		if err := e.applyMessage(m); err != nil {
 			return err
 		}
 	}
-
-	return nil
 }
 
 func (e *ZanzibarEngineImpl) applyMessage(m kafka.Message) error {
