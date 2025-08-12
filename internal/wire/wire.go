@@ -7,6 +7,7 @@ import (
 	"authz/internal/engine/rbac"
 	"authz/internal/pkg"
 	"authz/internal/schema"
+	"authz/internal/service"
 	"authz/internal/service/database"
 	"authz/internal/service/redis"
 	"context"
@@ -19,6 +20,8 @@ func NewRbacHandler(context.Context, pkg.Lifecycle) (*rbac.Handler, error) {
 		database.New,
 		redis.New,
 		schema.NewSchema,
+
+		service.NewKafkaReader,
 
 		rbac.NewZanzibarEngine,
 		wire.Bind(new(rbac.ZanzibarEngine), new(*rbac.ZanzibarEngineImpl)),

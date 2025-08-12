@@ -186,7 +186,7 @@ func (r *ZanzibarLogicImpl) Create(c context.Context, tuple *authzpbv1.Tuple) er
 		}
 
 		if err := tx.Create(&ChangeLog{
-			Tuple: tupleBytes,
+			Data: tupleBytes,
 		}).Error; err != nil {
 			return err
 		}
@@ -230,7 +230,7 @@ func (r *ZanzibarLogicImpl) Delete(c context.Context, in *authzpbv1.DeleteTuples
 					return err
 				}
 
-				changelogs[i] = ChangeLog{Tuple: data}
+				changelogs[i] = ChangeLog{Data: data}
 			}
 
 			if err := tx.Create(changelogs).Error; err != nil {
@@ -248,7 +248,7 @@ func (r *ZanzibarLogicImpl) Delete(c context.Context, in *authzpbv1.DeleteTuples
 				return err
 			}
 
-			changelogs[i] = ChangeLog{Tuple: data}
+			changelogs[i] = ChangeLog{Data: data}
 		}
 
 		return r.db(c).Transaction(func(tx *gorm.DB) error {

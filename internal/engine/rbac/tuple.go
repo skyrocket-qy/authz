@@ -33,13 +33,13 @@ type Tuple struct {
 }
 
 type ChangeLog struct {
-	Id    uint64 `gorm:"primaryKey"`
-	Tuple []byte // marshal tuple into byte data to reduce storage
+	Id   uint64 `gorm:"primaryKey"`
+	Data []byte // marshal tuple into byte data to reduce storage
 }
 
 // only one latest one record
 type GraphCheckpoint struct {
-	LastChangeLogID uint64 `gorm:"primaryKey"` // up to which changelog was applied
+	LastChangeLogId uint64 `gorm:"primaryKey"` // up to which changelog was applied
 	Data            []byte // marshaled in-memory graph
 }
 

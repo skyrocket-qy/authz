@@ -10,6 +10,7 @@ import (
 	"authz/internal/engine/rbac"
 	"authz/internal/pkg"
 	"authz/internal/schema"
+	"authz/internal/service"
 	"authz/internal/service/database"
 	"authz/internal/service/redis"
 	"context"
@@ -27,7 +28,8 @@ func NewRbacHandler(contextContext context.Context, lifecycle pkg.Lifecycle) (*r
 	if err != nil {
 		return nil, err
 	}
-	zanzibarEngineImpl, err := rbac.NewZanzibarEngine(contextContext, db, client, schemaSchema)
+	reader := service.NewKafkaReader()
+	zanzibarEngineImpl, err := rbac.NewZanzibarEngine(contextContext, db, client, schemaSchema, reader)
 	if err != nil {
 		return nil, err
 	}
