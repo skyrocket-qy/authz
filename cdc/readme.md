@@ -1,15 +1,28 @@
-docker exec -it postgres psql -U debezium -d mydb
+# Connector setup
 
+1. Start service
+
+```zsh
+docker compose up -d 
+```
+
+2. set db
+
+```zsh
+docker exec -it postgres psql -U postgres -d postgres
+```
+
+```sql
 -- Example table
-CREATE TABLE customers (
-  id SERIAL PRIMARY KEY,
-  first_name TEXT,
-  last_name TEXT
-);
+CREATE TABLE tuples ();
 
 -- Publication for Debezium
-CREATE PUBLICATION my_publication FOR ALL TABLES;
+CREATE PUBLICATION debezium FOR TABLE tuples;
+```
 
+3. Set connector
+
+```zsh
 curl -X PUT http://localhost:8083/connectors/postgres-connector/config \
   -H "Content-Type: application/json" \
   -d '{
@@ -17,11 +30,11 @@ curl -X PUT http://localhost:8083/connectors/postgres-connector/config \
     "tasks.max": "1",
     "database.hostname": "postgres",
     "database.port": "5432",
-    "database.user": "debezium",
-    "database.password": "dbz",
-    "database.dbname": "mydb",
+    "database.user": "postgres",
+    "database.password": "password",
+    "database.dbname": "postgres",
     "database.server.name": "pgserver1",
-    "publication.name": "my_publication",
+    "publication.name": "debezium",
     "slot.name": "debezium_slot",
     "plugin.name": "pgoutput",
     "topic.prefix": "pg",
@@ -35,11 +48,17 @@ curl -X PUT http://localhost:8083/connectors/postgres-connector/config \
     "transforms.unwrap.delete.handling.mode": "drop",
     "transforms.unwrap.add.fields": "op"
   }'
+```
 
+4. Test
 
-INSERT INTO customers (first_name, last_name) VALUES ('John', 'Doe');
+```sql
+INSERT INTO tuples (sbj_ns, sbj_id, relation, obj_ns, obj_id) VALUES ('1', '1', '1', '1', '1');
+```
 
+``` zsh
 docker exec -it kafka /opt/kafka/bin/kafka-console-consumer.sh \
   --bootstrap-server kafka:9092 \
-  --topic pg.public.customers \
+  --topic pg.public.tuples \
   --from-beginning
+```

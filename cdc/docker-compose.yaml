@@ -43,14 +43,14 @@ services:
       - kafka
 
   postgres:
-    image: postgres:15
+    image: postgres:17
     container_name: postgres
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_USER: debezium
-      POSTGRES_PASSWORD: dbz
-      POSTGRES_DB: mydb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: postgres
     command:
       - "postgres"
       - "-c"

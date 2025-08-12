@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"authz/internal/cfg"
+	"authz/internal/engine/rbac"
 	"authz/internal/pkg"
 
 	"github.com/rs/zerolog/log"
@@ -77,6 +78,7 @@ func New(lc pkg.Lifecycle) (db *gorm.DB, err error) {
 		return sqlDB.Close()
 	})
 
+	db.AutoMigrate(&rbac.Tuple{})
 	// db.AutoMigrate(
 	// 	&model.Org{},
 	// 	&model.User{},
