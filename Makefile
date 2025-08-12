@@ -64,3 +64,5 @@ load-db-to-migrations:
 
 gen-jwt-key:
 	openssl rand -base64 64
+
+
