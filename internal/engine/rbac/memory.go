@@ -149,6 +149,7 @@ func (e *ZanzibarEngineImpl) Expand(c context.Context, rel string, obj *entity.I
 	return nil, nil
 }
 
+// TODO: use init state snapshot to avoid fully reload
 func (e *ZanzibarEngineImpl) build(c context.Context) error {
 	r := e.kafkaR
 	e.graph = make(map[entity.Instance]map[string]map[entity.Instance]struct{})

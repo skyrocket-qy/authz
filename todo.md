@@ -1,6 +1,5 @@
-- hot-reload with air lib
-- db resolver if do read-write separation
 - manual life cycle management
-- cache hot path
-- wildcard support
+- wildcard support or use set semantic
+- use pprof for profiling
 - multiple schema load
+- schema format design
