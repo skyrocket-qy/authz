@@ -41,3 +41,12 @@ type Resource struct {
 	Ns   string `gorm:"uniqueindex:idx_ns_name;type:varchar(255);not null"`
 	Name string `gorm:"uniqueindex:idx_ns_name;type:varchar(255);not null"`
 }
+
+type Tuple struct {
+	Id       uint64 `gorm:"primaryKey" json:"id"`
+	SbjNs    string `gorm:"uniqueIndex:idx_tuple;not null" json:"sbj_ns"`
+	SbjId    string `gorm:"uniqueIndex:idx_tuple;not null" json:"sbj_id"`
+	Relation string `gorm:"uniqueIndex:idx_tuple;not null" json:"relation"`
+	ObjNs    string `gorm:"uniqueIndex:idx_tuple;not null" json:"obj_ns"`
+	ObjId    string `gorm:"uniqueIndex:idx_tuple;not null" json:"obj_id"`
+}

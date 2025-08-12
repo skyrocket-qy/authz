@@ -23,15 +23,6 @@ package rbac
 // 	Relation string `gorm:"uniqueIndex;not null"`
 // }
 
-type Tuple struct {
-	Id       uint64 `gorm:"primaryKey"`
-	SbjNs    string `gorm:"uniqueIndex:idx_tuple;not null"`
-	SbjId    string `gorm:"uniqueIndex:idx_tuple;not null"`
-	Relation string `gorm:"uniqueIndex:idx_tuple;not null"`
-	ObjNs    string `gorm:"uniqueIndex:idx_tuple;not null"`
-	ObjId    string `gorm:"uniqueIndex:idx_tuple;not null"`
-}
-
 type ChangeLog struct {
 	Id   uint64 `gorm:"primaryKey"`
 	Data []byte // marshal tuple into byte data to reduce storage
