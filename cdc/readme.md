@@ -39,7 +39,7 @@ curl -X PUT http://localhost:8083/connectors/postgres-connector/config \
 
 INSERT INTO customers (first_name, last_name) VALUES ('John', 'Doe');
 
-docker exec -it kafka kafka-console-consumer \
+docker exec -it kafka /opt/kafka/bin/kafka-console-consumer.sh \
   --bootstrap-server kafka:9092 \
   --topic pg.public.customers \
   --from-beginning
