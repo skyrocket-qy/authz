@@ -19,6 +19,8 @@ import (
 	"gorm.io/gorm"
 )
 
+//TODO: add job to auto do graph make in db
+
 // zanzibar in memory
 type ZanzibarEngine interface {
 	Check(c context.Context, sbj *entity.Instance, rel string, obj *entity.Instance) (bool, error)
@@ -36,12 +38,6 @@ type ZanzibarEngineImpl struct {
 	graph   map[entity.Instance]map[string]map[entity.Instance]struct{}
 	version uint64
 
-	// instanceId map[entity.Instance]uint64
-	// relId      map[string]uint64
-	// idInstance map[uint64]entity.Instance
-	// idRel      map[uint64]string
-	// permId     map[string]uint64
-
 	mutex sync.RWMutex
 }
 
@@ -54,8 +50,6 @@ func NewZanzibarEngine(c context.Context, db *gorm.DB, rds *redis.Client, s *sch
 		db:     db,
 		rds:    rds,
 		graph:  make(map[entity.Instance]map[string]map[entity.Instance]struct{}),
-		// instanceId: make(map[entity.Instance]uint64),
-		// relId:      make(map[string]uint64),
 	}
 
 	if err := engine.build(c); err != nil {
@@ -158,35 +152,7 @@ func (e *ZanzibarEngineImpl) Expand(c context.Context, rel string, obj *entity.I
 }
 
 func (e *ZanzibarEngineImpl) build(c context.Context) error {
-	tuples := []Tuple{}
-	if err := e.db.WithContext(c).Find(&tuples).Error; err != nil {
-		return err
-	}
-
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
-
-	for _, tuple := range tuples {
-		obj := entity.Instance{
-			Ns: tuple.ObjNs,
-			Id: tuple.ObjId,
-		}
-		sbj := entity.Instance{
-			Ns: tuple.SbjNs,
-			Id: tuple.SbjId,
-		}
-		rel := tuple.Relation
-
-		if _, exists := e.graph[obj]; !exists {
-			e.graph[obj] = make(map[string]map[entity.Instance]struct{})
-		}
-		if _, exists := e.graph[obj][rel]; !exists {
-			e.graph[obj][rel] = make(map[entity.Instance]struct{})
-		}
-		e.graph[obj][rel][sbj] = struct{}{}
-	}
-
-	return nil
+	return e.rebuild(c)
 }
 
 // if kafka message.version not fit, need to catchup from db first
