@@ -69,4 +69,4 @@ Thumbs.db
 # Optional: if using Turbopack
 .next/cache/
 
-cdc/kafka-data
+deploy/kafka-data
