@@ -15,7 +15,7 @@ import (
 type RbacLogic interface {
 	ListUsers(c context.Context, in *rbacpb.ListUsersIn) (out *rbacpb.ListUsersOut, err error)
 	UpdateUser(c context.Context, in *rbacpb.UpdateUserIn) error
-	DeleteUser(c context.Context, id *rbacpb.DeleteUserIn) error
+	DeleteUser(c context.Context, in *rbacpb.DeleteUserIn) error
 
 	GetRole(context.Context, *rbacpb.GetRoleIn) (*rbacpb.GetRoleOut, error)
 	CreateRole(c context.Context, in *rbacpb.CreateRoleIn) error

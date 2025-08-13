@@ -21,7 +21,9 @@ type ZanzibarLogic interface {
 	List(c context.Context, in *authzpbv1.ListTuplesIn) (*authzpbv1.ListTuplesOut, error)
 	Find(c context.Context, filter *authzpbv1.TupleFilter) ([]*authzpbv1.Tuple, error)
 	Delete(c context.Context, in *authzpbv1.DeleteTuplesIn) error
-	GetPermissions(c context.Context, sbj *authzpbv1.Instance, nsType string) ([]*rbacpb.Permission, error)
+	GetPermissions(c context.Context, sbj *authzpbv1.Instance, nsType string) (
+		[]*rbacpb.Permission, error,
+	)
 
 	Check(c context.Context, in *authzpbv1.CheckIn) (*authzpbv1.CheckOut, error)
 	// Lookup(c context.Context, sbj *entity.Instance, rel string) ([]*entity.Instance, error)
@@ -217,13 +219,12 @@ func (r *ZanzibarLogicImpl) Check(c context.Context, in *authzpbv1.CheckIn) (
 		Id: in.SbjId,
 	}
 
-	perm := in.Rel
 	obj := &entity.Instance{
 		Ns: in.ObjNs,
 		Id: in.ObjId,
 	}
 
-	ok, err := r.zm.Check(c, user, perm, obj)
+	ok, err := r.zm.Check(c, user, in.Rel, obj)
 	if err != nil {
 		return nil, err
 	}
@@ -238,25 +239,6 @@ func (r *ZanzibarLogicImpl) Lookup(c context.Context, user *entity.Instance, per
 
 	return objs, nil
 }
-
-// func StartCleanJob(r *ZanzibarLogicImpl, cro *cron.Cron) error {
-// 	return cro.AddFunc("0 0 * * *", func() {
-// 		for {
-// 			done, err := r.CleanUnused()
-// 			if err != nil {
-// 				logx.Error(err.Error())
-// 				time.Sleep(15 * time.Minute)
-// 				continue
-// 			}
-
-// 			if done {
-// 				break
-// 			}
-
-// 			time.Sleep(15 * time.Minute) // TODO: retry exponentially
-// 		}
-// 	})
-// }
 
 func (r *ZanzibarLogicImpl) Expand(c context.Context, perm string, obj *entity.Instance) (
 	users []entity.Instance, err error,
@@ -378,101 +360,6 @@ func (r *ZanzibarLogicImpl) rewriteIncludesDirect(resNs, resId string, ur *schem
 
 	return false
 }
-
-// func (r *ZanzibarLogicImpl) CleanUnused() (done bool, err error) {
-// 	ctx := context.Background()
-
-// 	lockKey := "zanzibar:clean-daily:lock"
-// 	lockValue := uuid.New().String()
-// 	ok, err := r.rdb.SetNX(ctx, lockKey, lockValue, 24*time.Hour).Result()
-// 	if err != nil {
-// 		return false, err
-// 	}
-// 	if !ok {
-// 		logx.Info("Another clean job is already running.")
-// 		return false, nil
-// 	}
-// 	defer func() {
-// 		script := `
-// 			if redis.call("get", KEYS[1]) == ARGV[1] then
-// 				return redis.call("del", KEYS[1])
-// 			else
-// 				return 0
-// 			end
-// 		`
-// 		if _, err := r.rdb.Eval(ctx, script, []string{lockKey}, lockValue).Result(); err != nil {
-// 			logx.Errorf("Failed to release lock: %v", err)
-// 		}
-// 	}()
-
-// 	val, err := r.rdb.Get(ctx, "zanzibar:clean-daily:done").Result()
-// 	if err != nil && err != redis.Nil {
-// 		return false, err
-// 	}
-// 	if val != "" {
-// 		logx.Info("Clean job already completed.")
-// 		return true, nil
-// 	}
-
-// 	if err := r.cleanUnusedNamespaces(ctx); err != nil {
-// 		return false, err
-// 	}
-// 	if err := r.cleanUnusedRelationDefs(ctx); err != nil {
-// 		return false, err
-// 	}
-// 	if err := r.cleanUnusedInstances(ctx); err != nil {
-// 		return false, err
-// 	}
-
-// 	if err := r.rdb.Set(ctx, "zanzibar:clean-daily:done",
-// 		time.Now().Format(time.RFC3339), 24*time.Hour).Err(); err != nil {
-// 		return true, err
-// 	}
-
-// 	return true, nil
-// }
-
-// func (r *ZanzibarLogicImpl) cleanUnusedNamespaces(c context.Context) error {
-// 	subquery := `
-// 		SELECT obj_ns_id AS id FROM relations
-// 		UNION
-// 		SELECT sbj_ns_id AS id FROM relations
-// 	`
-// 	if err := r.db.WithContext(ctx).Where("id NOT IN (" + subquery + ")").
-// 		Delete(&Namespace{}).Error; err != nil {
-// 		return err
-// 	}
-
-// 	return nil
-// }
-
-// func (r *ZanzibarLogicImpl) cleanUnusedRelationDefs(c context.Context) error {
-// 	subquery := `
-// 		SELECT sbj_relation_id AS id FROM relations
-// 		UNION
-// 		SELECT relation_id AS id FROM relations
-// 	`
-// 	if err := r.db.WithContext(ctx).Where("id NOT IN (" + subquery + ")").
-// 		Delete(&RelationDef{}).Error; err != nil {
-// 		return err
-// 	}
-
-// 	return nil
-// }
-
-// func (r *ZanzibarLogicImpl) cleanUnusedInstances(c context.Context) error {
-// 	subquery := `
-// 		SELECT obj_id AS id FROM relations
-// 		UNION
-// 		SELECT sbj_id AS id FROM relations
-// 	`
-// 	if err := r.db.WithContext(ctx).Where("id NOT IN (" + subquery + ")").
-// 		Delete(&Instance{}).Error; err != nil {
-// 		return err
-// 	}
-
-// 	return nil
-// }
 
 func ApplyTupleFilter(f *authzpbv1.TupleFilter) func(*gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
