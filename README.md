@@ -1,4 +1,4 @@
-<img src="manifest/icon/f2.png" alt="icon" width="130">
+<img src="manifest/icon/f2.png" alt="icon" width="140">
 
 # Zanzibar reversed-engineering
 
