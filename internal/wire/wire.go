@@ -15,7 +15,7 @@ import (
 	"github.com/google/wire"
 )
 
-func NewRbacHandler(context.Context, pkg.Lifecycle) (*rbac.Handler, error) {
+func NewRbacHandler(context.Context, *pkg.LifecycleParallel) (*rbac.Handler, error) {
 	wire.Build(
 		database.New,
 		redis.New,

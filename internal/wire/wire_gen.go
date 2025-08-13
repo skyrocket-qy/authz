@@ -18,18 +18,18 @@ import (
 
 // Injectors from wire.go:
 
-func NewRbacHandler(contextContext context.Context, lifecycle pkg.Lifecycle) (*rbac.Handler, error) {
-	db, err := database.New(lifecycle)
+func NewRbacHandler(contextContext context.Context, lifecycleParallel *pkg.LifecycleParallel) (*rbac.Handler, error) {
+	db, err := database.New(lifecycleParallel)
 	if err != nil {
 		return nil, err
 	}
-	client := redis.New(lifecycle)
+	client := redis.New(lifecycleParallel)
 	schemaSchema, err := schema.NewSchema()
 	if err != nil {
 		return nil, err
 	}
-	reader := service.NewKafkaReader()
-	zanzibarMemoryImpl, err := rbac.NewZanzibarMemory(contextContext, db, schemaSchema, reader)
+	reader := service.NewKafkaReader(lifecycleParallel)
+	zanzibarMemoryImpl, err := rbac.NewZanzibarMemory(contextContext, lifecycleParallel, db, schemaSchema, reader)
 	if err != nil {
 		return nil, err
 	}

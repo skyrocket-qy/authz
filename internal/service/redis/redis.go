@@ -7,13 +7,13 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func New(lc pkg.Lifecycle) *redis.Client {
+func New(lc *pkg.LifecycleParallel) *redis.Client {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     cfg.Cfg.Redis.Host + ":" + cfg.Cfg.Redis.Port,
 		Password: cfg.Cfg.Redis.Password,
 		DB:       0,
 	})
 
-	lc.Add(rdb.Close)
+	lc.Add(rdb, rdb.Close)
 	return rdb
 }

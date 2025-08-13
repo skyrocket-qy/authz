@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -72,24 +73,40 @@ func RunServer(cmd *cobra.Command, args []string) {
 	}
 
 	logger.InitLogger()
-	lc := pkg.NewSimpleLifecycle()
+	lc := pkg.NewLifecycleParallel()
 
 	startConnectServer(lc)
 }
 
-func startConnectServer(lc pkg.Lifecycle) {
+var inflight = &sync.WaitGroup{}
+
+func startConnectServer(lc *pkg.LifecycleParallel) {
 	connectH, err := wire.NewRbacHandler(context.TODO(), lc)
 	if err != nil {
 		log.Error().Msg(err.Error())
 		return
 	}
+
+	inflightInterceptor := connect.UnaryInterceptorFunc(func(
+		next connect.UnaryFunc,
+	) connect.UnaryFunc {
+		return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
+			inflight.Add(1)
+			defer inflight.Done()
+			return next(ctx, req)
+		}
+	})
+
 	path, handler := authzpbv1connect.NewAuthzServiceHandler(connectH,
 		connect.WithCompressMinBytes(512),
+		connect.WithInterceptors(inflightInterceptor),
 	)
 
-	rbacPath, rbacH := rbacpbconnect.NewRbacServiceHandler(connectH, connect.WithCompressMinBytes(512))
+	rbacPath, rbacH := rbacpbconnect.NewRbacServiceHandler(connectH,
+		connect.WithCompressMinBytes(512),
+		connect.WithInterceptors(inflightInterceptor),
+	)
 	mux := http.NewServeMux()
-
 	mux.Handle(rbacPath, rbacH)
 	mux.Handle(path, handler)
 	c := cors.New(cors.Options{
@@ -101,7 +118,7 @@ func startConnectServer(lc pkg.Lifecycle) {
 
 	handlerWithCors := c.Handler(mux)
 	server := NewHttpServer(lc, handlerWithCors)
-
+	lc.Finish()
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 
@@ -127,7 +144,7 @@ func startConnectServer(lc pkg.Lifecycle) {
 
 }
 
-func NewHttpServer(lc pkg.Lifecycle, handler http.Handler) *http.Server {
+func NewHttpServer(lc *pkg.LifecycleParallel, handler http.Handler) *http.Server {
 	server := &http.Server{
 		Addr:              ":8080",
 		Handler:           handler,
@@ -137,10 +154,15 @@ func NewHttpServer(lc pkg.Lifecycle, handler http.Handler) *http.Server {
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
-	lc.Add(func() error {
+	lc.Add(server, func() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		return server.Shutdown(ctx)
+		if err := server.Shutdown(ctx); err != nil {
+			return err
+		}
+
+		inflight.Wait()
+		return nil
 	})
 
 	return server

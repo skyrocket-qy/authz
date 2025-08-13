@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"authz/internal/entity"
+	"authz/internal/pkg"
 	"authz/internal/schema"
 
 	"github.com/rs/zerolog/log"
@@ -32,14 +33,13 @@ type ZanzibarMemoryImpl struct {
 	kafkaR *kafka.Reader
 	db     *gorm.DB
 	graph  map[entity.Instance]map[string]map[entity.Instance]struct{}
-
-	mutex sync.RWMutex
+	cancel context.CancelFunc
+	mutex  sync.RWMutex
 }
 
-func NewZanzibarMemory(c context.Context, db *gorm.DB, s *schema.Schema,
+func NewZanzibarMemory(c context.Context, lc *pkg.LifecycleParallel, db *gorm.DB, s *schema.Schema,
 	kafkaR *kafka.Reader) (*ZanzibarMemoryImpl, error,
 ) {
-
 	engine := ZanzibarMemoryImpl{
 		kafkaR: kafkaR,
 		db:     db,
@@ -50,10 +50,19 @@ func NewZanzibarMemory(c context.Context, db *gorm.DB, s *schema.Schema,
 		return nil, err
 	}
 
-	go engine.sync()
+	cc, cancel := context.WithCancel(c)
+	engine.cancel = cancel
+	go engine.sync(cc)
 	engine.schema = s
 
+	lc.Add(&engine, engine.Close, db, kafkaR)
+
 	return &engine, nil
+}
+
+func (e *ZanzibarMemoryImpl) Close() error {
+	e.cancel()
+	return nil
 }
 
 func (e *ZanzibarMemoryImpl) Check(c context.Context, user *entity.Instance, perm string,
@@ -145,19 +154,22 @@ func (e *ZanzibarMemoryImpl) build(c context.Context) error {
 	}
 
 	for {
-		readCtx, cancel := context.WithTimeout(c, 3*time.Second)
-		defer cancel()
-		m, err := r.ReadMessage(readCtx)
-		if err != nil {
-			if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
-				return nil
+		select {
+		case <-c.Done():
+			return nil
+		default:
+			readCtx, cancel := context.WithTimeout(c, 3*time.Second)
+			defer cancel()
+			m, err := r.ReadMessage(readCtx)
+			if err != nil {
+				if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+					return nil
+				}
+				return fmt.Errorf("read message error: %w", err)
 			}
-
-			return fmt.Errorf("read message error: %w", err)
-		}
-
-		if err := e.applyMessage(m); err != nil {
-			return err
+			if err := e.applyMessage(m); err != nil {
+				return err
+			}
 		}
 	}
 }
@@ -172,6 +184,7 @@ func (e *ZanzibarMemoryImpl) applyMessage(m kafka.Message) error {
 	if err := json.Unmarshal(m.Value, &val); err != nil {
 		return err
 	}
+	fmt.Println(val)
 
 	sbj := entity.Instance{Ns: val.SbjNs, Id: val.SbjId}
 	rel := val.Relation
@@ -206,17 +219,25 @@ func (e *ZanzibarMemoryImpl) applyMessage(m kafka.Message) error {
 	return nil
 }
 
-func (e *ZanzibarMemoryImpl) sync() {
+func (e *ZanzibarMemoryImpl) sync(ctx context.Context) {
 	for {
-		m, err := e.kafkaR.ReadMessage(context.Background())
-		if err != nil {
-			log.Error().Err(err).Msg("Failed to read message")
-			continue
-		}
-
-		if err := e.applyMessage(m); err != nil {
-			log.Error().Err(err).Msg("Failed to apply message")
-			continue
+		select {
+		case <-ctx.Done():
+			log.Info().Msg("sync stopped")
+			return
+		default:
+			m, err := e.kafkaR.ReadMessage(ctx)
+			if err != nil {
+				if errors.Is(err, context.Canceled) {
+					return
+				}
+				log.Error().Err(err).Msg("Failed to read message")
+				continue
+			}
+			if err := e.applyMessage(m); err != nil {
+				log.Error().Err(err).Msg("Failed to apply message")
+				continue
+			}
 		}
 	}
 }

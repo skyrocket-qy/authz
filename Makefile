@@ -11,16 +11,6 @@ fbit:
 	-p 2020:2020 \
 	fluent/fluent-bit:2.2
 
-mysql:
-	docker run -d \
-		--name mysql-container \
-		-p 5432:3306 \
-		-e MYSQL_ROOT_PASSWORD=admin \
-		-e MYSQL_USER=admin \
-		-e MYSQL_PASSWORD=admin \
-		-e MYSQL_DATABASE=mydb \
-		mysql:9.1
-
 redis:
 	docker run -d \
 	--name my-redis \
@@ -60,7 +50,6 @@ hash:
 load-db-to-migrations:
 	atlas migrate diff --dev-url "docker://postgres/15/dev" \
 	--to "postgres://postgres:password@localhost:5432/postgres?sslmode=disable"
-
 
 gen-jwt-key:
 	openssl rand -base64 64
