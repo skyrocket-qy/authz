@@ -46,9 +46,11 @@ func NewZanzibarMemory(c context.Context, lc *pkg.LifecycleParallel, db *gorm.DB
 		graph:  make(map[entity.Instance]map[string]map[entity.Instance]struct{}),
 	}
 
+	st := time.Now()
 	if err := engine.build(c); err != nil {
 		return nil, err
 	}
+	log.Info().Int64("took ms", time.Since(st).Milliseconds()).Msg("build rbac graph")
 
 	cc, cancel := context.WithCancel(c)
 	engine.cancel = cancel
@@ -184,7 +186,7 @@ func (e *ZanzibarMemoryImpl) applyMessage(m kafka.Message) error {
 	if err := json.Unmarshal(m.Value, &val); err != nil {
 		return err
 	}
-	fmt.Println(val)
+	fmt.Println(string(m.Key), val)
 
 	sbj := entity.Instance{Ns: val.SbjNs, Id: val.SbjId}
 	rel := val.Relation
@@ -223,7 +225,6 @@ func (e *ZanzibarMemoryImpl) sync(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			log.Info().Msg("sync stopped")
 			return
 		default:
 			m, err := e.kafkaR.ReadMessage(ctx)

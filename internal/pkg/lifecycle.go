@@ -59,6 +59,9 @@ func (l *LifecycleParallel) Finish() {
 		}
 
 		for _, up := range ups {
+			if _, ok := l.appCloser[up]; !ok {
+				continue
+			}
 			l.appIndegrees[up]++
 		}
 	}
@@ -70,11 +73,10 @@ func (l *LifecycleParallel) Finish() {
 			l.readyCh <- app
 		}
 	}
-
 }
 
-// TODO: some app no need to close, so no need to inside graph
 func (l *LifecycleParallel) Shutdown(c context.Context) error {
+	l.Finish()
 	var wg sync.WaitGroup
 	var firstErr atomic.Value
 	wg.Add(len(l.readyCh))

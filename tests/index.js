@@ -14,15 +14,15 @@ export function setup() {
     let resources = 1000
     let users     = 100000
 
-    // for (let i = 0; i < users; i++){
-    //     let roleId = i % roles
-    //     assignRole(i,roleId)
-    // }
+    for (let i = 0; i < users; i++){
+        let roleId = i % roles
+        assignRole(i,roleId)
+    }
 
-    // for (let i = 0; i < roles; i++){
-    //     let resId = i % resources
-    //     grantPerm(i, resId, "read")
-    // }
+    for (let i = 0; i < roles; i++){
+        let resId = i % resources
+        grantPerm(i, resId, "read")
+    }
 
 
     for (let i = 0; i < 17; i++) {

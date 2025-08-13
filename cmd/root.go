@@ -118,7 +118,6 @@ func startConnectServer(lc *pkg.LifecycleParallel) {
 
 	handlerWithCors := c.Handler(mux)
 	server := NewHttpServer(lc, handlerWithCors)
-	lc.Finish()
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 
