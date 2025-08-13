@@ -186,7 +186,6 @@ func (e *ZanzibarMemoryImpl) applyMessage(m kafka.Message) error {
 	if err := json.Unmarshal(m.Value, &val); err != nil {
 		return err
 	}
-	fmt.Println(string(m.Key), val)
 
 	sbj := entity.Instance{Ns: val.SbjNs, Id: val.SbjId}
 	rel := val.Relation
