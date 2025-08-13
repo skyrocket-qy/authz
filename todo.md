@@ -1,5 +1,9 @@
-- manual life cycle management
-- wildcard support or use set semantic
 - use pprof for profiling
 - multiple schema load
 - schema format design
+- auto make graph in db service
+- design more case
+- batch operation
+- integrate authn
+- think a good name for this project
+- test the performance
