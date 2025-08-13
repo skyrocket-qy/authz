@@ -6,7 +6,6 @@ import (
 	"authz/internal/schema"
 	"context"
 	"errors"
-	"strings"
 
 	"github.com/redis/go-redis/v9"
 	"github.com/skyrocket-qy/protos/gen/authzpb/rbacpb"
@@ -14,10 +13,10 @@ import (
 	pkgpbv1 "github.com/skyrocket-qy/protos/gen/pkgpb/v1"
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 type ZanzibarLogic interface {
+	// Tuple
 	Create(c context.Context, tuple *authzpbv1.Tuple) error
 	List(c context.Context, in *authzpbv1.ListTuplesIn) (*authzpbv1.ListTuplesOut, error)
 	Find(c context.Context, filter *authzpbv1.TupleFilter) ([]*authzpbv1.Tuple, error)
@@ -25,30 +24,34 @@ type ZanzibarLogic interface {
 	GetPermissions(c context.Context, sbj *authzpbv1.Instance, nsType string) ([]*rbacpb.Permission, error)
 
 	Check(c context.Context, in *authzpbv1.CheckIn) (*authzpbv1.CheckOut, error)
-	Lookup(c context.Context, sbj *entity.Instance, rel string) ([]*entity.Instance, error)
-	Expand(c context.Context, relation string, obj *entity.Instance) ([]entity.Instance, error)
+	// Lookup(c context.Context, sbj *entity.Instance, rel string) ([]*entity.Instance, error)
+	// Expand(c context.Context, relation string, obj *entity.Instance) ([]entity.Instance, error)
 }
 
 var _ ZanzibarLogic = (*ZanzibarLogicImpl)(nil)
 
 type ZanzibarLogicImpl struct {
-	pgdb    *gorm.DB
-	rdb     *redis.Client
-	zEngine ZanzibarEngine
-	schema  *schema.Schema
+	pgdb   *gorm.DB
+	rdb    *redis.Client
+	zm     ZanzibarMemory
+	schema *schema.Schema
 }
 
-func NewZanzibarLogic(db *gorm.DB, rdb *redis.Client, zEngine ZanzibarEngine,
+func NewZanzibarLogic(db *gorm.DB, rdb *redis.Client, zm ZanzibarMemory,
 	s *schema.Schema) *ZanzibarLogicImpl {
 	return &ZanzibarLogicImpl{
-		pgdb:    db,
-		rdb:     rdb,
-		zEngine: zEngine,
-		schema:  s,
+		pgdb:   db,
+		rdb:    rdb,
+		zm:     zm,
+		schema: s,
 	}
 }
 
 func (r *ZanzibarLogicImpl) db(c context.Context) *gorm.DB {
+	if db, ok := c.Value(pkg.DbCtxKey{}).(*gorm.DB); ok && db != nil {
+		return db
+	}
+
 	return r.pgdb.WithContext(c)
 }
 
@@ -167,77 +170,43 @@ func (r *ZanzibarLogicImpl) Find(c context.Context, filter *authzpbv1.TupleFilte
 }
 
 func (r *ZanzibarLogicImpl) Create(c context.Context, tuple *authzpbv1.Tuple) error {
-	tupleModel := Tuple{
+	return r.db(c).Create(&Tuple{
 		SbjNs:    tuple.SbjNs,
 		SbjId:    tuple.SbjId,
 		Relation: tuple.Rel,
 		ObjNs:    tuple.ObjNs,
 		ObjId:    tuple.ObjId,
-	}
-
-	if err := r.db(c).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(&tupleModel).Error; err != nil {
-			return err
-		}
-
-		return nil
-	}); err != nil {
-		return err
-	}
-
-	return nil
+	}).Error
 }
 
 func (r *ZanzibarLogicImpl) Delete(c context.Context, in *authzpbv1.DeleteTuplesIn) error {
 	switch req := in.Mode.(type) {
 	case *authzpbv1.DeleteTuplesIn_Filter:
 		filter := req.Filter
-		return r.db(c).Transaction(func(tx *gorm.DB) error {
-			var toDelete []*Tuple
-			if err := tx.Scopes(ApplyTupleFilter(filter)).
-				Clauses(clause.Locking{Strength: "UPDATE"}).
-				Find(&toDelete).Error; err != nil {
-				return err
-			}
+		return r.db(c).Scopes(ApplyTupleFilter(filter)).Delete(&Tuple{}).Error
 
-			if err := tx.Unscoped().Delete(toDelete).Error; err != nil {
-				return err
-			}
+	case *authzpbv1.DeleteTuplesIn_DeleteTuples:
+		tuples := req.DeleteTuples.Tuples
+		values := make([][]any, len(tuples))
+		for i, t := range tuples {
+			values[i] = []any{t.SbjNs, t.SbjId, t.Rel, t.ObjNs, t.ObjId}
+		}
 
-			return nil
-		})
-	case *authzpbv1.DeleteTuplesIn_Tuples:
-		tuples := req.Tuples.Tuples
+		return r.db(c).
+			Where("(sbj_ns, sbj_id, rel, obj_ns, obj_id) IN ?", values).
+			Delete(&Tuple{}).Error
 
-		return r.db(c).Transaction(func(tx *gorm.DB) error {
-			values := make([]any, 0, len(tuples)*5)
-			placeholders := make([]string, len(tuples))
-
-			for i, t := range tuples {
-				placeholders[i] = "(?, ?, ?, ?, ?)"
-				values = append(values, t.SbjNs, t.SbjId, t.Rel, t.ObjNs, t.ObjId)
-			}
-
-			query := `
-			DELETE FROM tuples
-			WHERE (sbj_ns, sbj_id, rel, obj_ns, obj_id) IN (` + strings.Join(placeholders, ",") + `)
-			`
-			if err := tx.Unscoped().Exec(query, values...).Error; err != nil {
-				return err
-			}
-
-			return nil
-		})
-
-	case *authzpbv1.DeleteTuplesIn_Ids:
+	case *authzpbv1.DeleteTuplesIn_DeleteTupleIds:
 		if err := r.db(c).
-			Where("id IN ?", req.Ids.Ids).
+			Where("id IN ?", req.DeleteTupleIds.Ids).
 			Delete(&Tuple{}).Error; err != nil {
 			return err
 		}
+	default:
+		return errors.New("mode type error")
 	}
 
-	return errors.New("mode type error")
+	return nil
 }
 
 func (r *ZanzibarLogicImpl) Check(c context.Context, in *authzpbv1.CheckIn) (
@@ -254,7 +223,7 @@ func (r *ZanzibarLogicImpl) Check(c context.Context, in *authzpbv1.CheckIn) (
 		Id: in.ObjId,
 	}
 
-	ok, err := r.zEngine.Check(c, user, perm, obj)
+	ok, err := r.zm.Check(c, user, perm, obj)
 	if err != nil {
 		return nil, err
 	}

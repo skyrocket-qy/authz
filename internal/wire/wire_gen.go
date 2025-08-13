@@ -29,11 +29,11 @@ func NewRbacHandler(contextContext context.Context, lifecycle pkg.Lifecycle) (*r
 		return nil, err
 	}
 	reader := service.NewKafkaReader()
-	zanzibarEngineImpl, err := rbac.NewZanzibarEngine(contextContext, db, client, schemaSchema, reader)
+	zanzibarMemoryImpl, err := rbac.NewZanzibarMemory(contextContext, db, schemaSchema, reader)
 	if err != nil {
 		return nil, err
 	}
-	zanzibarLogicImpl := rbac.NewZanzibarLogic(db, client, zanzibarEngineImpl, schemaSchema)
+	zanzibarLogicImpl := rbac.NewZanzibarLogic(db, client, zanzibarMemoryImpl, schemaSchema)
 	rbacLogicImpl := rbac.NewRbacLogic(zanzibarLogicImpl, db, schemaSchema)
 	handler := rbac.NewHandler(zanzibarLogicImpl, rbacLogicImpl)
 	return handler, nil

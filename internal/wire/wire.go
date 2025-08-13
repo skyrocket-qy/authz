@@ -23,8 +23,8 @@ func NewRbacHandler(context.Context, pkg.Lifecycle) (*rbac.Handler, error) {
 
 		service.NewKafkaReader,
 
-		rbac.NewZanzibarEngine,
-		wire.Bind(new(rbac.ZanzibarEngine), new(*rbac.ZanzibarEngineImpl)),
+		rbac.NewZanzibarMemory,
+		wire.Bind(new(rbac.ZanzibarMemory), new(*rbac.ZanzibarMemoryImpl)),
 		rbac.NewZanzibarLogic,
 		wire.Bind(new(rbac.ZanzibarLogic), new(*rbac.ZanzibarLogicImpl)),
 		rbac.NewRbacLogic,

@@ -11,7 +11,6 @@ import (
 	"authz/internal/entity"
 	"authz/internal/schema"
 
-	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
 	"github.com/segmentio/kafka-go"
 	"gorm.io/gorm"
@@ -20,32 +19,30 @@ import (
 // TODO: prebuild the graph to reduce loading time
 
 // zanzibar in memory
-type ZanzibarEngine interface {
+type ZanzibarMemory interface {
 	Check(c context.Context, sbj *entity.Instance, rel string, obj *entity.Instance) (bool, error)
-	Lookup(c context.Context, sbj *entity.Instance, rel string) ([]*entity.Instance, error)
-	Expand(c context.Context, rel string, obj *entity.Instance) ([]*entity.Instance, error)
+	// Lookup(c context.Context, sbj *entity.Instance, rel string) ([]*entity.Instance, error)
+	// Expand(c context.Context, rel string, obj *entity.Instance) ([]*entity.Instance, error)
 }
 
-var _ ZanzibarEngine = (*ZanzibarEngineImpl)(nil)
+var _ ZanzibarMemory = (*ZanzibarMemoryImpl)(nil)
 
-type ZanzibarEngineImpl struct {
+type ZanzibarMemoryImpl struct {
 	schema *schema.Schema
 	kafkaR *kafka.Reader
 	db     *gorm.DB
-	rds    *redis.Client
 	graph  map[entity.Instance]map[string]map[entity.Instance]struct{}
 
 	mutex sync.RWMutex
 }
 
-func NewZanzibarEngine(c context.Context, db *gorm.DB, rds *redis.Client, s *schema.Schema,
-	kafkaR *kafka.Reader) (*ZanzibarEngineImpl, error,
+func NewZanzibarMemory(c context.Context, db *gorm.DB, s *schema.Schema,
+	kafkaR *kafka.Reader) (*ZanzibarMemoryImpl, error,
 ) {
 
-	engine := ZanzibarEngineImpl{
+	engine := ZanzibarMemoryImpl{
 		kafkaR: kafkaR,
 		db:     db,
-		rds:    rds,
 		graph:  make(map[entity.Instance]map[string]map[entity.Instance]struct{}),
 	}
 
@@ -59,7 +56,7 @@ func NewZanzibarEngine(c context.Context, db *gorm.DB, rds *redis.Client, s *sch
 	return &engine, nil
 }
 
-func (e *ZanzibarEngineImpl) Check(c context.Context, user *entity.Instance, perm string,
+func (e *ZanzibarMemoryImpl) Check(c context.Context, user *entity.Instance, perm string,
 	obj *entity.Instance) (bool, error,
 ) {
 	e.mutex.RLock()
@@ -81,7 +78,7 @@ func (e *ZanzibarEngineImpl) Check(c context.Context, user *entity.Instance, per
 	return e.evalUsersetRewrite(c, &relation.UsersetRewrite, user, obj), nil
 }
 
-func (e *ZanzibarEngineImpl) evalUsersetRewrite(c context.Context, rewrite *schema.UsersetRewrite,
+func (e *ZanzibarMemoryImpl) evalUsersetRewrite(c context.Context, rewrite *schema.UsersetRewrite,
 	user *entity.Instance, obj *entity.Instance) bool {
 	switch {
 	case rewrite.ComputedUserSet != nil:
@@ -130,27 +127,15 @@ func (e *ZanzibarEngineImpl) evalUsersetRewrite(c context.Context, rewrite *sche
 	return false
 }
 
-func (e *ZanzibarEngineImpl) hasDirectTuple(user *entity.Instance, rel string, obj *entity.Instance) bool {
+func (e *ZanzibarMemoryImpl) hasDirectTuple(user *entity.Instance, rel string, obj *entity.Instance) bool {
 	if _, ok := e.graph[*obj][rel][*user]; ok {
 		return true
 	}
 	return false
 }
 
-func (e *ZanzibarEngineImpl) Lookup(c context.Context, sbj *entity.Instance, rel string) (
-	[]*entity.Instance, error) {
-	return nil, nil
-}
-
-func (e *ZanzibarEngineImpl) Expand(c context.Context, rel string, obj *entity.Instance) (
-	sbjs []*entity.Instance, err error,
-) {
-
-	return nil, nil
-}
-
 // TODO: use init state snapshot to avoid fully reload
-func (e *ZanzibarEngineImpl) build(c context.Context) error {
+func (e *ZanzibarMemoryImpl) build(c context.Context) error {
 	r := e.kafkaR
 	e.graph = make(map[entity.Instance]map[string]map[entity.Instance]struct{})
 
@@ -177,7 +162,7 @@ func (e *ZanzibarEngineImpl) build(c context.Context) error {
 	}
 }
 
-func (e *ZanzibarEngineImpl) applyMessage(m kafka.Message) error {
+func (e *ZanzibarMemoryImpl) applyMessage(m kafka.Message) error {
 	type Val struct {
 		Tuple
 		Op string `json:"__op"`
@@ -221,7 +206,7 @@ func (e *ZanzibarEngineImpl) applyMessage(m kafka.Message) error {
 	return nil
 }
 
-func (e *ZanzibarEngineImpl) sync() {
+func (e *ZanzibarMemoryImpl) sync() {
 	for {
 		m, err := e.kafkaR.ReadMessage(context.Background())
 		if err != nil {
@@ -237,7 +222,7 @@ func (e *ZanzibarEngineImpl) sync() {
 }
 
 // if kafka message.version not fit, need to catchup from db first
-// func (e *ZanzibarEngineImpl) CatchUp(c context.Context) {
+// func (e *ZanzibarMemoryImpl) CatchUp(c context.Context) {
 // 	for {
 // 		select {
 // 		case <-c.Done():
@@ -292,7 +277,7 @@ func (e *ZanzibarEngineImpl) sync() {
 // 	}
 // }
 
-// func (e *ZanzibarEngineImpl) CatchUpFromDb(c context.Context) error {
+// func (e *ZanzibarMemoryImpl) CatchUpFromDb(c context.Context) error {
 // 	changeLogs := []*ChangeLog{}
 // 	if err := e.db.Order("id").Where("version > ?", e.version).Find(&changeLogs).Error; err != nil {
 // 		return err
@@ -354,7 +339,7 @@ func (e *ZanzibarEngineImpl) sync() {
 // 	return nil
 // }
 
-// func (e *ZanzibarEngineImpl) buildFromChangeLog(c context.Context) error {
+// func (e *ZanzibarMemoryImpl) buildFromChangeLog(c context.Context) error {
 // 	changeLogs := []*ChangeLog{}
 // 	if err := e.db.Order("id").Find(&changeLogs).Error; err != nil {
 // 		return err
@@ -416,7 +401,7 @@ func (e *ZanzibarEngineImpl) sync() {
 // 	return nil
 // }
 
-// func (e *ZanzibarEngineImpl) rebuild(c context.Context) error {
+// func (e *ZanzibarMemoryImpl) rebuild(c context.Context) error {
 // 	latestGraph := GraphCheckpoint{}
 // 	if err := e.db.Limit(1).Order("last_change_log_id desc").Take(&latestGraph).Error; err != nil {
 // 		return e.buildFromChangeLog(c)
@@ -434,7 +419,7 @@ func (e *ZanzibarEngineImpl) sync() {
 // 	return nil
 // }
 
-// func (e *ZanzibarEngineImpl) updateGraph(update *authzpbv1.GraphUpdate) error {
+// func (e *ZanzibarMemoryImpl) updateGraph(update *authzpbv1.GraphUpdate) error {
 // 	e.mutex.Lock()
 // 	defer e.mutex.Unlock()
 

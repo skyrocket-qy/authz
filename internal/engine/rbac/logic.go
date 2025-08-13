@@ -141,7 +141,24 @@ func (r *RbacLogicImpl) UpdateUser(c context.Context, in *rbacpb.UpdateUserIn) e
 }
 
 func (r *RbacLogicImpl) DeleteUser(c context.Context, in *rbacpb.DeleteUserIn) error {
-	return r.db(c).Delete(&User{}, in.Id).Error
+	if err := r.db(c).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Delete(&User{}, in.Id).Error; err != nil {
+			return err
+		}
+
+		return r.zbLogic.Delete(pkg.WithDB(c, tx), &authzpbv1.DeleteTuplesIn{
+			Mode: &authzpbv1.DeleteTuplesIn_Filter{
+				Filter: &authzpbv1.TupleFilter{
+					SbjNs: pkg.Str("user"),
+					SbjId: pkg.Str(strconv.FormatUint(in.Id, 10)),
+				},
+			},
+		})
+	}); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (r *RbacLogicImpl) CreateRole(c context.Context, in *rbacpb.CreateRoleIn) error {
@@ -151,8 +168,25 @@ func (r *RbacLogicImpl) CreateRole(c context.Context, in *rbacpb.CreateRoleIn) e
 func (r *RbacLogicImpl) ListRoles(c context.Context, in *rbacpb.ListRolesIn) (
 	out *rbacpb.ListRolesOut, err error,
 ) {
+	validFilterFields := []string{"name"}
+	filterScope, err := pkg.ApplyFilter(in.Filters, validFilterFields, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	cnt := int64(0)
+	if err := r.db(c).Model(&Role{}).Scopes(filterScope).Count(&cnt).Error; err != nil {
+		return nil, err
+	}
+
 	roleMds := []*Role{}
-	if err := r.db(c).Find(&roleMds).Error; err != nil {
+	if err := r.db(c).
+		Scopes(
+			filterScope,
+			pkg.ApplyPager(in.Pager),
+			pkg.ApplySorter(in.Sorters),
+		).
+		Find(&roleMds).Error; err != nil {
 		return nil, err
 	}
 
@@ -164,7 +198,7 @@ func (r *RbacLogicImpl) ListRoles(c context.Context, in *rbacpb.ListRolesIn) (
 		})
 	}
 
-	return &rbacpb.ListRolesOut{Roles: roles}, nil
+	return &rbacpb.ListRolesOut{Roles: roles, Total: cnt}, nil
 }
 
 func (r *RbacLogicImpl) UpdateRole(c context.Context, in *rbacpb.UpdateRoleIn) error {
@@ -175,39 +209,43 @@ func (r *RbacLogicImpl) UpdateRole(c context.Context, in *rbacpb.UpdateRoleIn) e
 
 // TODO: wrap to transaction
 func (r *RbacLogicImpl) DeleteRole(c context.Context, in *rbacpb.DeleteRoleIn) error {
-	if err := r.db(c).Delete(&Role{}, in.Id).Error; err != nil {
-		return err
-	}
+	return r.db(c).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Delete(&Role{}, in.Id).Error; err != nil {
+			return err
+		}
 
-	if err := r.zbLogic.Delete(c,
-		&authzpbv1.DeleteTuplesIn{
-			Mode: &authzpbv1.DeleteTuplesIn_Filter{
-				Filter: &authzpbv1.TupleFilter{
-					SbjNs: pkg.Str("user"),
-					Rel:   pkg.Str("member"),
-					ObjNs: pkg.Str("role"),
-					ObjId: pkg.Str(strconv.FormatUint(in.Id, 10)),
+		cWithDb := pkg.WithDB(c, tx)
+
+		if err := r.zbLogic.Delete(cWithDb,
+			&authzpbv1.DeleteTuplesIn{
+				Mode: &authzpbv1.DeleteTuplesIn_Filter{
+					Filter: &authzpbv1.TupleFilter{
+						SbjNs: pkg.Str("user"),
+						Rel:   pkg.Str("member"),
+						ObjNs: pkg.Str("role"),
+						ObjId: pkg.Str(strconv.FormatUint(in.Id, 10)),
+					},
 				},
 			},
-		},
-	); err != nil {
-		return err
-	}
+		); err != nil {
+			return err
+		}
 
-	if err := r.zbLogic.Delete(c,
-		&authzpbv1.DeleteTuplesIn{
-			Mode: &authzpbv1.DeleteTuplesIn_Filter{
-				Filter: &authzpbv1.TupleFilter{
-					SbjNs: pkg.Str("role"),
-					Rel:   pkg.Str(strconv.FormatUint(in.Id, 10)),
+		if err := r.zbLogic.Delete(cWithDb,
+			&authzpbv1.DeleteTuplesIn{
+				Mode: &authzpbv1.DeleteTuplesIn_Filter{
+					Filter: &authzpbv1.TupleFilter{
+						SbjNs: pkg.Str("role"),
+						Rel:   pkg.Str(strconv.FormatUint(in.Id, 10)),
+					},
 				},
 			},
-		},
-	); err != nil {
-		return err
-	}
+		); err != nil {
+			return err
+		}
 
-	return nil
+		return nil
+	})
 }
 
 func (r *RbacLogicImpl) CreateResource(c context.Context, in *rbacpb.CreateResourceIn) error {
@@ -218,8 +256,25 @@ func (r *RbacLogicImpl) CreateResource(c context.Context, in *rbacpb.CreateResou
 func (r *RbacLogicImpl) ListResources(c context.Context, in *rbacpb.ListResourcesIn) (
 	out *rbacpb.ListResourcesOut, err error,
 ) {
+	validFilterFields := []string{"ns", "name"}
+	filterScope, err := pkg.ApplyFilter(in.Filters, validFilterFields, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	cnt := int64(0)
+	if err := r.db(c).Model(&Resource{}).Scopes(filterScope).Count(&cnt).Error; err != nil {
+		return nil, err
+	}
+
 	resMds := []*Resource{}
-	if err := r.db(c).Find(&resMds).Error; err != nil {
+	if err := r.db(c).
+		Scopes(
+			filterScope,
+			pkg.ApplyPager(in.Pager),
+			pkg.ApplySorter(in.Sorters),
+		).
+		Find(&resMds).Error; err != nil {
 		return nil, err
 	}
 
@@ -231,59 +286,63 @@ func (r *RbacLogicImpl) ListResources(c context.Context, in *rbacpb.ListResource
 		})
 	}
 
-	return &rbacpb.ListResourcesOut{Resources: resources}, nil
+	return &rbacpb.ListResourcesOut{Resources: resources, Total: cnt}, nil
 }
 
 func (r *RbacLogicImpl) DeleteResource(c context.Context, in *rbacpb.DeleteResourceIn) error {
-	var res Resource
-	if err := r.db(c).Delete(&res, in.Id).Error; err != nil {
-		return err
-	}
+	return r.db(c).Transaction(func(tx *gorm.DB) error {
+		var res Resource
+		if err := tx.Delete(&res, in.Id).Error; err != nil {
+			return err
+		}
 
-	if err := r.zbLogic.Delete(c,
-		&authzpbv1.DeleteTuplesIn{
-			Mode: &authzpbv1.DeleteTuplesIn_Filter{
-				Filter: &authzpbv1.TupleFilter{
-					ObjNs: pkg.Str(res.Ns),
-					ObjId: pkg.Str(strconv.FormatUint(in.Id, 10)),
+		if err := r.zbLogic.Delete(pkg.WithDB(c, tx),
+			&authzpbv1.DeleteTuplesIn{
+				Mode: &authzpbv1.DeleteTuplesIn_Filter{
+					Filter: &authzpbv1.TupleFilter{
+						ObjNs: pkg.Str(res.Ns),
+						ObjId: pkg.Str(strconv.FormatUint(in.Id, 10)),
+					},
 				},
 			},
-		},
-	); err != nil {
-		return err
-	}
+		); err != nil {
+			return err
+		}
 
-	return nil
+		return nil
+	})
 }
 
 // TODO: wrap to transaction
 func (r *RbacLogicImpl) AssignRole(c context.Context, in *rbacpb.AssignRoleIn) error {
-	if err := r.db(c).Model(&User{}).Where("id = ?", in.UserId).
-		Take(&User{}).Error; err != nil {
-		return err
-	}
+	return r.db(c).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&User{}).Where("id = ?", in.UserId).
+			Take(&User{}).Error; err != nil {
+			return err
+		}
 
-	if err := r.db(c).Model(&Role{}).Where("id = ?", in.RoleId).
-		Take(&Role{}).Error; err != nil {
-		return err
-	}
+		if err := tx.Model(&Role{}).Where("id = ?", in.RoleId).
+			Take(&Role{}).Error; err != nil {
+			return err
+		}
 
-	return r.zbLogic.Create(c,
-		&authzpbv1.Tuple{
-			SbjNs: "user",
-			SbjId: strconv.FormatUint(in.UserId, 10),
-			Rel:   "member",
-			ObjNs: "role",
-			ObjId: strconv.FormatUint(in.RoleId, 10),
-		},
-	)
+		return r.zbLogic.Create(pkg.WithDB(c, tx),
+			&authzpbv1.Tuple{
+				SbjNs: "user",
+				SbjId: strconv.FormatUint(in.UserId, 10),
+				Rel:   "member",
+				ObjNs: "role",
+				ObjId: strconv.FormatUint(in.RoleId, 10),
+			},
+		)
+	})
 }
 
 func (r *RbacLogicImpl) RevokeRole(c context.Context, in *rbacpb.RevokeRoleIn) error {
 	return r.zbLogic.Delete(c,
 		&authzpbv1.DeleteTuplesIn{
-			Mode: &authzpbv1.DeleteTuplesIn_Tuples{
-				Tuples: &authzpbv1.DeleteTuples{
+			Mode: &authzpbv1.DeleteTuplesIn_DeleteTuples{
+				DeleteTuples: &authzpbv1.DeleteTuples{
 					Tuples: []*authzpbv1.Tuple{
 						{
 							SbjNs: "user",
@@ -300,20 +359,22 @@ func (r *RbacLogicImpl) RevokeRole(c context.Context, in *rbacpb.RevokeRoleIn) e
 }
 
 func (r *RbacLogicImpl) GrantPerm(c context.Context, in *rbacpb.GrantPermIn) error {
-	res := Resource{}
-	if err := r.db(c).Where("id = ?", in.ResourceId).Take(&res).Error; err != nil {
-		return err
-	}
+	return r.db(c).Transaction(func(tx *gorm.DB) error {
+		res := Resource{}
+		if err := tx.Where("id = ?", in.ResourceId).Take(&res).Error; err != nil {
+			return err
+		}
 
-	return r.zbLogic.Create(c,
-		&authzpbv1.Tuple{
-			SbjNs: "role",
-			SbjId: strconv.FormatUint(in.RoleId, 10),
-			Rel:   in.Perm,
-			ObjNs: res.Ns,
-			ObjId: strconv.FormatUint(in.ResourceId, 10),
-		},
-	)
+		return r.zbLogic.Create(pkg.WithDB(c, tx),
+			&authzpbv1.Tuple{
+				SbjNs: "role",
+				SbjId: strconv.FormatUint(in.RoleId, 10),
+				Rel:   in.Perm,
+				ObjNs: res.Ns,
+				ObjId: strconv.FormatUint(in.ResourceId, 10),
+			},
+		)
+	})
 }
 
 func (r *RbacLogicImpl) RevokePerm(c context.Context, in *rbacpb.RevokePermIn) error {
@@ -324,8 +385,8 @@ func (r *RbacLogicImpl) RevokePerm(c context.Context, in *rbacpb.RevokePermIn) e
 
 	return r.zbLogic.Delete(c,
 		&authzpbv1.DeleteTuplesIn{
-			Mode: &authzpbv1.DeleteTuplesIn_Tuples{
-				Tuples: &authzpbv1.DeleteTuples{
+			Mode: &authzpbv1.DeleteTuplesIn_DeleteTuples{
+				DeleteTuples: &authzpbv1.DeleteTuples{
 					Tuples: []*authzpbv1.Tuple{
 						{
 							SbjNs: "role",
@@ -383,33 +444,9 @@ func (r *RbacLogicImpl) ListResourceTypes(context.Context) (
 func (r *RbacLogicImpl) ListResourcesByType(c context.Context, in *rbacpb.ListResourcesByTypeIn) (
 	*rbacpb.ListResourcesByTypeOut, error,
 ) {
-	tuples := []*Tuple{}
-	if err := r.db(c).Where("obj_ns = ?", in.Type).Find(&tuples).Error; err != nil {
+	out := &rbacpb.ListResourcesByTypeOut{}
+	if err := r.db(c).Model(&Resource{}).Where("ns = ?", in.Type).Scan(&out.Resources).Error; err != nil {
 		return nil, err
-	}
-
-	ids := map[string]struct{}{}
-	for _, tuple := range tuples {
-		ids[tuple.ObjId] = struct{}{}
-	}
-
-	out := &rbacpb.ListResourcesByTypeOut{
-		Resources: []*rbacpb.ListResourcesByTypeData{},
-	}
-
-	for idStr := range ids {
-		id, _ := strconv.ParseUint(idStr, 10, 64)
-
-		res := Resource{}
-		// TODO: bad perf
-		if err := r.db(c).Where("id = ?", id).Take(&res).Error; err != nil {
-			return nil, err
-		}
-
-		out.Resources = append(out.Resources, &rbacpb.ListResourcesByTypeData{
-			Id:   id,
-			Name: res.Name,
-		})
 	}
 
 	return out, nil

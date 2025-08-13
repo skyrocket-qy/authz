@@ -1,6 +1,6 @@
 # Zanzibar reversed-engineering
 
-Insipired by [Zanzibar](!https://research.google/pubs/zanzibar-googles-consistent-global-authorization-system/), This project is to implement a distributed authorization system.
+Insipired by [Zanzibar](!https://research.google/pubs/zanzibar-googles-consistent-global-authorization-system/), This project is to implement a distributed authorization read-heavy system
 
 ```math
 \text{CHECK}(U, \langle \text{object}\#\text{perm} \rangle) = \text{EVALUATE}(\text{perm\_expr}, U, \text{object})
