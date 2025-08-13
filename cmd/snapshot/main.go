@@ -48,6 +48,7 @@ func main() {
 		}
 	}
 	fmt.Println("lastKey: ", lastKey)
+	fmt.Println(len(graph))
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
 
@@ -109,12 +110,12 @@ func applyMessage(m kafka.Message) error {
 	}
 
 	var key struct {
-		LastKey uint64
+		Id uint64 `json:"id"`
 	}
 	if err := json.Unmarshal(m.Key, &key); err != nil {
 		return err
 	}
-	lastKey = key.LastKey
+	lastKey = key.Id
 
 	sbj := entity.Instance{Ns: val.SbjNs, Id: val.SbjId}
 	rel := val.Relation
