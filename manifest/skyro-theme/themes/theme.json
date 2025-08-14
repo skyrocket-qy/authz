@@ -687,7 +687,7 @@
         "punctuation.definition.comment"
       ],
       "settings": {
-        "foreground": "#a85f00",
+        "foreground": "#7F848E",
         "fontStyle": "italic"
       }
     },
@@ -697,7 +697,7 @@
         "punctuation.definition.string"
       ],
       "settings": {
-        "foreground": "#D9D9D9",
+        "foreground": "#CE9178",
         "_comment": "go import"
       }
     },
@@ -768,7 +768,7 @@
         "variable.function"
       ],
       "settings": {
-        "foreground": "#89b4fa",
+        "foreground": "#f9e2af",
         "fontStyle": "italic"
       }
     },
@@ -820,7 +820,7 @@
         "entity.name.type"
       ],
       "settings": {
-        "foreground": "#89B4FA",
+        "foreground": "#D9D9D9",
         "fontStyle": "italic"
       }
     },
