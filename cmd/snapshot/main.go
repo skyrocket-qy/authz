@@ -19,7 +19,7 @@ import (
 )
 
 var graph map[entity.Instance]map[string]map[entity.Instance]struct{}
-var lastKey uint64
+var lastKey int64
 
 func main() {
 	if err := pkg.NewConfig(); err != nil {
@@ -70,8 +70,8 @@ func main() {
 	db.AutoMigrate(&rbac.GraphCheckpoint{})
 	start = time.Now()
 	if err := db.Create(&rbac.GraphCheckpoint{
-		LastChangeLogId: lastKey,
-		Data:            marshaledData,
+		LastOffset: lastKey,
+		Data:       marshaledData,
 	}).Error; err != nil {
 		panic(err)
 	}
@@ -109,13 +109,7 @@ func applyMessage(m kafka.Message) error {
 		return err
 	}
 
-	var key struct {
-		Id uint64 `json:"id"`
-	}
-	if err := json.Unmarshal(m.Key, &key); err != nil {
-		return err
-	}
-	lastKey = key.Id
+	lastKey = m.Offset
 
 	sbj := entity.Instance{Ns: val.SbjNs, Id: val.SbjId}
 	rel := val.Relation

@@ -33,6 +33,7 @@ type ZanzibarMemoryImpl struct {
 	kafkaR *kafka.Reader
 	db     *gorm.DB
 	graph  map[entity.Instance]map[string]map[entity.Instance]struct{}
+	Offest int64
 	cancel context.CancelFunc
 	mutex  sync.RWMutex
 }
@@ -54,6 +55,10 @@ func NewZanzibarMemory(c context.Context, lc *pkg.LifecycleParallel, db *gorm.DB
 
 	cc, cancel := context.WithCancel(c)
 	engine.cancel = cancel
+
+	if err := engine.kafkaR.SetOffset(engine.Offest + 1); err != nil {
+		return nil, fmt.Errorf("failed to set offset to earliest: %w", err)
+	}
 	go engine.sync(cc)
 	engine.schema = s
 
@@ -150,7 +155,23 @@ func (e *ZanzibarMemoryImpl) build(c context.Context) error {
 	r := e.kafkaR
 	e.graph = make(map[entity.Instance]map[string]map[entity.Instance]struct{})
 
-	// Reset offset to earliest to read all messages from start
+	cp := GraphCheckpoint{}
+	tx := e.db.WithContext(c).Take(&cp)
+	if err := tx.Error; err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("failed to get graph checkpoint: %w", err)
+		}
+	}
+
+	if tx.RowsAffected > 0 {
+		if err := pkg.DecodeGob(cp.Data, &e.graph); err != nil {
+			return fmt.Errorf("failed to decode graph: %w", err)
+		}
+		e.Offest = cp.LastOffset
+		return nil
+	}
+
+	// Build from all messages
 	if err := r.SetOffset(kafka.FirstOffset); err != nil {
 		return fmt.Errorf("failed to set offset to earliest: %w", err)
 	}
@@ -160,18 +181,19 @@ func (e *ZanzibarMemoryImpl) build(c context.Context) error {
 		case <-c.Done():
 			return nil
 		default:
-			readCtx, cancel := context.WithTimeout(c, 3*time.Second)
-			defer cancel()
-			m, err := r.ReadMessage(readCtx)
-			if err != nil {
-				if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
-					return nil
-				}
-				return fmt.Errorf("read message error: %w", err)
+		}
+
+		readCtx, cancel := context.WithTimeout(c, 3*time.Second)
+		defer cancel()
+		m, err := r.ReadMessage(readCtx)
+		if err != nil {
+			if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+				return nil
 			}
-			if err := e.applyMessage(m); err != nil {
-				return err
-			}
+			return fmt.Errorf("read message error: %w", err)
+		}
+		if err := e.applyMessage(m); err != nil {
+			return err
 		}
 	}
 }
@@ -182,7 +204,6 @@ func (e *ZanzibarMemoryImpl) applyMessage(m kafka.Message) error {
 		Op string `json:"__op"`
 	}
 	var val Val
-
 	if err := json.Unmarshal(m.Value, &val); err != nil {
 		return err
 	}
@@ -191,8 +212,9 @@ func (e *ZanzibarMemoryImpl) applyMessage(m kafka.Message) error {
 	rel := val.Relation
 	obj := entity.Instance{Ns: val.ObjNs, Id: val.ObjId}
 
-	e.mutex.Lock()
+	e.mutex.Lock() // TODO: Lock entire map is not efficient
 	defer e.mutex.Unlock()
+	e.Offest = m.Offset // TODO: it only use on job service
 	if _, exists := e.graph[obj]; !exists {
 		e.graph[obj] = make(map[string]map[entity.Instance]struct{})
 	}
@@ -212,7 +234,7 @@ func (e *ZanzibarMemoryImpl) applyMessage(m kafka.Message) error {
 		}
 		e.graph[obj][rel][sbj] = struct{}{}
 	case "d": // delete/remove edge
-		delete(e.graph[obj][rel], sbj)
+		delete(e.graph[obj][rel], sbj) // TODO: if empty, delete relation, if empty, delete object
 	default:
 		// handle other ops if any
 	}
@@ -242,221 +264,58 @@ func (e *ZanzibarMemoryImpl) sync(ctx context.Context) {
 	}
 }
 
-// if kafka message.version not fit, need to catchup from db first
-// func (e *ZanzibarMemoryImpl) CatchUp(c context.Context) {
-// 	for {
-// 		select {
-// 		case <-c.Done():
-// 			log.Println("Closing Kafka reader...")
-// 			if err := e.kafkaR.Close(); err != nil {
-// 				log.Printf("Error closing reader: %v\n", err)
-// 			}
-// 			log.Println("Kafka reader closed. Exiting.")
-// 		default:
-// 			m, err := e.kafkaR.FetchMessage(c)
-// 			if err != nil {
-// 				if c.Err() != nil {
-// 					continue
-// 				}
-// 				log.Printf("Error fetching message: %v\n", err)
-// 				time.Sleep(1 * time.Second)
-// 				continue
-// 			}
+func (e *ZanzibarMemoryImpl) SyncGraphCheckpoint(c context.Context) {
+	for {
+		select {
+		case <-c.Done():
+			return
+		default:
+			time.Sleep(10 * time.Minute)
+		}
 
-// 			fmt.Printf("Received message at offset %d: key=%s, value=%s\n",
-// 				m.Offset, string(m.Key), string(m.Value))
+		cp := GraphCheckpoint{}
+		tx := e.db.WithContext(c).Take(&cp)
+		if err := tx.Error; err != nil {
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
+				log.Error().Err(err).Msg("Failed to get graph checkpoint")
+				continue
+			}
+		}
 
-// 			update := &authzpbv1.GraphUpdate{}
-// 			if err := proto.Unmarshal(m.Value, update); err != nil {
-// 				log.Printf("Failed to unmarshal message at offset %d: %v\n", m.Offset, err)
-// 				continue
-// 			}
+		if tx.RowsAffected == 0 {
+			e.mutex.RLock()
+			bytes, err := pkg.EncodeGob(&e.graph)
+			if err != nil {
+				log.Warn().Err(err).Msg("Failed to encode graph")
+				e.mutex.RUnlock()
+				continue
+			}
+			cp.LastOffset = e.Offest
+			e.mutex.RUnlock()
+			cp.Data = bytes
 
-// 			if update.Version > e.version {
-// 				if update.Version != e.version+1 {
-// 					if err := e.CatchUpFromDb(c); err != nil {
-// 						log.Printf("Failed to build graph at offset %d: %v\n", m.Offset, err)
+			if err := e.db.WithContext(c).Create(&cp).Error; err != nil {
+				log.Error().Err(err).Msg("Failed to create graph checkpoint")
+				continue
+			}
+		} else {
+			if e.Offest-cp.LastOffset > 1000 {
+				e.mutex.RLock()
+				bytes, err := pkg.EncodeGob(&e.graph)
+				if err != nil {
+					log.Warn().Err(err).Msg("Failed to encode graph")
+					e.mutex.RUnlock()
+					continue
+				}
+				cp.LastOffset = e.Offest
+				e.mutex.RUnlock()
+				cp.Data = bytes
 
-// 						if err := e.rebuild(c); err != nil {
-// 							log.Printf("Failed to build graph at offset %d: %v\n", m.Offset, err)
-// 							continue
-// 						}
-// 					}
-// 				}
-
-// 				if err := e.updateGraph(update); err != nil {
-// 					log.Printf("Failed to update graph at offset %d: %v\n", m.Offset, err)
-// 					continue
-// 				}
-// 			}
-
-// 			if err := e.kafkaR.CommitMessages(c, m); err != nil {
-// 				log.Printf("Failed to commit offset for message at offset %d: %v\n", m.Offset, err)
-// 				continue
-// 			}
-// 		}
-// 	}
-// }
-
-// func (e *ZanzibarMemoryImpl) CatchUpFromDb(c context.Context) error {
-// 	changeLogs := []*ChangeLog{}
-// 	if err := e.db.Order("id").Where("version > ?", e.version).Find(&changeLogs).Error; err != nil {
-// 		return err
-// 	}
-
-// 	e.mutex.Lock()
-// 	defer e.mutex.Unlock()
-
-// 	d := &authzpbv1.GraphUpdate{}
-// 	for _, changeLog := range changeLogs {
-// 		if err := proto.Unmarshal(changeLog.Data, d); err != nil {
-// 			return err
-// 		}
-
-// 		switch d.Operation {
-// 		case authzpbv1.Operation_CREATE:
-// 			for _, tuple := range d.Tuples {
-// 				sbj := entity.Instance{
-// 					Ns: tuple.SbjNs,
-// 					Id: tuple.SbjId,
-// 				}
-// 				obj := entity.Instance{
-// 					Ns: tuple.ObjNs,
-// 					Id: tuple.ObjId,
-// 				}
-// 				rel := tuple.Rel
-// 				if _, exists := e.graph[obj]; !exists {
-// 					e.graph[obj] = make(map[string]map[entity.Instance]struct{})
-// 				}
-// 				if _, exists := e.graph[obj][rel]; !exists {
-// 					e.graph[obj][rel] = make(map[entity.Instance]struct{})
-// 				}
-// 				e.graph[obj][rel][sbj] = struct{}{}
-// 			}
-
-// 		case authzpbv1.Operation_DELETE:
-// 			for _, tuple := range d.Tuples {
-// 				obj := entity.Instance{
-// 					Ns: tuple.ObjNs,
-// 					Id: tuple.ObjId,
-// 				}
-// 				rel := tuple.Rel
-// 				if _, exists := e.graph[obj]; !exists {
-// 					continue
-// 				}
-// 				if _, exists := e.graph[obj][rel]; !exists {
-// 					continue
-// 				}
-// 				delete(e.graph[obj][rel], entity.Instance{
-// 					Ns: tuple.SbjNs,
-// 					Id: tuple.SbjId,
-// 				})
-// 			}
-// 		}
-// 	}
-
-// 	e.version = changeLogs[len(changeLogs)-1].Id
-
-// 	return nil
-// }
-
-// func (e *ZanzibarMemoryImpl) buildFromChangeLog(c context.Context) error {
-// 	changeLogs := []*ChangeLog{}
-// 	if err := e.db.Order("id").Find(&changeLogs).Error; err != nil {
-// 		return err
-// 	}
-
-// 	e.mutex.Lock()
-// 	defer e.mutex.Unlock()
-
-// 	d := &authzpbv1.GraphUpdate{}
-// 	for _, changeLog := range changeLogs {
-// 		if err := proto.Unmarshal(changeLog.Data, d); err != nil {
-// 			return err
-// 		}
-
-// 		switch d.Operation {
-// 		case authzpbv1.Operation_CREATE:
-// 			for _, tuple := range d.Tuples {
-// 				sbj := entity.Instance{
-// 					Ns: tuple.SbjNs,
-// 					Id: tuple.SbjId,
-// 				}
-// 				obj := entity.Instance{
-// 					Ns: tuple.ObjNs,
-// 					Id: tuple.ObjId,
-// 				}
-// 				rel := tuple.Rel
-// 				if _, exists := e.graph[obj]; !exists {
-// 					e.graph[obj] = make(map[string]map[entity.Instance]struct{})
-// 				}
-// 				if _, exists := e.graph[obj][rel]; !exists {
-// 					e.graph[obj][rel] = make(map[entity.Instance]struct{})
-// 				}
-// 				e.graph[obj][rel][sbj] = struct{}{}
-// 			}
-
-// 		case authzpbv1.Operation_DELETE:
-// 			for _, tuple := range d.Tuples {
-// 				obj := entity.Instance{
-// 					Ns: tuple.ObjNs,
-// 					Id: tuple.ObjId,
-// 				}
-// 				rel := tuple.Rel
-// 				if _, exists := e.graph[obj]; !exists {
-// 					continue
-// 				}
-// 				if _, exists := e.graph[obj][rel]; !exists {
-// 					continue
-// 				}
-// 				delete(e.graph[obj][rel], entity.Instance{
-// 					Ns: tuple.SbjNs,
-// 					Id: tuple.SbjId,
-// 				})
-// 			}
-// 		}
-// 	}
-
-// 	e.version = changeLogs[len(changeLogs)-1].Id
-
-// 	return nil
-// }
-
-// func (e *ZanzibarMemoryImpl) rebuild(c context.Context) error {
-// 	latestGraph := GraphCheckpoint{}
-// 	if err := e.db.Limit(1).Order("last_change_log_id desc").Take(&latestGraph).Error; err != nil {
-// 		return e.buildFromChangeLog(c)
-// 	}
-
-// 	e.mutex.Lock()
-// 	defer e.mutex.Unlock()
-
-// 	dec := gob.NewDecoder(bytes.NewReader(latestGraph.Data))
-// 	if err := dec.Decode(&e.graph); err != nil {
-// 		return err
-// 	}
-// 	e.version = latestGraph.LastChangeLogId
-
-// 	return nil
-// }
-
-// func (e *ZanzibarMemoryImpl) updateGraph(update *authzpbv1.GraphUpdate) error {
-// 	e.mutex.Lock()
-// 	defer e.mutex.Unlock()
-
-// 	for _, tuple := range update.Tuples {
-// 		obj := entity.Instance{
-// 			Ns: tuple.ObjNs,
-// 			Id: tuple.ObjId,
-// 		}
-// 		sbj := entity.Instance{
-// 			Ns: tuple.SbjNs,
-// 			Id: tuple.SbjId,
-// 		}
-// 		rel := tuple.Rel
-
-// 		delete(e.graph[obj][rel], sbj)
-// 	}
-
-// 	return nil
-// }
+				if err := e.db.WithContext(c).Save(&cp).Error; err != nil {
+					log.Error().Err(err).Msg("Failed to update graph checkpoint")
+					continue
+				}
+			}
+		}
+	}
+}

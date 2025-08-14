@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"authz/cmd/service"
 	"authz/internal/pkg"
 	"authz/internal/service/logger"
 	"authz/internal/wire"
@@ -41,6 +42,8 @@ func Execute() {
 }
 
 func init() {
+	Cmd.AddCommand(service.Cmd)
+
 	Cmd.Flags().StringVarP(&pkg.Env, `env`, "e", "local", `default: local`)
 	Cmd.Flags().StringP("engine", `g`, "rbac", "default: rbac")
 

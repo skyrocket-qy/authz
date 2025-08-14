@@ -52,6 +52,6 @@ type Tuple struct {
 }
 
 type GraphCheckpoint struct {
-	LastChangeLogId uint64 `gorm:"primaryKey"` // up to which changelog was applied
-	Data            []byte // marshaled in-memory graph
+	LastOffset int64  `gorm:"primaryKey"` // up to which changelog was applied
+	Data       []byte // marshaled in-memory graph
 }

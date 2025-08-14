@@ -33,3 +33,10 @@ func NewRbacHandler(context.Context, *pkg.LifecycleParallel) (*rbac.Handler, err
 	)
 	return nil, nil
 }
+
+// func NewJobService(context.Context, *pkg.LifecycleParallel) (*service.JobService, error) {
+// 	wire.Build(
+// 		service.NewJobService,
+// 	)
+// 	return nil, nil
+// }

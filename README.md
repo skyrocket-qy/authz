@@ -1,6 +1,6 @@
 <img src="manifest/icon/f2.png" alt="icon" width="140">
 
-# Zanzibar reversed-engineering
+# MemZ
 
 Insipired by [Zanzibar](!https://research.google/pubs/zanzibar-googles-consistent-global-authorization-system/), This project is to implement a distributed authorization read-heavy system
 
