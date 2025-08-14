@@ -1,6 +1,7 @@
-package rbac
+package rbac_test
 
 import (
+	"authz/internal/engine/rbac"
 	"authz/internal/entity"
 	"fmt"
 	"math/rand"
@@ -10,29 +11,29 @@ import (
 	"time"
 )
 
-//numShards = min(nextPowerOfTwo(numObjects/100), 2*numGoroutines, 4*numCores)
+//numShards = min(2*numGoroutines, numObjects)
 
 // very high case
-// const (
-// 	numObjects    = 1000000
-// 	numRelations  = 8
-// 	numSubjects   = 100
-// 	readPercent   = 95
-// 	numGoroutines = 500
-// 	numOps        = 500000
-// 	numShards     = 1024
-// )
+const (
+	numObjects    = 1000000
+	numRelations  = 8
+	numSubjects   = 100
+	readPercent   = 95
+	numGoroutines = 500
+	numOps        = 500000
+	numShards     = 8192
+)
 
 // highly content
-const (
-	numObjects    = 5
-	numRelations  = 3
-	numSubjects   = 5
-	readPercent   = 90
-	numGoroutines = 400
-	numOps        = 50000
-	numShards     = 5
-)
+// const (
+// 	numObjects    = 5
+// 	numRelations  = 3
+// 	numSubjects   = 5
+// 	readPercent   = 90
+// 	numGoroutines = 400
+// 	numOps        = 50000
+// 	numShards     = 5
+// )
 
 // test delete
 // const (
@@ -46,15 +47,15 @@ const (
 // 	// Mix of writes: 50% create, 50% delete
 // )
 
-// Constants for simulation
+// General case
 // const (
 // 	numObjects    = 5000
 // 	numRelations  = 5
 // 	numSubjects   = 10
 // 	readPercent   = 95
 // 	numGoroutines = 50
-// 	numOps        = 50000
-// 	numShards     = 16
+// 	numOps        = 40000
+// 	numShards     = 8192
 // )
 
 // -------------------- Per-Object Lock --------------------
@@ -370,6 +371,102 @@ func (g *GraphSharded) delete(obj entity.Instance, rel string, sbj entity.Instan
 	}
 }
 
+// ----only shared and sync on obj------
+type ObjSOEntry struct {
+	relations map[string]map[entity.Instance]struct{}
+	mu        sync.RWMutex
+}
+
+type shardSO struct {
+	graph map[entity.Instance]*ObjSOEntry
+	mu    sync.RWMutex
+}
+
+type GraphSOSharded struct {
+	shards []*shardSO
+	n      int
+}
+
+func NewGraphSOSharded(numShards int) *GraphSOSharded {
+	shards := make([]*shardSO, numShards)
+	for i := 0; i < numShards; i++ {
+		shards[i] = &shardSO{graph: make(map[entity.Instance]*ObjSOEntry)}
+	}
+	return &GraphSOSharded{shards: shards, n: numShards}
+}
+
+// simple shard by obj.Id uint64
+func (g *GraphSOSharded) getShard(obj entity.Instance) *shardSO {
+	sum, _ := strconv.Atoi(obj.Id)
+	return g.shards[sum%g.n]
+}
+
+// get or create object entry
+func (g *GraphSOSharded) getObj(obj entity.Instance) *ObjSOEntry {
+	s := g.getShard(obj)
+	s.mu.RLock()
+	entry := s.graph[obj]
+	s.mu.RUnlock()
+
+	if entry == nil {
+		s.mu.Lock()
+		if s.graph[obj] == nil {
+			s.graph[obj] = &ObjSOEntry{relations: make(map[string]map[entity.Instance]struct{})}
+		}
+		entry = s.graph[obj]
+		s.mu.Unlock()
+	}
+	return entry
+}
+
+// Read only locks the object
+func (g *GraphSOSharded) Read(obj entity.Instance, rel string, sbj entity.Instance) bool {
+	entry := g.getObj(obj)
+	entry.mu.RLock()
+	defer entry.mu.RUnlock()
+	sbjs, ok := entry.relations[rel]
+	if !ok {
+		return false
+	}
+	_, exists := sbjs[sbj]
+	return exists
+}
+
+// Write only locks the object
+func (g *GraphSOSharded) Write(obj entity.Instance, rel string, sbj entity.Instance) {
+	entry := g.getObj(obj)
+	entry.mu.Lock()
+	defer entry.mu.Unlock()
+	if entry.relations[rel] == nil {
+		entry.relations[rel] = make(map[entity.Instance]struct{})
+	}
+	entry.relations[rel][sbj] = struct{}{}
+}
+
+// Delete only locks the object
+func (g *GraphSOSharded) delete(obj entity.Instance, rel string, sbj entity.Instance) {
+	entry := g.getObj(obj)
+	entry.mu.Lock()
+	defer entry.mu.Unlock()
+
+	sbjs, ok := entry.relations[rel]
+	if !ok {
+		return
+	}
+	delete(sbjs, sbj)
+	if len(sbjs) == 0 {
+		delete(entry.relations, rel)
+	}
+
+	// Optional: remove object from shard if empty
+	if len(entry.relations) == 0 {
+		s := g.getShard(obj)
+		s.mu.Lock()
+		delete(s.graph, obj)
+		s.mu.Unlock()
+	}
+}
+
 // -------------------- Benchmark --------------------
 
 func benchmarkGraph(b *testing.B,
@@ -426,23 +523,23 @@ func benchmarkGraph(b *testing.B,
 	}
 }
 
-func BenchmarkPerObjectGraph(b *testing.B) {
-	g := NewGraphPerObject()
-	benchmarkGraph(b,
-		g.Read,
-		g.Write,
-		g.delete,
-	)
-}
+// func BenchmarkPerObjectGraph(b *testing.B) {
+// 	g := NewGraphPerObject()
+// 	benchmarkGraph(b,
+// 		g.Read,
+// 		g.Write,
+// 		g.delete,
+// 	)
+// }
 
-func BenchmarkPerObjRelGraph(b *testing.B) {
-	g := NewGraphPerObjRel()
-	benchmarkGraph(b,
-		g.Read,
-		g.Write,
-		g.delete,
-	)
-}
+// func BenchmarkPerObjRelGraph(b *testing.B) {
+// 	g := NewGraphPerObjRel()
+// 	benchmarkGraph(b,
+// 		g.Read,
+// 		g.Write,
+// 		g.delete,
+// 	)
+// }
 
 // func BenchmarkPerObjRelSbjGraph(b *testing.B) {
 // 	g := NewGraphPerObjRelSbj()
@@ -458,5 +555,23 @@ func BenchmarkShardedGraph(b *testing.B) {
 		g.Read,
 		g.Write,
 		g.delete,
+	)
+}
+
+func BenchmarkShardedSOGraph(b *testing.B) {
+	g := NewGraphSOSharded(numShards)
+	benchmarkGraph(b,
+		g.Read,
+		g.Write,
+		g.delete,
+	)
+}
+
+func BenchmarkFormal(b *testing.B) {
+	g := rbac.NewGraph()
+	benchmarkGraph(b,
+		g.Read,
+		g.Create,
+		g.Delete,
 	)
 }

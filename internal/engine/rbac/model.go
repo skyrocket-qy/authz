@@ -6,6 +6,8 @@ import (
 	"gorm.io/gorm"
 )
 
+// TODO: for better performance, consider separate metadata and tuples
+
 type User struct {
 	Id        uint64 `gorm:"primarykey"`
 	CreatedAt time.Time
@@ -42,6 +44,7 @@ type Resource struct {
 	Name string `gorm:"uniqueindex:idx_ns_name;type:varchar(255);not null"`
 }
 
+// TODO: use uint64 replace string for best performance but consider convert overhead
 type Tuple struct {
 	Id       uint64 `gorm:"primaryKey" json:"id"`
 	SbjNs    string `gorm:"uniqueIndex:idx_tuple;not null" json:"sbj_ns"`
