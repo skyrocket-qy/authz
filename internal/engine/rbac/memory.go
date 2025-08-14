@@ -32,6 +32,8 @@ type ZanzibarMemoryImpl struct {
 	schema *schema.Schema
 	kafkaR *kafka.Reader
 	db     *gorm.DB
+
+	// TODO: COW | sharded map | sync map
 	graph  map[entity.Instance]map[string]map[entity.Instance]struct{}
 	Offest int64
 	cancel context.CancelFunc

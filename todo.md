@@ -7,3 +7,4 @@
 - integrate authn
 - think a good name for this project
 - test the performance
+ok, I want to test global lock, per-object lock, per-relation lock, per-sbj lok, 
