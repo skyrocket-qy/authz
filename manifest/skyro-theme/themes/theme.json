@@ -622,7 +622,7 @@
       "foreground": "#cba6f7"
     },
     "variable.readonly.defaultLibrary:go": {
-      "foreground": "#cba6f7"
+      "foreground": "#D9D9D9"
     },
     "tomlArrayKey": {
       "foreground": "#89b4fa",
@@ -676,7 +676,7 @@
       "name": "Parentheses, Brackets, Braces",
       "scope": "punctuation",
       "settings": {
-        "foreground": "#9399b2",
+        "foreground": "#CCCCCC",
         "fontStyle": ""
       }
     },
