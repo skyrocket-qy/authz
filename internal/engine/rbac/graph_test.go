@@ -570,7 +570,7 @@ func BenchmarkShardedSOGraph(b *testing.B) {
 func BenchmarkFormal(b *testing.B) {
 	g := rbac.NewGraph()
 	benchmarkGraph(b,
-		g.Read,
+		g.Exist,
 		g.Create,
 		g.Delete,
 	)

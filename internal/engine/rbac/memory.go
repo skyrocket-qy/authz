@@ -77,9 +77,6 @@ func (e *ZanzibarMemoryImpl) Close() error {
 func (e *ZanzibarMemoryImpl) Check(c context.Context, user *entity.Instance, perm string,
 	obj *entity.Instance) (bool, error,
 ) {
-	e.mutex.RLock()
-	defer e.mutex.RUnlock()
-
 	ns, ok := e.schema.Namespaces[obj.Ns]
 	if !ok {
 		return false, fmt.Errorf("unknown namespace: %s", obj.Ns)

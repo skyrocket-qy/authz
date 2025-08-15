@@ -36,7 +36,7 @@ func (g *Graph) getShard(obj entity.Instance) *Shard {
 }
 
 // Read only locks the object
-func (g *Graph) Read(obj entity.Instance, rel string, sbj entity.Instance) bool {
+func (g *Graph) Exist(obj entity.Instance, rel string, sbj entity.Instance) bool {
 	s := g.getShard(obj)
 	s.mu.RLock()
 	objEntry := s.graph[obj]
@@ -114,4 +114,24 @@ func (g *Graph) Delete(obj entity.Instance, rel string, sbj entity.Instance) {
 			s.mu.Unlock()
 		}
 	}
+}
+
+func (g *Graph) GetSbjs(obj entity.Instance, rel string) map[entity.Instance]struct{} {
+	s := g.getShard(obj)
+	s.mu.RLock()
+	objEntry := s.graph[obj]
+	s.mu.RUnlock()
+	if objEntry == nil {
+		return nil
+	}
+
+	objEntry.mu.RLock()
+	defer objEntry.mu.RUnlock()
+
+	relEntry := objEntry.Relations[rel]
+	if relEntry == nil {
+		return nil
+	}
+
+	return relEntry
 }

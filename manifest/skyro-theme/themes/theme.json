@@ -121,7 +121,7 @@
     "diffEditor.diagonalFill": "#585b7099",
     "diffEditorOverview.insertedForeground": "#a6e3a1cc",
     "diffEditorOverview.removedForeground": "#f38ba8cc",
-    "editor.background": "#000000",
+    "editor.background": "#0A0A0A",
     "editor.findMatchBackground": "#5e3f53",
     "editor.findMatchBorder": "#f38ba833",
     "editor.findMatchHighlightBackground": "#3e5767",
@@ -155,7 +155,7 @@
     "editorGutter.commentGlyphForeground": "#cba6f7",
     "editorGutter.deletedBackground": "#f38ba8",
     "editorGutter.foldingControlForeground": "#9399b2",
-    "editorGutter.modifiedBackground": "#89DCEB",
+    "editorGutter.modifiedBackground": "#EFB080",
     "editorHoverWidget.background": "#181825",
     "editorHoverWidget.border": "#585b70",
     "editorHoverWidget.foreground": "#cdd6f4",
@@ -176,7 +176,7 @@
     "editorMarkerNavigationWarning.background": "#fab387",
     "editorOverviewRuler.background": "#181825",
     "editorOverviewRuler.border": "#cdd6f412",
-    "editorOverviewRuler.modifiedForeground": "#89DCEB",
+    "editorOverviewRuler.modifiedForeground": "#EFB080",
     "editorRuler.foreground": "#585b70",
     "editor.stackFrameHighlightBackground": "#89DCEB26",
     "editor.focusedStackFrameHighlightBackground": "#a6e3a126",
@@ -217,9 +217,9 @@
     "gitDecoration.conflictingResourceForeground": "#cba6f7",
     "gitDecoration.deletedResourceForeground": "#f38ba8",
     "gitDecoration.ignoredResourceForeground": "#6c7086",
-    "gitDecoration.modifiedResourceForeground": "#89DCEB",
+    "gitDecoration.modifiedResourceForeground": "#EFB080",
     "gitDecoration.stageDeletedResourceForeground": "#f38ba8",
-    "gitDecoration.stageModifiedResourceForeground": "#89DCEB",
+    "gitDecoration.stageModifiedResourceForeground": "#EFB080",
     "gitDecoration.submoduleResourceForeground": "#89b4fa",
     "gitDecoration.untrackedResourceForeground": "#a6e3a1",
     "input.background": "#313244",
@@ -330,7 +330,7 @@
     "settings.textInputBorder": "#00000000",
     "settings.numberInputBackground": "#45475a",
     "settings.numberInputBorder": "#00000000",
-    "sideBar.background": "#000000",
+    "sideBar.background": "#0A0A0A",
     "sideBar.dropBackground": "#cba6f733",
     "sideBar.foreground": "#cdd6f4",
     "sideBar.border": "#00000000",
@@ -385,8 +385,8 @@
     "tab.unfocusedActiveBorder": "#00000000",
     "tab.unfocusedActiveBorderTop": "#cba6f74d",
     "tab.unfocusedInactiveBackground": "#0c0216",
-    "terminal.background": "#000000",
-    "terminal.foreground": "#D9D9D9",
+    "terminal.background": "#0A0A0A",
+    "terminal.foreground": "#e0e0e0",
     "terminal.ansiBlack": "#45475a",
     "terminal.ansiRed": "#f38ba8",
     "terminal.ansiGreen": "#a6e3a1",
@@ -622,7 +622,7 @@
       "foreground": "#cba6f7"
     },
     "variable.readonly.defaultLibrary:go": {
-      "foreground": "#D9D9D9"
+      "foreground": "#569CD6"
     },
     "tomlArrayKey": {
       "foreground": "#89b4fa",
@@ -669,7 +669,7 @@
         "punctuation.definition.variable"
       ],
       "settings": {
-        "foreground": "#D9D9D9"
+        "foreground": "#e0e0e0"
       }
     },
     {
@@ -697,7 +697,7 @@
         "punctuation.definition.string"
       ],
       "settings": {
-        "foreground": "#CE9178",
+        "foreground": "#E394DC",
         "_comment": "go import"
       }
     },
@@ -768,7 +768,7 @@
         "variable.function"
       ],
       "settings": {
-        "foreground": "#89B4FA",
+        "foreground": "#EFB080",
         "fontStyle": "italic"
       }
     },
@@ -820,7 +820,7 @@
         "entity.name.type"
       ],
       "settings": {
-        "foreground": "#D9D9D9",
+        "foreground": "#e0e0e0",
         "fontStyle": "italic"
       }
     },
