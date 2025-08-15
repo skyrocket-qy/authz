@@ -6,8 +6,8 @@ services:
       - "9092:9092"
       - "29093:29093"
       - "29092:29092"
-    volumes:
-      - ./kafka-data:/tmp/kraft-combined-logs
+    # volumes:
+      # - ./kafka-data:/tmp/kraft-combined-logs
     environment:
       KAFKA_CLUSTER_ID: "Vklx3rQ1Slm-Eixk3CSWeg"
       KAFKA_PROCESS_ROLES: broker,controller
@@ -23,7 +23,6 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-
 
   connect:
     image: debezium/connect:3.0.0.Final
@@ -62,3 +61,18 @@ services:
       - "max_wal_senders=10"
       - "-c"
       - "listen_addresses=*"
+  authz:
+    build:
+      context: .
+      dockerfile: authz.Dockerfile
+    image: authz:latest
+    container_name: authz
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+
+    depends_on:
+      - kafka
+      - postgres
+      - connect

@@ -78,17 +78,9 @@ func New(lc *pkg.LifecycleParallel) (db *gorm.DB, err error) {
 		return sqlDB.Close()
 	})
 
-	db.AutoMigrate(&rbac.Tuple{})
-	// db.AutoMigrate(
-	// 	&model.Org{},
-	// 	&model.User{},
-	// 	&model.UserAuth{},
-	// 	&model.Resource{},
-	// 	&model.Role{},
-	// 	&model.Tuple{},
-	// 	&model.ChangeLog{},
-	// 	&model.GraphCheckpoint{},
-	// )
+	if err := db.AutoMigrate(&rbac.Tuple{}, &rbac.GraphCheckpoint{}); err != nil {
+		return nil, err
+	}
 
 	return db, err
 }

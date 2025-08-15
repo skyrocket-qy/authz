@@ -70,3 +70,5 @@ Thumbs.db
 .next/cache/
 
 deploy/kafka-data
+
+kafka-data
