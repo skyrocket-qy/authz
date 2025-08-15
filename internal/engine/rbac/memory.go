@@ -256,41 +256,24 @@ func (e *ZanzibarMemoryImpl) sync(ctx context.Context) {
 }
 
 func (e *ZanzibarMemoryImpl) SyncGraphCheckpoint(c context.Context) {
+	ticker := time.NewTicker(1 * time.Hour)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case <-c.Done():
 			return
-		default:
-			time.Sleep(10 * time.Minute)
-		}
-
-		cp := GraphCheckpoint{}
-		tx := e.db.WithContext(c).Take(&cp)
-		if err := tx.Error; err != nil {
-			if !errors.Is(err, gorm.ErrRecordNotFound) {
-				log.Error().Err(err).Msg("Failed to get graph checkpoint")
-				continue
+		case <-ticker.C:
+			cp := GraphCheckpoint{}
+			tx := e.db.WithContext(c).Take(&cp)
+			if err := tx.Error; err != nil {
+				if !errors.Is(err, gorm.ErrRecordNotFound) {
+					log.Error().Err(err).Msg("Failed to get graph checkpoint")
+					continue
+				}
 			}
-		}
 
-		if tx.RowsAffected == 0 {
-			e.mutex.RLock()
-			bytes, err := pkg.EncodeGob(&e.graph)
-			if err != nil {
-				log.Warn().Err(err).Msg("Failed to encode graph")
-				e.mutex.RUnlock()
-				continue
-			}
-			cp.LastOffset = e.Offest
-			e.mutex.RUnlock()
-			cp.Data = bytes
-
-			if err := e.db.WithContext(c).Create(&cp).Error; err != nil {
-				log.Error().Err(err).Msg("Failed to create graph checkpoint")
-				continue
-			}
-		} else {
-			if e.Offest-cp.LastOffset > 1000 {
+			if tx.RowsAffected == 0 {
 				e.mutex.RLock()
 				bytes, err := pkg.EncodeGob(&e.graph)
 				if err != nil {
@@ -302,9 +285,27 @@ func (e *ZanzibarMemoryImpl) SyncGraphCheckpoint(c context.Context) {
 				e.mutex.RUnlock()
 				cp.Data = bytes
 
-				if err := e.db.WithContext(c).Save(&cp).Error; err != nil {
-					log.Error().Err(err).Msg("Failed to update graph checkpoint")
+				if err := e.db.WithContext(c).Create(&cp).Error; err != nil {
+					log.Error().Err(err).Msg("Failed to create graph checkpoint")
 					continue
+				}
+			} else {
+				if e.Offest-cp.LastOffset > 1000 {
+					e.mutex.RLock()
+					bytes, err := pkg.EncodeGob(&e.graph)
+					if err != nil {
+						log.Warn().Err(err).Msg("Failed to encode graph")
+						e.mutex.RUnlock()
+						continue
+					}
+					cp.LastOffset = e.Offest
+					e.mutex.RUnlock()
+					cp.Data = bytes
+
+					if err := e.db.WithContext(c).Save(&cp).Error; err != nil {
+						log.Error().Err(err).Msg("Failed to update graph checkpoint")
+						continue
+					}
 				}
 			}
 		}
