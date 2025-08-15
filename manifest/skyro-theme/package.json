@@ -1,0 +1,22 @@
+{
+  "name": "my-custom-theme",
+  "displayName": "My Awesome Theme",
+  "description": "A custom theme made by me.",
+  "version": "0.0.1",
+  "publisher": "skyro",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Themes"
+  ],
+  "contributes": {
+    "themes": [
+      {
+        "label": "My Awesome Theme",
+        "uiTheme": "vs-dark",
+        "path": "./themes/theme.json"
+      }
+    ]
+  }
+}

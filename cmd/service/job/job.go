@@ -1,6 +1,14 @@
 package job
 
 import (
+	"authz/internal/engine/rbac"
+	"authz/internal/pkg"
+	"authz/internal/service"
+	"authz/internal/service/database"
+	"authz/internal/service/logger"
+	"context"
+
+	"github.com/skyrocket-qy/gox/logx"
 	"github.com/spf13/cobra"
 )
 
@@ -12,27 +20,27 @@ var Cmd = &cobra.Command{
 }
 
 func start(cmd *cobra.Command, args []string) {
-	// if err := pkg.NewConfig(); err != nil {
-	// 	logx.Error(err.Error())
+	if err := pkg.NewConfig(); err != nil {
+		logx.Error(err.Error())
 
-	// 	return
-	// }
+		return
+	}
 
-	// logger.InitLogger()
-	// lc := pkg.NewLifecycleParallel()
+	logger.InitLogger()
+	lc := pkg.NewLifecycleParallel()
 
-	// db, err := database.New(lc)
-	// if err != nil {
-	// 	logx.Error(err.Error())
-	// 	return
-	// }
-	// kafkaR := service.NewKafkaReader(lc)
+	db, err := database.New(lc)
+	if err != nil {
+		logx.Error(err.Error())
+		return
+	}
+	kafkaR := service.NewKafkaReader(lc)
 
-	// zm, err := rbac.NewZanzibarMemory(context.TODO(), lc, db, nil, kafkaR)
-	// if err != nil {
-	// 	logx.Error(err.Error())
-	// 	return
-	// }
+	zm, err := rbac.NewZanzibarMemory(context.TODO(), lc, db, nil, kafkaR)
+	if err != nil {
+		logx.Error(err.Error())
+		return
+	}
 
-	// zm.SyncGraphCheckpoint(context.TODO())
+	zm.SyncGraphCheckpoint(context.TODO())
 }

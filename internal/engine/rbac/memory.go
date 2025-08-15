@@ -13,9 +13,6 @@ import (
 	"authz/internal/pkg"
 	"authz/internal/schema"
 
-	redissrv "authz/internal/service/redis"
-
-	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
 	"github.com/segmentio/kafka-go"
 	"gorm.io/gorm"
@@ -31,11 +28,9 @@ type ZanzibarMemory interface {
 var _ ZanzibarMemory = (*ZanzibarMemoryImpl)(nil)
 
 type ZanzibarMemoryImpl struct {
-	schema          *schema.Schema
-	kafkaR          *kafka.Reader
-	db              *gorm.DB
-	redisCli        *redis.Client
-	updateGraphLock *redissrv.DistributedLock
+	schema *schema.Schema
+	kafkaR *kafka.Reader
+	db     *gorm.DB
 
 	graph  *Graph
 	Offest int64
@@ -44,16 +39,13 @@ type ZanzibarMemoryImpl struct {
 }
 
 func NewZanzibarMemory(c context.Context, lc *pkg.LifecycleParallel, db *gorm.DB, s *schema.Schema,
-	kafkaR *kafka.Reader, redisCli *redis.Client) (*ZanzibarMemoryImpl, error,
+	kafkaR *kafka.Reader) (*ZanzibarMemoryImpl, error,
 ) {
 	engine := ZanzibarMemoryImpl{
-		kafkaR:   kafkaR,
-		db:       db,
-		graph:    NewGraph(),
-		redisCli: redisCli,
+		kafkaR: kafkaR,
+		db:     db,
+		graph:  NewGraph(),
 	}
-
-	engine.updateGraphLock = redissrv.NewDistributedLock(redisCli, "update_graph_lock", time.Hour)
 
 	st := time.Now()
 	if err := engine.build(c); err != nil {
@@ -269,17 +261,7 @@ func (e *ZanzibarMemoryImpl) SyncGraphCheckpoint(c context.Context) {
 		case <-c.Done():
 			return
 		default:
-			time.Sleep(1 * time.Hour)
-		}
-
-		// TODO: also need to set a value to make sure each hour only execute once
-		ok, err := e.updateGraphLock.TryLock(c)
-		if err != nil {
-			log.Error().Err(err).Msg("Failed to acquire lock")
-			continue
-		}
-		if !ok {
-			continue
+			time.Sleep(10 * time.Minute)
 		}
 
 		cp := GraphCheckpoint{}
@@ -287,7 +269,6 @@ func (e *ZanzibarMemoryImpl) SyncGraphCheckpoint(c context.Context) {
 		if err := tx.Error; err != nil {
 			if !errors.Is(err, gorm.ErrRecordNotFound) {
 				log.Error().Err(err).Msg("Failed to get graph checkpoint")
-				e.updateGraphLock.Unlock(c)
 				continue
 			}
 		}
@@ -298,7 +279,6 @@ func (e *ZanzibarMemoryImpl) SyncGraphCheckpoint(c context.Context) {
 			if err != nil {
 				log.Warn().Err(err).Msg("Failed to encode graph")
 				e.mutex.RUnlock()
-				e.updateGraphLock.Unlock(c)
 				continue
 			}
 			cp.LastOffset = e.Offest
@@ -307,7 +287,6 @@ func (e *ZanzibarMemoryImpl) SyncGraphCheckpoint(c context.Context) {
 
 			if err := e.db.WithContext(c).Create(&cp).Error; err != nil {
 				log.Error().Err(err).Msg("Failed to create graph checkpoint")
-				e.updateGraphLock.Unlock(c)
 				continue
 			}
 		} else {
@@ -317,7 +296,6 @@ func (e *ZanzibarMemoryImpl) SyncGraphCheckpoint(c context.Context) {
 				if err != nil {
 					log.Warn().Err(err).Msg("Failed to encode graph")
 					e.mutex.RUnlock()
-					e.updateGraphLock.Unlock(c)
 					continue
 				}
 				cp.LastOffset = e.Offest
@@ -326,11 +304,9 @@ func (e *ZanzibarMemoryImpl) SyncGraphCheckpoint(c context.Context) {
 
 				if err := e.db.WithContext(c).Save(&cp).Error; err != nil {
 					log.Error().Err(err).Msg("Failed to update graph checkpoint")
-					e.updateGraphLock.Unlock(c)
 					continue
 				}
 			}
 		}
-		e.updateGraphLock.Unlock(c)
 	}
 }
