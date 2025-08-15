@@ -34,7 +34,7 @@ type ZanzibarMemoryImpl struct {
 	db     *gorm.DB
 
 	// TODO: COW | sharded map | sync map
-	graph  map[entity.Instance]map[string]map[entity.Instance]struct{}
+	graph  *Graph
 	Offest int64
 	cancel context.CancelFunc
 	mutex  sync.RWMutex
@@ -46,7 +46,7 @@ func NewZanzibarMemory(c context.Context, lc *pkg.LifecycleParallel, db *gorm.DB
 	engine := ZanzibarMemoryImpl{
 		kafkaR: kafkaR,
 		db:     db,
-		graph:  make(map[entity.Instance]map[string]map[entity.Instance]struct{}),
+		graph:  NewGraph(),
 	}
 
 	st := time.Now()
@@ -98,20 +98,28 @@ func (e *ZanzibarMemoryImpl) evalUsersetRewrite(c context.Context, rewrite *sche
 	user *entity.Instance, obj *entity.Instance) bool {
 	switch {
 	case rewrite.ComputedUserSet != nil:
-		return e.hasDirectTuple(user, rewrite.ComputedUserSet.Relation, obj)
+		return e.graph.Exist(obj, rewrite.ComputedUserSet.Relation, user)
 
 	case rewrite.TupleToUserset != nil:
-		relSbj, ok := e.graph[*obj]
-		if !ok {
-			return false
-		}
-		sbjs, ok := relSbj[rewrite.TupleToUserset.Tupleset.Relation]
+		s := e.graph.getShard(obj)
+		s.mu.RLock()
+		objEntry := s.graph[*obj]
+		s.mu.RUnlock()
+
+		objEntry.mu.RLock()
+		sbjs, ok := objEntry.Relations[rewrite.TupleToUserset.Tupleset.Relation]
 		if !ok {
 			return false
 		}
 
+		sbjArr := make([]*entity.Instance, 0, len(sbjs))
 		for sbj := range sbjs {
-			ok, _ := e.Check(c, user, rewrite.TupleToUserset.ComputedUserset.Relation, &sbj) // TODO: make sure relation don't have cycle
+			sbjArr = append(sbjArr, &sbj)
+		}
+		objEntry.mu.RUnlock()
+
+		for _, sbj := range sbjArr {
+			ok, _ := e.Check(c, user, rewrite.TupleToUserset.ComputedUserset.Relation, sbj) // TODO: make sure relation don't have cycle
 			if ok {
 				return true
 			}
@@ -143,17 +151,9 @@ func (e *ZanzibarMemoryImpl) evalUsersetRewrite(c context.Context, rewrite *sche
 	return false
 }
 
-func (e *ZanzibarMemoryImpl) hasDirectTuple(user *entity.Instance, rel string, obj *entity.Instance) bool {
-	if _, ok := e.graph[*obj][rel][*user]; ok {
-		return true
-	}
-	return false
-}
-
 // TODO: use init state snapshot to avoid fully reload
 func (e *ZanzibarMemoryImpl) build(c context.Context) error {
 	r := e.kafkaR
-	e.graph = make(map[entity.Instance]map[string]map[entity.Instance]struct{})
 
 	cp := GraphCheckpoint{}
 	tx := e.db.WithContext(c).Take(&cp)
@@ -212,31 +212,14 @@ func (e *ZanzibarMemoryImpl) applyMessage(m kafka.Message) error {
 	rel := val.Relation
 	obj := entity.Instance{Ns: val.ObjNs, Id: val.ObjId}
 
-	e.mutex.Lock() // TODO: Lock entire map is not efficient
-	defer e.mutex.Unlock()
 	e.Offest = m.Offset // TODO: it only use on job service
-	if _, exists := e.graph[obj]; !exists {
-		e.graph[obj] = make(map[string]map[entity.Instance]struct{})
-	}
-	if _, exists := e.graph[obj][rel]; !exists {
-		e.graph[obj][rel] = make(map[entity.Instance]struct{})
-	}
-	e.graph[obj][rel][sbj] = struct{}{}
 
-	// Apply operation type from val.Op ("c"=create, "d"=delete, etc.)
 	switch val.Op {
-	case "c": // create/add edge
-		if _, exists := e.graph[obj]; !exists {
-			e.graph[obj] = make(map[string]map[entity.Instance]struct{})
-		}
-		if _, exists := e.graph[obj][rel]; !exists {
-			e.graph[obj][rel] = make(map[entity.Instance]struct{})
-		}
-		e.graph[obj][rel][sbj] = struct{}{}
-	case "d": // delete/remove edge
-		delete(e.graph[obj][rel], sbj) // TODO: if empty, delete relation, if empty, delete object
+	case "c":
+		e.graph.Create(&obj, rel, &sbj)
+	case "d":
+		e.graph.Delete(&obj, rel, &sbj)
 	default:
-		// handle other ops if any
 	}
 
 	return nil

@@ -1,7 +1,6 @@
 package rbac_test
 
 import (
-	"authz/internal/engine/rbac"
 	"authz/internal/entity"
 	"fmt"
 	"math/rand"
@@ -567,11 +566,11 @@ func BenchmarkShardedSOGraph(b *testing.B) {
 	)
 }
 
-func BenchmarkFormal(b *testing.B) {
-	g := rbac.NewGraph()
-	benchmarkGraph(b,
-		g.Exist,
-		g.Create,
-		g.Delete,
-	)
-}
+// func BenchmarkFormal(b *testing.B) {
+// 	g := rbac.NewGraph()
+// 	benchmarkGraph(b,
+// 		g.Exist,
+// 		g.Create,
+// 		g.Delete,
+// 	)
+// }

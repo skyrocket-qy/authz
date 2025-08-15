@@ -155,7 +155,7 @@
     "editorGutter.commentGlyphForeground": "#cba6f7",
     "editorGutter.deletedBackground": "#f38ba8",
     "editorGutter.foldingControlForeground": "#9399b2",
-    "editorGutter.modifiedBackground": "#EFB080",
+    "editorGutter.modifiedBackground": "#D7A16D",
     "editorHoverWidget.background": "#181825",
     "editorHoverWidget.border": "#585b70",
     "editorHoverWidget.foreground": "#cdd6f4",
@@ -176,7 +176,7 @@
     "editorMarkerNavigationWarning.background": "#fab387",
     "editorOverviewRuler.background": "#181825",
     "editorOverviewRuler.border": "#cdd6f412",
-    "editorOverviewRuler.modifiedForeground": "#EFB080",
+    "editorOverviewRuler.modifiedForeground": "#D7A16D",
     "editorRuler.foreground": "#585b70",
     "editor.stackFrameHighlightBackground": "#89DCEB26",
     "editor.focusedStackFrameHighlightBackground": "#a6e3a126",
@@ -217,9 +217,9 @@
     "gitDecoration.conflictingResourceForeground": "#cba6f7",
     "gitDecoration.deletedResourceForeground": "#f38ba8",
     "gitDecoration.ignoredResourceForeground": "#6c7086",
-    "gitDecoration.modifiedResourceForeground": "#EFB080",
+    "gitDecoration.modifiedResourceForeground": "#D7A16D",
     "gitDecoration.stageDeletedResourceForeground": "#f38ba8",
-    "gitDecoration.stageModifiedResourceForeground": "#EFB080",
+    "gitDecoration.stageModifiedResourceForeground": "#D7A16D",
     "gitDecoration.submoduleResourceForeground": "#89b4fa",
     "gitDecoration.untrackedResourceForeground": "#a6e3a1",
     "input.background": "#313244",
@@ -676,7 +676,7 @@
       "name": "Parentheses, Brackets, Braces",
       "scope": "punctuation",
       "settings": {
-        "foreground": "#CCCCCC",
+        "foreground": "#AAAAAA",
         "fontStyle": ""
       }
     },
@@ -756,7 +756,7 @@
         "punctuation.separator.key-value"
       ],
       "settings": {
-        "foreground": "#94e2d5"
+        "foreground": "#D6D6D6"
       }
     },
     {
