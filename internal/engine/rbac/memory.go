@@ -74,6 +74,7 @@ func (e *ZanzibarMemoryImpl) Close() error {
 	return nil
 }
 
+// TODO: need to check visited to avoid cycle
 func (e *ZanzibarMemoryImpl) Check(c context.Context, user *entity.Instance, perm string,
 	obj *entity.Instance) (bool, error,
 ) {
@@ -110,7 +111,7 @@ func (e *ZanzibarMemoryImpl) evalUsersetRewrite(c context.Context, rewrite *sche
 		}
 
 		for sbj := range sbjs {
-			ok, _ := e.Check(c, user, rewrite.TupleToUserset.ComputedUserset.Relation, &sbj)
+			ok, _ := e.Check(c, user, rewrite.TupleToUserset.ComputedUserset.Relation, &sbj) // TODO: make sure relation don't have cycle
 			if ok {
 				return true
 			}

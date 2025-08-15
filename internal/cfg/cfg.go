@@ -3,8 +3,8 @@ package cfg
 var Cfg Config
 
 type Config struct {
-	MaxCheckDepth int `env:"MAX_CHECK_DEPTH"`
-	MaxCheckNodes int `env:"MAX_CHECK_NODES"`
+	MaxCheckDepth int `env:"MAX_CHECK_DEPTH"` // TODO: not implemented
+	MaxCheckNodes int `env:"MAX_CHECK_NODES"` // TODO: not implemented
 
 	SchemaPath string `env:"SCHEMA_PATH"`
 	Port       int    `env:"PORT"`

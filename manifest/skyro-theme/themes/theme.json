@@ -121,7 +121,7 @@
     "diffEditor.diagonalFill": "#585b7099",
     "diffEditorOverview.insertedForeground": "#a6e3a1cc",
     "diffEditorOverview.removedForeground": "#f38ba8cc",
-    "editor.background": "#0A0A0A",
+    "editor.background": "#131313",
     "editor.findMatchBackground": "#5e3f53",
     "editor.findMatchBorder": "#f38ba833",
     "editor.findMatchHighlightBackground": "#3e5767",
@@ -129,7 +129,7 @@
     "editor.findRangeHighlightBackground": "#3e5767",
     "editor.findRangeHighlightBorder": "#89dceb33",
     "editor.foldBackground": "#89dceb40",
-    "editor.foreground": "#E0E0E0",
+    "editor.foreground": "#D6D6D6",
     "editor.hoverHighlightBackground": "#89dceb40",
     "editor.lineHighlightBackground": "#cdd6f412",
     "editor.lineHighlightBorder": "#00000000",
@@ -330,9 +330,9 @@
     "settings.textInputBorder": "#00000000",
     "settings.numberInputBackground": "#45475a",
     "settings.numberInputBorder": "#00000000",
-    "sideBar.background": "#0A0A0A",
+    "sideBar.background": "#131313",
     "sideBar.dropBackground": "#cba6f733",
-    "sideBar.foreground": "#cdd6f4",
+    "sideBar.foreground": "#D6D6D6",
     "sideBar.border": "#00000000",
     "sideBarSectionHeader.background": "#181825",
     "sideBarSectionHeader.foreground": "#cdd6f4",
@@ -385,8 +385,8 @@
     "tab.unfocusedActiveBorder": "#00000000",
     "tab.unfocusedActiveBorderTop": "#cba6f74d",
     "tab.unfocusedInactiveBackground": "#0c0216",
-    "terminal.background": "#0A0A0A",
-    "terminal.foreground": "#e0e0e0",
+    "terminal.background": "#131313",
+    "terminal.foreground": "#D6D6D6",
     "terminal.ansiBlack": "#45475a",
     "terminal.ansiRed": "#f38ba8",
     "terminal.ansiGreen": "#a6e3a1",
@@ -669,7 +669,7 @@
         "punctuation.definition.variable"
       ],
       "settings": {
-        "foreground": "#e0e0e0"
+        "foreground": "#D6D6D6"
       }
     },
     {
@@ -820,7 +820,7 @@
         "entity.name.type"
       ],
       "settings": {
-        "foreground": "#e0e0e0",
+        "foreground": "#D6D6D6",
         "fontStyle": "italic"
       }
     },

@@ -21,12 +21,13 @@ func NewGraph() *Graph {
 }
 
 type Shard struct {
-	graph map[entity.Instance]*ObjEntry
+	graph map[entity.Instance]*ObjEntry // obj -> ObjEntry
 	mu    sync.RWMutex
 }
 
 type ObjEntry struct {
-	Relations map[string]map[entity.Instance]struct{}
+	// We don't give each relation a lock because it's too expensive
+	Relations map[string]map[entity.Instance]struct{} // rel -> sbj
 	mu        sync.RWMutex
 }
 
