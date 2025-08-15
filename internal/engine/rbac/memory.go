@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"authz/internal/cfg"
 	"authz/internal/entity"
 	"authz/internal/pkg"
 	"authz/internal/schema"
@@ -16,8 +17,6 @@ import (
 	"github.com/segmentio/kafka-go"
 	"gorm.io/gorm"
 )
-
-// TODO: prebuild the graph to reduce loading time
 
 // zanzibar in memory
 type ZanzibarMemory interface {
@@ -33,7 +32,6 @@ type ZanzibarMemoryImpl struct {
 	kafkaR *kafka.Reader
 	db     *gorm.DB
 
-	// TODO: COW | sharded map | sync map
 	graph  *Graph
 	Offest int64
 	cancel context.CancelFunc
@@ -74,9 +72,14 @@ func (e *ZanzibarMemoryImpl) Close() error {
 	return nil
 }
 
-// TODO: need to check visited to avoid cycle
 func (e *ZanzibarMemoryImpl) Check(c context.Context, user *entity.Instance, perm string,
 	obj *entity.Instance) (bool, error,
+) {
+	return e.check(c, user, perm, obj, map[entity.Instance]struct{}{})
+}
+
+func (e *ZanzibarMemoryImpl) check(c context.Context, user *entity.Instance, perm string,
+	obj *entity.Instance, visited map[entity.Instance]struct{}) (bool, error,
 ) {
 	ns, ok := e.schema.Namespaces[obj.Ns]
 	if !ok {
@@ -91,11 +94,17 @@ func (e *ZanzibarMemoryImpl) Check(c context.Context, user *entity.Instance, per
 		return false, nil
 	}
 
-	return e.evalUsersetRewrite(c, &relation.UsersetRewrite, user, obj), nil
+	return e.evalUsersetRewrite(c, &relation.UsersetRewrite, user, obj, visited), nil
 }
 
 func (e *ZanzibarMemoryImpl) evalUsersetRewrite(c context.Context, rewrite *schema.UsersetRewrite,
-	user *entity.Instance, obj *entity.Instance) bool {
+	user *entity.Instance, obj *entity.Instance, visited map[entity.Instance]struct{}) bool {
+	if _, ok := visited[*obj]; ok || !(len(visited) < cfg.Cfg.MaxCheckNodes) {
+		// the return boolean will not tell caller to stop checking, but it will stop recursion
+		return false
+	}
+	visited[*obj] = struct{}{}
+
 	switch {
 	case rewrite.ComputedUserSet != nil:
 		return e.graph.Exist(obj, rewrite.ComputedUserSet.Relation, user)
@@ -119,7 +128,7 @@ func (e *ZanzibarMemoryImpl) evalUsersetRewrite(c context.Context, rewrite *sche
 		objEntry.mu.RUnlock()
 
 		for _, sbj := range sbjArr {
-			ok, _ := e.Check(c, user, rewrite.TupleToUserset.ComputedUserset.Relation, sbj) // TODO: make sure relation don't have cycle
+			ok, _ := e.check(c, user, rewrite.TupleToUserset.ComputedUserset.Relation, sbj, visited)
 			if ok {
 				return true
 			}
@@ -129,7 +138,7 @@ func (e *ZanzibarMemoryImpl) evalUsersetRewrite(c context.Context, rewrite *sche
 
 	case rewrite.Union != nil:
 		for _, r := range rewrite.Union {
-			if e.evalUsersetRewrite(c, r, user, obj) {
+			if e.evalUsersetRewrite(c, r, user, obj, visited) {
 				return true
 			}
 		}
@@ -137,21 +146,20 @@ func (e *ZanzibarMemoryImpl) evalUsersetRewrite(c context.Context, rewrite *sche
 
 	case rewrite.Intersection != nil:
 		for _, r := range rewrite.Intersection {
-			if !e.evalUsersetRewrite(c, r, user, obj) {
+			if !e.evalUsersetRewrite(c, r, user, obj, visited) {
 				return false
 			}
 		}
 		return true
 
 	case rewrite.Exclusion != nil:
-		return e.evalUsersetRewrite(c, rewrite.Exclusion.Base, user, obj) &&
-			!e.evalUsersetRewrite(c, rewrite.Exclusion.Subtract, user, obj)
+		return e.evalUsersetRewrite(c, rewrite.Exclusion.Base, user, obj, visited) &&
+			!e.evalUsersetRewrite(c, rewrite.Exclusion.Subtract, user, obj, visited)
 	}
 
 	return false
 }
 
-// TODO: use init state snapshot to avoid fully reload
 func (e *ZanzibarMemoryImpl) build(c context.Context) error {
 	r := e.kafkaR
 

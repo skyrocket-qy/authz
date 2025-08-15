@@ -150,7 +150,7 @@
     "editorGroup.emptyBackground": "#1e1e2e",
     "editorGroupHeader.tabsBackground": "#11111b",
     "editorGutter.addedBackground": "#4E8C4E",
-    "editorGutter.background": "#0c0216",
+    "editorGutter.background": "#0b0115",
     "editorGutter.commentRangeForeground": "#313244",
     "editorGutter.commentGlyphForeground": "#cba6f7",
     "editorGutter.deletedBackground": "#f38ba8",
@@ -619,7 +619,7 @@
       "foreground": "#cdd6f4"
     },
     "type.defaultLibrary:go": {
-      "foreground": "#cba6f7"
+      "foreground": "#569CD6"
     },
     "variable.readonly.defaultLibrary:go": {
       "foreground": "#569CD6"
