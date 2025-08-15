@@ -148,7 +148,6 @@ func (r *ZanzibarLogicImpl) List(c context.Context, in *authzpbv1.ListTuplesIn) 
 	return out, nil
 }
 
-// TODO: pagination and limit , sorter
 func (r *ZanzibarLogicImpl) Find(c context.Context, filter *authzpbv1.TupleFilter) (
 	[]*authzpbv1.Tuple, error,
 ) {

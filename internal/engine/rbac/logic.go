@@ -207,7 +207,6 @@ func (r *RbacLogicImpl) UpdateRole(c context.Context, in *rbacpb.UpdateRoleIn) e
 	}).Error
 }
 
-// TODO: wrap to transaction
 func (r *RbacLogicImpl) DeleteRole(c context.Context, in *rbacpb.DeleteRoleIn) error {
 	return r.db(c).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Delete(&Role{}, in.Id).Error; err != nil {
@@ -252,7 +251,6 @@ func (r *RbacLogicImpl) CreateResource(c context.Context, in *rbacpb.CreateResou
 	return r.db(c).Create(&Resource{Ns: in.Ns, Name: in.Name}).Error
 }
 
-// TODO: listOption handle
 func (r *RbacLogicImpl) ListResources(c context.Context, in *rbacpb.ListResourcesIn) (
 	out *rbacpb.ListResourcesOut, err error,
 ) {
@@ -313,7 +311,6 @@ func (r *RbacLogicImpl) DeleteResource(c context.Context, in *rbacpb.DeleteResou
 	})
 }
 
-// TODO: wrap to transaction
 func (r *RbacLogicImpl) AssignRole(c context.Context, in *rbacpb.AssignRoleIn) error {
 	return r.db(c).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Model(&User{}).Where("id = ?", in.UserId).
