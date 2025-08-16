@@ -1,0 +1,8 @@
+namespaces:
+  action:
+    type: resource
+    relations:
+      list_users: {}
+      create_user: {}
+      update_user: {}
+      delete_user: {}

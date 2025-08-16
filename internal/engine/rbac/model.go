@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// TODO: for better performance, consider separate metadata and tuples
+// TODO: for better performance, consider separate metadata and tuples with saga pattern
 
 type User struct {
 	Id        uint64 `gorm:"primarykey"`

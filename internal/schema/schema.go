@@ -1,23 +1,76 @@
 package schema
 
 import (
-	"authz/internal/cfg"
 	"errors"
+	"fmt"
+	"io/fs"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
 
 func NewSchema() (*Schema, error) {
-	s := Schema{}
-	f, _ := os.ReadFile(cfg.Cfg.SchemaPath)
-	err := yaml.Unmarshal(f, &s)
+	filePaths, err := getYamlFilesFromEnv()
 	if err != nil {
 		return nil, err
 	}
-	s.Build()
 
-	return &s, nil
+	schema := Schema{}
+	for _, path := range filePaths {
+		tmpSchema := Schema{}
+		f, err := os.ReadFile(path)
+		if err != nil {
+			return nil, err
+		}
+
+		err = yaml.Unmarshal(f, &tmpSchema)
+		if err != nil {
+			return nil, err
+		}
+		tmpSchema.Build()
+	}
+
+	return &schema, nil
+}
+
+func getYamlFilesFromEnv() ([]string, error) {
+	pathStr := os.Getenv("SCHEMA_PATH")
+	if pathStr == "" {
+		return nil, fmt.Errorf("CONFIG_PATHS not set")
+	}
+
+	paths := strings.Split(pathStr, ",")
+	var yamlFiles []string
+
+	for _, p := range paths {
+		p = strings.TrimSpace(p)
+		fi, err := os.Stat(p)
+		if err != nil {
+			return nil, err
+		}
+
+		if fi.IsDir() {
+			// scan all .yaml files in directory
+			err := filepath.WalkDir(p, func(path string, d fs.DirEntry, err error) error {
+				if err != nil {
+					return err
+				}
+				if !d.IsDir() && (strings.HasSuffix(d.Name(), ".yaml") || strings.HasSuffix(d.Name(), ".yml")) {
+					yamlFiles = append(yamlFiles, path)
+				}
+				return nil
+			})
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			yamlFiles = append(yamlFiles, p)
+		}
+	}
+
+	return yamlFiles, nil
 }
 
 type Schema struct {
@@ -150,4 +203,16 @@ func (s *Schema) Build() {
 			}
 		}
 	}
+}
+
+// TODO: union deeper
+func (s *Schema) Union(schema2 *Schema) error {
+	for _, ns := range schema2.Namespaces {
+		if _, exists := s.Namespaces[ns.Type]; exists {
+			return fmt.Errorf("namespace %s already exists", ns.Type)
+		}
+		s.Namespaces[ns.Type] = ns
+	}
+
+	return nil
 }

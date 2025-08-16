@@ -1,6 +1,6 @@
 module authz
 
-go 1.24.5
+go 1.24.6
 
 require (
 	ariga.io/atlas-provider-gorm v0.5.3

@@ -34,9 +34,9 @@ func (h *Handler) ListUsers(
 	return connect.NewResponse(out), nil
 }
 
-func (h *Handler) UpdateUser(
-	ctx context.Context, req *connect.Request[rbacpb.UpdateUserIn],
-) (*connect.Response[emptypb.Empty], error) {
+func (h *Handler) UpdateUser(ctx context.Context, req *connect.Request[rbacpb.UpdateUserIn],
+) (*connect.Response[emptypb.Empty], error,
+) {
 	err := h.rbacLogic.UpdateUser(ctx, req.Msg)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)

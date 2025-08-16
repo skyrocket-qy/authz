@@ -8,11 +8,14 @@ namespaces:
               relation: read
           - tuple_to_userset:
               tupleset:
-                relation: belongs_to
+                relation: include
               computed_userset:
                 relation: read
   object_set:
     type: resource
     relations:
-      read:
+      read: {}
+
+      include:
+        allow_subject_namespaces: [object]
       

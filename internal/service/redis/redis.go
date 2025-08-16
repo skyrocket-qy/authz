@@ -21,7 +21,6 @@ func New(lc *pkg.LifecycleParallel) *redis.Client {
 	return rdb
 }
 
-// TODO: use distributed lock to do update graph check point
 type DistributedLock struct {
 	client *redis.Client
 	key    string

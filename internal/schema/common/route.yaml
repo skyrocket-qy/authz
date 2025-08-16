@@ -1,0 +1,15 @@
+namespaces:
+  route:
+    type: resource
+    relations:
+      read:
+        intersection:
+          - computed_userset:
+              relation: "read"
+          - tuple_to_userset:
+              tupleset:
+                namespace: "route"
+                relation: "sub_route"
+              computed_userset:
+                relation: "read"
+      sub_route: {}
