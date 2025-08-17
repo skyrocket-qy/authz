@@ -1,7 +1,14 @@
 namespaces:
+  action:
+    type: resource
+    relations:
+      list_users: {}
+      create_user: {}
+      update_user: {}
+      delete_user: {}
+
   object:
     type: resource
-    allow_subject_namespaces: [role] # if not set, means all allowed
     relations:
       read:
         union:
@@ -13,10 +20,43 @@ namespaces:
                 relation: write
               computed_userset:
                 relation: member
+          # object_set
+          - tuple_to_userset:
+              tupleset:
+                relation: belong
+              computed_userset:
+                relation: write
+          - tuple_to_userset:
+              tupleset:
+                relation: belong
+              computed_userset:
+                relation: read
       write:
+        union:
+          - tuple_to_userset:
+              computed_userset:
+                relation: member
+          - tuple_to_userset:
+              tupleset:
+                relation: belong
+              computed_userset:
+                relation: write
+
+  object_set:
+    type: resource
+    relations:
+      read:
+        allow_subject_namespaces: [role]
         tuple_to_userset:
           computed_userset:
-            relation: member
+            relation: member     
+      write: 
+        allow_subject_namespaces: [role]
+        tuple_to_userset:
+          computed_userset:
+            relation: member     
+      belong:
+        allow_subject_namespaces: [object]
 
   role:
     relations:

@@ -8,7 +8,7 @@ namespaces:
               relation: read
           - tuple_to_userset:
               tupleset:
-                relation: include
+                relation: belong
               computed_userset:
                 relation: read
   object_set:
@@ -16,6 +16,6 @@ namespaces:
     relations:
       read: {}
 
-      include:
+      belong:
         allow_subject_namespaces: [object]
       
