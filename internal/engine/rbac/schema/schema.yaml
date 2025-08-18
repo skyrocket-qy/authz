@@ -2,10 +2,22 @@ namespaces:
   action:
     type: resource
     relations:
-      list_users: {}
-      create_user: {}
-      update_user: {}
-      delete_user: {}
+      list_users: 
+        tuple_to_userset:
+          computed_userset:
+            relation: member    
+      create_user:
+        tuple_to_userset:
+          computed_userset:
+            relation: member    
+      update_user:
+        tuple_to_userset:
+          computed_userset:
+            relation: member    
+      delete_user:
+        tuple_to_userset:
+          computed_userset:
+            relation: member    
 
   object:
     type: resource

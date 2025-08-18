@@ -1,6 +1,4 @@
 - use pprof for profiling
-- multiple schema load
-- schema format design
 - batch operation
 - integrate authn
 - test the performance
