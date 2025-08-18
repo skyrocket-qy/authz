@@ -114,7 +114,7 @@ func (e *ZanzibarMemoryImpl) evalUsersetRewrite(c context.Context, rewrite *sche
 	case rewrite.TupleToUserset != nil:
 		s := e.graph.getShard(obj)
 		s.mu.RLock()
-		objEntry := s.graph[*obj]
+		objEntry := s.Graph[*obj]
 		s.mu.RUnlock()
 
 		objEntry.mu.RLock()

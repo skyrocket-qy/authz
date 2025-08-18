@@ -15,13 +15,13 @@ type Graph struct {
 func NewGraph() *Graph {
 	shards := make([]*Shard, NumShards)
 	for i := range NumShards {
-		shards[i] = &Shard{graph: make(map[entity.Instance]*ObjEntry)}
+		shards[i] = &Shard{Graph: make(map[entity.Instance]*ObjEntry)}
 	}
 	return &Graph{Shards: shards}
 }
 
 type Shard struct {
-	graph map[entity.Instance]*ObjEntry // obj -> ObjEntry
+	Graph map[entity.Instance]*ObjEntry // obj -> ObjEntry
 	mu    sync.RWMutex
 }
 
@@ -40,7 +40,7 @@ func (g *Graph) getShard(obj *entity.Instance) *Shard {
 func (g *Graph) Exist(obj *entity.Instance, rel string, sbj *entity.Instance) bool {
 	s := g.getShard(obj)
 	s.mu.RLock()
-	objEntry := s.graph[*obj]
+	objEntry := s.Graph[*obj]
 	s.mu.RUnlock()
 	if objEntry == nil {
 		return false
@@ -62,14 +62,14 @@ func (g *Graph) Exist(obj *entity.Instance, rel string, sbj *entity.Instance) bo
 func (g *Graph) Create(obj *entity.Instance, rel string, sbj *entity.Instance) {
 	s := g.getShard(obj)
 	s.mu.RLock()
-	objEntry := s.graph[*obj]
+	objEntry := s.Graph[*obj]
 	s.mu.RUnlock()
 	if objEntry == nil {
 		s.mu.Lock()
-		if s.graph[*obj] == nil {
-			s.graph[*obj] = &ObjEntry{Relations: make(map[string]map[entity.Instance]struct{})}
+		if s.Graph[*obj] == nil {
+			s.Graph[*obj] = &ObjEntry{Relations: make(map[string]map[entity.Instance]struct{})}
 		}
-		objEntry = s.graph[*obj]
+		objEntry = s.Graph[*obj]
 		s.mu.Unlock()
 	}
 
@@ -90,7 +90,7 @@ func (g *Graph) Delete(obj *entity.Instance, rel string, sbj *entity.Instance) {
 	s := g.getShard(obj)
 
 	s.mu.RLock()
-	objEntry := s.graph[*obj]
+	objEntry := s.Graph[*obj]
 	s.mu.RUnlock()
 	if objEntry == nil {
 		return
@@ -110,7 +110,7 @@ func (g *Graph) Delete(obj *entity.Instance, rel string, sbj *entity.Instance) {
 		if len(objEntry.Relations) == 0 {
 			s.mu.Lock()
 			if len(objEntry.Relations) == 0 {
-				delete(s.graph, *obj)
+				delete(s.Graph, *obj)
 			}
 			s.mu.Unlock()
 		}
