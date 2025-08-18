@@ -17,7 +17,7 @@ func NewSchema() (*Schema, error) {
 		return nil, err
 	}
 
-	schema := Schema{}
+	schema := Schema{Namespaces: map[string]*Namespace{}}
 	for _, path := range filePaths {
 		tmpSchema := Schema{}
 		f, err := os.ReadFile(path)
@@ -30,6 +30,10 @@ func NewSchema() (*Schema, error) {
 			return nil, err
 		}
 		tmpSchema.Build()
+
+		if err := schema.Union(&tmpSchema); err != nil {
+			return nil, err
+		}
 	}
 
 	return &schema, nil
@@ -207,11 +211,11 @@ func (s *Schema) Build() {
 
 // TODO: union deeper
 func (s *Schema) Union(schema2 *Schema) error {
-	for _, ns := range schema2.Namespaces {
-		if _, exists := s.Namespaces[ns.Type]; exists {
-			return fmt.Errorf("namespace %s already exists", ns.Type)
+	for ns, nsEntry := range schema2.Namespaces {
+		if _, exists := s.Namespaces[ns]; exists {
+			return fmt.Errorf("namespace %s already exists", ns)
 		}
-		s.Namespaces[ns.Type] = ns
+		s.Namespaces[ns] = nsEntry
 	}
 
 	return nil

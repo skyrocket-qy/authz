@@ -51,7 +51,9 @@ func NewZanzibarMemory(c context.Context, lc *pkg.LifecycleParallel, db *gorm.DB
 	if err := engine.build(c); err != nil {
 		return nil, err
 	}
-	log.Info().Int64("took ms", time.Since(st).Milliseconds()).Msg("build rbac graph")
+	log.Info().
+		Int64("offset", engine.Offest).
+		Int64("took ms", time.Since(st).Milliseconds()).Msg("build rbac graph")
 
 	cc, cancel := context.WithCancel(c)
 	engine.cancel = cancel
@@ -161,6 +163,7 @@ func (e *ZanzibarMemoryImpl) evalUsersetRewrite(c context.Context, rewrite *sche
 }
 
 func (e *ZanzibarMemoryImpl) build(c context.Context) error {
+	log.Info().Msg("build rbac graph")
 	r := e.kafkaR
 
 	cp := GraphCheckpoint{}
