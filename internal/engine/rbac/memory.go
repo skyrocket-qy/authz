@@ -175,7 +175,7 @@ func (e *ZanzibarMemoryImpl) build(c context.Context) error {
 	}
 
 	if tx.RowsAffected > 0 {
-		if err := pkg.DecodeGob(cp.Data, &e.graph); err != nil {
+		if err := pkg.DecodeGob(cp.Data, e.graph); err != nil {
 			return fmt.Errorf("failed to decode graph: %w", err)
 		}
 		e.Offest = cp.LastOffset

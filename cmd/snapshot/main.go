@@ -18,7 +18,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-var graph map[entity.Instance]map[string]map[entity.Instance]struct{}
+var graph *rbac.Graph
 var lastKey int64
 
 func main() {
@@ -29,7 +29,7 @@ func main() {
 	lc := pkg.NewLifecycleParallel()
 	r := service.NewKafkaReader(lc)
 	c := context.Background()
-	graph = make(map[entity.Instance]map[string]map[entity.Instance]struct{})
+	graph = rbac.NewGraph()
 	if err := r.SetOffset(kafka.FirstOffset); err != nil {
 		panic(err)
 	}
@@ -48,7 +48,7 @@ func main() {
 		}
 	}
 	fmt.Println("lastKey: ", lastKey)
-	fmt.Println(len(graph))
+	// fmt.Println(len(graph))
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
 
@@ -87,7 +87,7 @@ func main() {
 	loadTime := time.Since(start)
 	fmt.Printf("Load Time: %s\n\n", loadTime)
 
-	graph = make(map[entity.Instance]map[string]map[entity.Instance]struct{})
+	graph = rbac.NewGraph()
 	dec := gob.NewDecoder(bytes.NewReader(marshaledData))
 	start = time.Now()
 	if err := dec.Decode(&graph); err != nil {
@@ -115,26 +115,12 @@ func applyMessage(m kafka.Message) error {
 	rel := val.Relation
 	obj := entity.Instance{Ns: val.ObjNs, Id: val.ObjId}
 
-	if _, exists := graph[obj]; !exists {
-		graph[obj] = make(map[string]map[entity.Instance]struct{})
-	}
-	if _, exists := graph[obj][rel]; !exists {
-		graph[obj][rel] = make(map[entity.Instance]struct{})
-	}
-	graph[obj][rel][sbj] = struct{}{}
-
 	// Apply operation type from val.Op ("c"=create, "d"=delete, etc.)
 	switch val.Op {
 	case "c": // create/add edge
-		if _, exists := graph[obj]; !exists {
-			graph[obj] = make(map[string]map[entity.Instance]struct{})
-		}
-		if _, exists := graph[obj][rel]; !exists {
-			graph[obj][rel] = make(map[entity.Instance]struct{})
-		}
-		graph[obj][rel][sbj] = struct{}{}
+		graph.Create(&obj, rel, &sbj)
 	case "d": // delete/remove edge
-		delete(graph[obj][rel], sbj)
+		graph.Delete(&obj, rel, &sbj)
 	default:
 		// handle other ops if any
 	}

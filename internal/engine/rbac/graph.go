@@ -9,7 +9,7 @@ import (
 const NumShards = 8192
 
 type Graph struct {
-	shards []*Shard
+	Shards []*Shard
 }
 
 func NewGraph() *Graph {
@@ -17,7 +17,7 @@ func NewGraph() *Graph {
 	for i := range NumShards {
 		shards[i] = &Shard{graph: make(map[entity.Instance]*ObjEntry)}
 	}
-	return &Graph{shards: shards}
+	return &Graph{Shards: shards}
 }
 
 type Shard struct {
@@ -33,7 +33,7 @@ type ObjEntry struct {
 
 func (g *Graph) getShard(obj *entity.Instance) *Shard {
 	sum, _ := strconv.Atoi(obj.Id) // TODO: use uint64 on obj
-	return g.shards[sum%NumShards]
+	return g.Shards[sum%NumShards]
 }
 
 // Read only locks the object
