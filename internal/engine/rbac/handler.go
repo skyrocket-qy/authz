@@ -192,7 +192,7 @@ func (h *Handler) DeleteTuples(
 	*connect.Response[emptypb.Empty], error,
 ) {
 	err := h.zLogic.Delete(ctx, req.Msg)
-	if err == nil {
+	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 

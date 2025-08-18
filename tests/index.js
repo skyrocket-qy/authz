@@ -2,10 +2,10 @@ import http from 'k6/http';
 
 
 export const options = {
-    vus: 3,
+    vus: 10,
     setupTimeout: '6000s',
     // iterations: 1000,
-    duration: '30s',
+    duration: '60s',
 }
 
 let enforcements = [];
@@ -44,14 +44,29 @@ export function setup() {
     return { enforcements };
 }
 
-export default function (data){
-    const i = __ITER;
-    const userId = i % 100000;   // 100k users
-    const roleId = userId % 10000;
-    const resourceId = roleId % 1000;
-    const perm = "read";
+export default function(data){
+    const userId = Math.floor(Math.random() * 100000);
+    const resourceId = Math.floor(Math.random() * 1000);
 
-    checkPerm(userId, resourceId, perm);
+    doRandomOp(userId, resourceId);
+}
+
+export function doRandomOp(userId, resourceId){
+    const rand = Math.random() * 100;
+    if(rand < 98){                  // 0–93 = 94% read
+        checkPerm(userId, resourceId, 'read');
+    } else if(rand < 99){           // 94–96 = 3% create
+        createTuple({
+            SbjNs: 'user',
+            SbjId: userId.toString(),
+            rel: 'member',
+            objId: Math.floor(Math.random() * 100000).toString(),
+            objNs: 'role',
+        });
+    } else {                        // 97–99 = 3% delete
+        const randId = Math.floor(Math.random() * 110000);
+        deleteTuples([randId]); // or some ID
+    }
 }
 
 // export function teardown(data) {
@@ -59,13 +74,15 @@ export default function (data){
 // }
 
 export function assignRole(userId, roleId) {
-  return http.post('http://localhost:8080/authzpb.rbacpb.RbacService/AssignRole', JSON.stringify({ userId, roleId }), {
+  return http.post('http://localhost:8080/authzpb.rbacpb.RbacService/AssignRole', 
+    JSON.stringify({ userId, roleId }), {
     headers: { 'Content-Type': 'application/json' },
   });
 }
 
 export function grantPerm(roleId, resourceId, perm) {
-  return http.post('http://localhost:8080/authzpb.rbacpb.RbacService/GrantPerm', JSON.stringify({ roleId, resourceId, perm }), {
+  return http.post('http://localhost:8080/authzpb.rbacpb.RbacService/GrantPerm', 
+    JSON.stringify({ roleId, resourceId, perm }), {
     headers: { 'Content-Type': 'application/json' },
   });
 }
@@ -78,4 +95,24 @@ export function checkPerm(userId, resourceId, perm) {
         objId: resourceId.toString(),
         objNs: 'object',
     }), { headers: { 'Content-Type': 'application/json' } });
+}
+
+export function createTuple(tuple){
+    return http.post(
+        'http://localhost:8080/authzpb.v1.AuthzService/CreateTuple', 
+        JSON.stringify(tuple), 
+        {headers: { 'Content-Type': 'application/json' }}
+    );
+}
+
+export function deleteTuples(id){
+    return http.post(
+        'http://localhost:8080/authzpb.v1.AuthzService/DeleteTuples', 
+        JSON.stringify({
+            "delete_tuple_ids": {
+                "ids": [id]
+            }
+        }), 
+        {headers: { 'Content-Type': 'application/json' }}
+    );
 }
