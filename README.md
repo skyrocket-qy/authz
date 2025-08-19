@@ -1,35 +1,45 @@
-
 # MemZ
 
 <img src="manifest/icon/f2.png" alt="icon" width="150">
 
-Insipired by [Zanzibar](!https://research.google/pubs/zanzibar-googles-consistent-global-authorization-system/), This project is to implement a distributed authorization read-heavy system
+Inspired by [Zanzibar](https://research.google/pubs/zanzibar-googles-consistent-global-authorization-system/), **MemZ** is a distributed, memory-first authorization system optimized for read-heavy workloads.
 
-## Goal
+---
 
-- Read-Heavy system
-- Distributed with HA and eventually consistence
-- High throught + low layency (50k+ qps + p95 < 10ms)
-- Memory evaluation
-- Focus on performance, not all cases support
+## Goals
 
-## Support model
+- **Read-heavy performance**
+- **Distributed with high availability** and eventual consistency
+- **High throughput + low latency**
+  - 50k+ QPS
+  - p95 latency < 10ms
+- **In-memory evaluation** for maximum speed
+- **Performance-focused** — not all edge cases are supported
 
-- RBAC
-- Hierarchical RBAC
-- Admin
-- Object-less
-- router
-- filesystem
-- static abac
+---
 
-## Limit
+## Supported Models
 
-- dynamic model
-- tuples.len > 10e8 use about 10G memory
-- single write db, not ideal on write-heavy
+- Role-Based Access Control (**RBAC**)
+- Hierarchical Relations
+- Global admin roles
+- Object-less permissions
+- Router-style access control
+- Filesystem-style permissions
+- Static attribute-based access control (**static ABAC**)
 
-## Support protocol
+---
+
+## Limitations
+
+- Not fully consistent
+- No dynamic policy model
+- Memory footprint: ~10 GB per 10⁸ tuples
+- Single write database — not optimized for write-heavy workloads
+
+---
+
+## Supported Protocols
 
 - gRPC
 - ConnectRPC

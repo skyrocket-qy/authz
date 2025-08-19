@@ -4,4 +4,12 @@
 - test the performance
 - finish the job service
 - add more schema types
-- cache
+- cmd to inspect tuples cycle, run check, benchmark, schema check
+- A simple web dashboard for viewing the relationship graph.
+- Metrics and tracing (Prometheus / OpenTelemetry)
+- Health checks and live config reload(Ready/Live probes for k8s.)
+- No downtime when updating schema.
+- Given a check, show why it was allowed/denied (critical for trust).
+- multi-tenant example
+- Time-based conditions (e.g. access valid until X) stored as metadata
+- Logo and README badges (CI passing, Docker pull count, GoDoc, etc.)
