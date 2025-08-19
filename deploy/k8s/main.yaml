@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: authz-main
+  namespace: authz
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: authz-main
+  template:
+    metadata:
+      labels:
+        app: authz-main
+    spec:
+      containers:
+        - name: main
+          image: myregistry/authz-main:latest
+          env:
+            - name: POSTGRES_URL
+              value: "postgresql://postgres:supersecret@authz-postgres:5432/authzdb"
+            - name: KAFKA_BROKER
+              value: "authz-kafka:9092"
+          ports:
+            - containerPort: 8080
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: authz-main-hpa
+  namespace: authz
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: authz-main
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50

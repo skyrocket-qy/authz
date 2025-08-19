@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: authz-job
+  namespace: authz
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: authz-job
+  template:
+    metadata:
+      labels:
+        app: authz-job
+    spec:
+      containers:
+        - name: job
+          image: myregistry/authz-job:latest
+          env:
+            - name: POSTGRES_URL
+              value: "postgresql://postgres:supersecret@authz-postgres:5432/authzdb"
+            - name: KAFKA_BROKER
+              value: "authz-kafka:9092"
