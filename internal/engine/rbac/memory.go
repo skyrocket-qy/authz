@@ -20,7 +20,7 @@ import (
 
 // zanzibar in memory
 type ZanzibarMemory interface {
-	Check(c context.Context, sbj *entity.Instance, rel string, obj *entity.Instance) (bool, error)
+	Check(c context.Context, sbj entity.Instance, rel string, obj entity.Instance) (bool, error)
 	// Lookup(c context.Context, sbj *entity.Instance, rel string) ([]*entity.Instance, error)
 	// Expand(c context.Context, rel string, obj *entity.Instance) ([]*entity.Instance, error)
 }
@@ -74,14 +74,14 @@ func (e *ZanzibarMemoryImpl) Close() error {
 	return nil
 }
 
-func (e *ZanzibarMemoryImpl) Check(c context.Context, user *entity.Instance, perm string,
-	obj *entity.Instance) (bool, error,
+func (e *ZanzibarMemoryImpl) Check(c context.Context, user entity.Instance, perm string,
+	obj entity.Instance) (bool, error,
 ) {
-	return e.check(c, user, perm, obj, map[entity.Instance]struct{}{})
+	return e.check(user, perm, obj, map[entity.Instance]struct{}{})
 }
 
-func (e *ZanzibarMemoryImpl) check(c context.Context, user *entity.Instance, perm string,
-	obj *entity.Instance, visited map[entity.Instance]struct{}) (bool, error,
+func (e *ZanzibarMemoryImpl) check(user entity.Instance, perm string,
+	obj entity.Instance, visited map[entity.Instance]struct{}) (bool, error,
 ) {
 	ns, ok := e.schema.Namespaces[obj.Ns]
 	if !ok {
@@ -96,51 +96,28 @@ func (e *ZanzibarMemoryImpl) check(c context.Context, user *entity.Instance, per
 		return false, nil
 	}
 
-	return e.evalUsersetRewrite(c, &relation.UsersetRewrite, user, obj, visited), nil
+	return e.evalUsersetRewrite(&relation.UsersetRewrite, user, obj, visited), nil
 }
 
-func (e *ZanzibarMemoryImpl) evalUsersetRewrite(c context.Context, rewrite *schema.UsersetRewrite,
-	user *entity.Instance, obj *entity.Instance, visited map[entity.Instance]struct{}) bool {
-	if _, ok := visited[*obj]; ok || !(len(visited) < cfg.Cfg.MaxCheckNodes) {
+// TODO: seems no need context
+func (e *ZanzibarMemoryImpl) evalUsersetRewrite(rewrite *schema.UsersetRewrite,
+	user entity.Instance, obj entity.Instance, visited map[entity.Instance]struct{}) bool {
+	if _, ok := visited[obj]; ok || !(len(visited) < cfg.Cfg.MaxCheckNodes) {
 		// the return boolean will not tell caller to stop checking, but it will stop recursion
 		return false
 	}
-	visited[*obj] = struct{}{}
+	visited[obj] = struct{}{}
 
 	switch {
 	case rewrite.ComputedUserSet != nil:
 		return e.graph.Exist(obj, rewrite.ComputedUserSet.Relation, user)
 
 	case rewrite.TupleToUserset != nil:
-		s := e.graph.getShard(obj)
-		s.mu.RLock()
-		objEntry := s.Graph[*obj]
-		s.mu.RUnlock()
-
-		objEntry.mu.RLock()
-		sbjs, ok := objEntry.Relations[rewrite.TupleToUserset.Tupleset.Relation]
-		if !ok {
-			return false
-		}
-
-		sbjArr := make([]*entity.Instance, 0, len(sbjs))
-		for sbj := range sbjs {
-			sbjArr = append(sbjArr, &sbj)
-		}
-		objEntry.mu.RUnlock()
-
-		for _, sbj := range sbjArr {
-			ok, _ := e.check(c, user, rewrite.TupleToUserset.ComputedUserset.Relation, sbj, visited)
-			if ok {
-				return true
-			}
-		}
-
-		return false
+		return e.evalTupleToUserset(rewrite.TupleToUserset, user, obj, visited)
 
 	case rewrite.Union != nil:
 		for _, r := range rewrite.Union {
-			if e.evalUsersetRewrite(c, r, user, obj, visited) {
+			if e.evalUsersetRewrite(r, user, obj, visited) {
 				return true
 			}
 		}
@@ -148,18 +125,60 @@ func (e *ZanzibarMemoryImpl) evalUsersetRewrite(c context.Context, rewrite *sche
 
 	case rewrite.Intersection != nil:
 		for _, r := range rewrite.Intersection {
-			if !e.evalUsersetRewrite(c, r, user, obj, visited) {
+			if !e.evalUsersetRewrite(r, user, obj, visited) {
 				return false
 			}
 		}
 		return true
 
 	case rewrite.Exclusion != nil:
-		return e.evalUsersetRewrite(c, rewrite.Exclusion.Base, user, obj, visited) &&
-			!e.evalUsersetRewrite(c, rewrite.Exclusion.Subtract, user, obj, visited)
+		return e.evalUsersetRewrite(rewrite.Exclusion.Base, user, obj, visited) &&
+			!e.evalUsersetRewrite(rewrite.Exclusion.Subtract, user, obj, visited)
 	}
 
 	return false
+}
+
+func (e *ZanzibarMemoryImpl) evalTupleToUserset(tupleToUserset *schema.TupleToUserset,
+	sbj entity.Instance, obj entity.Instance, visited map[entity.Instance]struct{},
+) bool {
+	reWriteObjs := e.getSbjs(
+		[]entity.Instance{obj, {Ns: obj.Ns, Id: "*"}},
+		tupleToUserset.ComputedUserset.Relation,
+	)
+
+	for nextObj := range reWriteObjs {
+		ok, _ := e.check(sbj, tupleToUserset.ComputedUserset.Relation, nextObj, visited)
+		if ok {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (e *ZanzibarMemoryImpl) getSbjs(objs []entity.Instance, rel string) map[entity.Instance]struct{} {
+	sbjs := make(map[entity.Instance]struct{})
+	for _, obj := range objs {
+		s := e.graph.getShard(obj)
+		s.mu.RLock()
+		objEntry, ok := s.Graph[obj]
+		s.mu.RUnlock()
+		if !ok {
+			continue
+		}
+
+		objEntry.mu.RLock()
+		sbjEntry, ok := objEntry.Relations[rel]
+		if ok {
+			for sbj := range sbjEntry {
+				sbjs[sbj] = struct{}{}
+			}
+		}
+		objEntry.mu.RUnlock()
+	}
+
+	return sbjs
 }
 
 func (e *ZanzibarMemoryImpl) build(c context.Context) error {
@@ -227,9 +246,9 @@ func (e *ZanzibarMemoryImpl) applyMessage(m kafka.Message) error {
 
 	switch val.Op {
 	case "c":
-		e.graph.Create(&obj, rel, &sbj)
+		e.graph.Create(obj, rel, sbj)
 	case "d":
-		e.graph.Delete(&obj, rel, &sbj)
+		e.graph.Delete(obj, rel, sbj)
 	default:
 	}
 

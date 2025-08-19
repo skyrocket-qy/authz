@@ -2,10 +2,17 @@ namespaces:
   action:
     type: resource
     relations:
-      list_users: 
-        tuple_to_userset:
-          computed_userset:
-            relation: member    
+      list_users:
+        union:
+          - tuple_to_userset:
+              tupleset:
+                namespace: role
+                id: admin
+              computed_userset:
+                relation: member   
+          - tuple_to_userset:
+              computed_userset:
+                relation: member    
       create_user:
         tuple_to_userset:
           computed_userset:

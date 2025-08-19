@@ -118,9 +118,9 @@ func applyMessage(m kafka.Message) error {
 	// Apply operation type from val.Op ("c"=create, "d"=delete, etc.)
 	switch val.Op {
 	case "c": // create/add edge
-		graph.Create(&obj, rel, &sbj)
+		graph.Create(obj, rel, sbj)
 	case "d": // delete/remove edge
-		graph.Delete(&obj, rel, &sbj)
+		graph.Delete(obj, rel, sbj)
 	default:
 		// handle other ops if any
 	}

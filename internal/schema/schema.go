@@ -102,9 +102,9 @@ type UsersetRewrite struct {
 }
 
 type Userset struct {
-	Namespace *string `yaml:"namespace"`
-	Id        string  `yaml:"id"`
-	Relation  string  `yaml:"relation"` // e.g. "owner""
+	Namespace *string `yaml:"namespace,omitempty"`
+	Id        *string `yaml:"id,omitempty"`
+	Relation  *string `yaml:"relation,omitempty"` // e.g. "owner""
 }
 
 type ExclusionNode struct {
@@ -123,7 +123,7 @@ type TupleToUserset struct {
 
 func (t *TupleToUserset) Build(rel string) {
 	if t.Tupleset == nil {
-		t.Tupleset = &Userset{Relation: rel}
+		t.Tupleset = &Userset{Relation: &rel}
 	}
 }
 
@@ -174,7 +174,7 @@ func (r *UsersetRewrite) Validate() error {
 		if r.TupleToUserset.Tupleset == nil || r.TupleToUserset.ComputedUserset == nil {
 			return errors.New("tuple_to_userset must have both tupleset and computed_userset")
 		}
-		if r.TupleToUserset.Tupleset.Relation == "" || r.TupleToUserset.ComputedUserset.Relation == "" {
+		if r.TupleToUserset.Tupleset.Relation == nil || r.TupleToUserset.ComputedUserset.Relation == "" {
 			return errors.New("tuple_to_userset fields must have non-empty relation")
 		}
 	}

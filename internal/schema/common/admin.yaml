@@ -1,0 +1,28 @@
+# method 1
+namespaces:
+  action:
+    relations:
+      list_users:
+        tuple_to_userset:
+          tupleset:
+            namespace: role
+            id: admin
+          computed_userset:
+            relation: member   
+# method 2
+  object:
+    relations:
+      read:
+        tuple_to_userset:
+          tupleset:
+            relation: belong
+          computed_userset:
+            relation: read
+  object_set:
+    relations:
+      read: {}
+      belong: {}
+
+# method 3
+# object:*#read@role:admin
+# object:*#*@role:admin

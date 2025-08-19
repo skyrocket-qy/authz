@@ -31,16 +31,17 @@ type ObjEntry struct {
 	mu        sync.RWMutex
 }
 
-func (g *Graph) getShard(obj *entity.Instance) *Shard {
+func (g *Graph) getShard(obj entity.Instance) *Shard {
 	sum, _ := strconv.Atoi(obj.Id) // TODO: use uint64 on obj
 	return g.Shards[sum%NumShards]
 }
 
+// TODO: wildcard support
 // Read only locks the object
-func (g *Graph) Exist(obj *entity.Instance, rel string, sbj *entity.Instance) bool {
+func (g *Graph) Exist(obj entity.Instance, rel string, sbj entity.Instance) bool {
 	s := g.getShard(obj)
 	s.mu.RLock()
-	objEntry := s.Graph[*obj]
+	objEntry := s.Graph[obj]
 	s.mu.RUnlock()
 	if objEntry == nil {
 		return false
@@ -54,22 +55,22 @@ func (g *Graph) Exist(obj *entity.Instance, rel string, sbj *entity.Instance) bo
 		return false
 	}
 
-	_, ok := relEntry[*sbj]
+	_, ok := relEntry[sbj]
 	return ok
 }
 
 // Write only locks the object
-func (g *Graph) Create(obj *entity.Instance, rel string, sbj *entity.Instance) {
+func (g *Graph) Create(obj entity.Instance, rel string, sbj entity.Instance) {
 	s := g.getShard(obj)
 	s.mu.RLock()
-	objEntry := s.Graph[*obj]
+	objEntry := s.Graph[obj]
 	s.mu.RUnlock()
 	if objEntry == nil {
 		s.mu.Lock()
-		if s.Graph[*obj] == nil {
-			s.Graph[*obj] = &ObjEntry{Relations: make(map[string]map[entity.Instance]struct{})}
+		if s.Graph[obj] == nil {
+			s.Graph[obj] = &ObjEntry{Relations: make(map[string]map[entity.Instance]struct{})}
 		}
-		objEntry = s.Graph[*obj]
+		objEntry = s.Graph[obj]
 		s.mu.Unlock()
 	}
 
@@ -82,15 +83,15 @@ func (g *Graph) Create(obj *entity.Instance, rel string, sbj *entity.Instance) {
 		relEntry = objEntry.Relations[rel]
 	}
 
-	relEntry[*sbj] = struct{}{}
+	relEntry[sbj] = struct{}{}
 }
 
 // Delete only locks the object
-func (g *Graph) Delete(obj *entity.Instance, rel string, sbj *entity.Instance) {
+func (g *Graph) Delete(obj entity.Instance, rel string, sbj entity.Instance) {
 	s := g.getShard(obj)
 
 	s.mu.RLock()
-	objEntry := s.Graph[*obj]
+	objEntry := s.Graph[obj]
 	s.mu.RUnlock()
 	if objEntry == nil {
 		return
@@ -103,14 +104,14 @@ func (g *Graph) Delete(obj *entity.Instance, rel string, sbj *entity.Instance) {
 		return
 	}
 
-	delete(relEntry, *sbj)
+	delete(relEntry, sbj)
 	if len(relEntry) == 0 {
 		delete(objEntry.Relations, rel)
 
 		if len(objEntry.Relations) == 0 {
 			s.mu.Lock()
 			if len(objEntry.Relations) == 0 {
-				delete(s.Graph, *obj)
+				delete(s.Graph, obj)
 			}
 			s.mu.Unlock()
 		}

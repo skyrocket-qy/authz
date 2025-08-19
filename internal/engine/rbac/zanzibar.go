@@ -214,12 +214,12 @@ func (r *ZanzibarLogicImpl) Delete(c context.Context, in *authzpbv1.DeleteTuples
 func (r *ZanzibarLogicImpl) Check(c context.Context, in *authzpbv1.CheckIn) (
 	*authzpbv1.CheckOut, error,
 ) {
-	user := &entity.Instance{
+	user := entity.Instance{
 		Ns: in.SbjNs,
 		Id: in.SbjId,
 	}
 
-	obj := &entity.Instance{
+	obj := entity.Instance{
 		Ns: in.ObjNs,
 		Id: in.ObjId,
 	}
@@ -352,7 +352,7 @@ func (r *ZanzibarLogicImpl) rewriteIncludesDirect(resNs, resId string, ur *schem
 		tset := ur.TupleToUserset.Tupleset
 		if tset != nil {
 			// Check if subject has relation on intermediate object
-			if _, ok := permSet[permission{resNs, resId, tset.Relation}]; ok {
+			if _, ok := permSet[permission{resNs, resId, *tset.Relation}]; ok {
 				// Now check computed userset of intermediate
 				return ur.TupleToUserset.ComputedUserset != nil
 			}
