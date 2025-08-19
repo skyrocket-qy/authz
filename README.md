@@ -1,39 +1,35 @@
-<img src="manifest/icon/f2.png" alt="icon" width="140">
 
 # MemZ
 
+<img src="manifest/icon/f2.png" alt="icon" width="150">
+
 Insipired by [Zanzibar](!https://research.google/pubs/zanzibar-googles-consistent-global-authorization-system/), This project is to implement a distributed authorization read-heavy system
 
-```math
-\text{CHECK}(U, \langle \text{object}\#\text{perm} \rangle) = \text{EVALUATE}(\text{perm\_expr}, U, \text{object})
-```
+## Goal
 
-Where perm_expr is a boolean expression derived from the schema for perm, composed of relations and logical operators.
+- Read-Heavy system
+- Distributed with HA and eventually consistence
+- High throught + low layency (50k+ qps + p95 < 10ms)
+- Memory evaluation
+- Focus on performance, not all cases support
 
-Let R₁, R₂, ..., Rₙ be relation names. Then:
+## Support model
 
-```
-example perm_expr = Union(R1, Intersection(R2, R3))
-```
-that is
-```math
-\text{EVALUATE}(\text{Union}(R_1, \text{Intersection}(R_2, R_3)), U, \text{object}) \\ = 
-\text{CHECK}(U, \langle \text{object}\#R_1 \rangle) \lor (\text{CHECK}(U, \langle \text{object}\#R_2 \rangle) \land \text{CHECK}(U, \langle \text{object}\#R_3 \rangle))
-```
+- RBAC
+- Hierarchical RBAC
+- Admin
+- Object-less
+- router
+- filesystem
+- static abac
 
-and each check is
+## Limit
 
-EVALUATE(Union(R1, ..., Rn), U, obj)         = ∨ᵢ CHECK(U, ⟨obj#Ri⟩)
+- dynamic model
+- tuples.len > 10e8 use about 10G memory
+- single write db, not ideal on write-heavy
 
-EVALUATE(Intersection(R1, ..., Rn), U, obj)  = ∧ᵢ CHECK(U, ⟨obj#Ri⟩)
+## Support protocol
 
-EVALUATE(Exclusion(R1, R2), U, obj)          = CHECK(U, ⟨obj#R1⟩) ∧ ¬CHECK(U, ⟨obj#R2⟩)
-
-EVALUATE(Relation(R), U, obj)               = CHECK(U, ⟨obj#R⟩)
-
-
-CHECK(U, ⟨object#relation⟩) =
-∃ tuple ⟨object#relation@U⟩
-∨ ∃ tuple ⟨object#relation@U′⟩, where
-U′ = ⟨object′#relation′⟩ and CHECK(U, U′)
-
+- gRPC
+- ConnectRPC

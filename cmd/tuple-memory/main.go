@@ -23,7 +23,7 @@ func main() {
 	// Create a big mock graph
 	graph := make(map[Instance]map[string]map[Instance]struct{})
 
-	numNodes := 100000                       // number of top-level nodes
+	numNodes := 1000000                      // number of top-level nodes
 	edgesPerNode := 50                       // edges per top-level node
 	rels := []string{"relA", "relB", "relC"} // relation keys
 	total := 0

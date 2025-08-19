@@ -1,6 +1,6 @@
+# for object-less actions, use same ns:id ex. system:action#list_users@role:admin
 namespaces:
-  action:
-    type: resource
+  system:
     relations:
       list_users: {}
       create_user: {}

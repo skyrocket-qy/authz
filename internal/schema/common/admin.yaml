@@ -23,6 +23,5 @@ namespaces:
       read: {}
       belong: {}
 
-# method 3
+# method 3 only support objid wildcard because action 
 # object:*#read@role:admin
-# object:*#*@role:admin
