@@ -22,5 +22,5 @@ kubectl -n authz delete -f 'https://strimzi.io/install/latest?namespace=authz'
 
 connecter
 ```
-
+minikube addons enable registry
 ```
