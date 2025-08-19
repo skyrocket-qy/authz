@@ -7,7 +7,7 @@ import (
 )
 
 var Cmd = &cobra.Command{
-	Use:   "srv",
+	Use:   "service",
 	Short: "run service",
 	// Long:  `The longer description`,
 	// Run: RunServer,
