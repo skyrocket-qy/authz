@@ -1,12 +1,12 @@
 # Connector setup
 
-1. Start service
+## Start service
 
 ```zsh
 docker compose up -d 
 ```
 
-2. set db
+## set db
 
 ```zsh
 docker exec -it postgres psql -U postgres -d postgres
@@ -20,7 +20,7 @@ CREATE TABLE tuples ();
 CREATE PUBLICATION debezium FOR TABLE tuples;
 ```
 
-3. Set connector
+## Set connector
 
 ```zsh
 curl -X PUT http://localhost:8083/connectors/postgres-connector/config \
@@ -50,7 +50,7 @@ curl -X PUT http://localhost:8083/connectors/postgres-connector/config \
   }'
 ```
 
-4. Test
+1. Test
 
 ```sql
 INSERT INTO tuples (sbj_ns, sbj_id, relation, obj_ns, obj_id) VALUES ('1', '1', '1', '1', '1');

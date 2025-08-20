@@ -4,7 +4,6 @@
 ![Coverage](https://img.shields.io/badge/coverage-0%25-brightgreen)
 ![Release](https://img.shields.io/github/v/release/skyrocket-qy/authz.svg)
 
-
 <img src="manifest/icon/f2.png" alt="icon" width="150">
 
 Inspired by [Zanzibar](https://research.google/pubs/zanzibar-googles-consistent-global-authorization-system/), **MemZ** is a distributed, memory-first authorization system optimized for read-heavy workloads.
