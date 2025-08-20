@@ -1,16 +1,19 @@
 package redis
 
 import (
+	"authz/internal/cfg"
+	"authz/internal/pkg"
 	"context"
 	"time"
 
-	"authz/internal/cfg"
-	"authz/internal/pkg"
+	"github.com/rs/zerolog/log"
+
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 )
 
 func New(lc *pkg.LifecycleParallel) *redis.Client {
+	log.Info().Msgf("start redis ")
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     cfg.Cfg.Redis.Host + ":" + cfg.Cfg.Redis.Port,
 		Password: cfg.Cfg.Redis.Password,

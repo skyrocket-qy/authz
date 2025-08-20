@@ -8,6 +8,7 @@ import (
 	"authz/internal/cfg"
 	"authz/internal/engine/rbac"
 	"authz/internal/pkg"
+
 	"github.com/rs/zerolog/log"
 	"github.com/skyrocket-qy/erx"
 	"gorm.io/driver/postgres"
@@ -54,7 +55,7 @@ func New(lc *pkg.LifecycleParallel) (db *gorm.DB, err error) {
 			dbCfg.User,
 			dbCfg.Password,
 			dbCfg.Db,
-			"Asia/Taipei",
+			"UTC",
 		)
 
 		db, err = gorm.Open(postgres.Open(connStr), &config)

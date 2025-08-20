@@ -27,6 +27,7 @@ type Config struct {
 	}
 
 	Kafka struct {
-		Broker string `env:"KAFKA_BROKER"`
+		Host string `env:"KAFKA_HOST"`
+		Port string `env:"KAFKA_PORT"`
 	}
 }

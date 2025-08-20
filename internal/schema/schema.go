@@ -3,11 +3,11 @@ package schema
 import (
 	"errors"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 )
 
@@ -16,6 +16,7 @@ func NewSchema() (*Schema, error) {
 	if err != nil {
 		return nil, err
 	}
+	log.Info().Msgf("schema files: %v", filePaths)
 
 	schema := Schema{Namespaces: map[string]*Namespace{}}
 	for _, path := range filePaths {
@@ -40,7 +41,6 @@ func NewSchema() (*Schema, error) {
 
 	return &schema, nil
 }
-
 func getYamlFilesFromEnv() ([]string, error) {
 	pathStr := os.Getenv("SCHEMA_PATH")
 	if pathStr == "" {
@@ -48,7 +48,6 @@ func getYamlFilesFromEnv() ([]string, error) {
 	}
 
 	paths := strings.Split(pathStr, ",")
-
 	var yamlFiles []string
 
 	for _, p := range paths {
@@ -60,21 +59,16 @@ func getYamlFilesFromEnv() ([]string, error) {
 		}
 
 		if fi.IsDir() {
-			// scan all .yaml files in directory
-			err := filepath.WalkDir(p, func(path string, d fs.DirEntry, err error) error {
-				if err != nil {
-					return err
-				}
-
-				if !d.IsDir() &&
-					(strings.HasSuffix(d.Name(), ".yaml") || strings.HasSuffix(d.Name(), ".yml")) {
-					yamlFiles = append(yamlFiles, path)
-				}
-
-				return nil
-			})
+			// only scan files directly in directory (non-recursive)
+			entries, err := os.ReadDir(p)
 			if err != nil {
 				return nil, err
+			}
+			for _, entry := range entries {
+				if !entry.IsDir() &&
+					(strings.HasSuffix(entry.Name(), ".yaml") || strings.HasSuffix(entry.Name(), ".yml")) {
+					yamlFiles = append(yamlFiles, filepath.Join(p, entry.Name()))
+				}
 			}
 		} else {
 			yamlFiles = append(yamlFiles, p)
