@@ -2,9 +2,7 @@
 
 ![Build Status](https://github.com/skyrocket-qy/authz/actions/workflows/ci.yml/badge.svg)
 ![Coverage](https://img.shields.io/badge/coverage-0%25-brightgreen)
-![Release](https://img.shields.io/github/v/release/user/repo.svg)
-![Dependencies](https://img.shields.io/david/skyrocket-qy/authz.svg)
-![Language](https://img.shields.io/github/languages/top/user/repo.svg)
+![Release](https://img.shields.io/github/v/release/skyrocket-qy/authz.svg)
 
 
 <img src="manifest/icon/f2.png" alt="icon" width="150">

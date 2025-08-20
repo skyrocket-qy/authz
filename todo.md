@@ -11,4 +11,3 @@
 - No downtime when updating schema.
 - multi-tenant example
 - Time-based conditions (e.g. access valid until X) stored as metadata
-- Logo and README badges (CI passing, Docker pull count, GoDoc, etc.)
