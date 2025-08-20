@@ -33,4 +33,10 @@ kubectl apply -f mysql.yaml
 kubectl -n kube-system get svc registry -o jsonpath='{.spec.clusterIP}' # get ip
 
 kubectl apply -f kafka-connect.yaml
+
+# debezium connector
+kubectl apply -f debezium_connector.yaml
+
+# watch
+kubectl run -n authz -it --rm --image=quay.io/debezium/tooling:1.2  --restart=Never watcher -- kcat -b debezium-cluster-kafka-bootstrap:9092 -C -o beginning -t mysql.inventory.customers
 ```
