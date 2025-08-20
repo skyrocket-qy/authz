@@ -11,8 +11,9 @@ func ApplyPager(pager *pkgpbv1.Pager) func(db *gorm.DB) *gorm.DB {
 			return db
 		}
 
-		size := int(pager.Size)
-		number := int(pager.Number)
+		size := int(pager.GetSize())
+		number := int(pager.GetNumber())
+
 		return db.
 			Offset(size * (number - 1)).
 			Limit(size)

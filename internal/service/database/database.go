@@ -8,7 +8,6 @@ import (
 	"authz/internal/cfg"
 	"authz/internal/engine/rbac"
 	"authz/internal/pkg"
-
 	"github.com/rs/zerolog/log"
 	"github.com/skyrocket-qy/erx"
 	"gorm.io/driver/postgres"
@@ -46,6 +45,7 @@ func New(lc *pkg.LifecycleParallel) (db *gorm.DB, err error) {
 		}
 
 		log.Info().Msg("Connecting to Postgres")
+
 		dbCfg := cfg.Cfg.Db
 		connStr := fmt.Sprintf(
 			"host=%s port=%d user=%s password=%s dbname=%s TimeZone=%s",
@@ -56,8 +56,8 @@ func New(lc *pkg.LifecycleParallel) (db *gorm.DB, err error) {
 			dbCfg.Db,
 			"Asia/Taipei",
 		)
-		db, err = gorm.Open(postgres.Open(connStr), &config)
 
+		db, err = gorm.Open(postgres.Open(connStr), &config)
 		if err != nil {
 			err = erx.W(err).SetCode(pkg.ErrDBUnavailable)
 

@@ -2,7 +2,6 @@ package service
 
 import (
 	"authz/cmd/service/job"
-
 	"github.com/spf13/cobra"
 )
 

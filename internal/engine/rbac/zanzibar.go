@@ -1,12 +1,12 @@
 package rbac
 
 import (
-	"authz/internal/entity"
-	"authz/internal/pkg"
-	"authz/internal/schema"
 	"context"
 	"errors"
 
+	"authz/internal/entity"
+	"authz/internal/pkg"
+	"authz/internal/schema"
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
 	"github.com/skyrocket-qy/protos/gen/authzpb/rbacpb"
@@ -41,7 +41,8 @@ type ZanzibarLogicImpl struct {
 }
 
 func NewZanzibarLogic(db *gorm.DB, rdb *redis.Client, zm ZanzibarMemory,
-	s *schema.Schema) *ZanzibarLogicImpl {
+	s *schema.Schema,
+) *ZanzibarLogicImpl {
 	return &ZanzibarLogicImpl{
 		pgdb:   db,
 		rdb:    rdb,
@@ -63,24 +64,24 @@ func (r *ZanzibarLogicImpl) List(c context.Context, in *authzpbv1.ListTuplesIn) 
 ) {
 	validFilterFields := []string{"sbj_ns", "sbj_id", "relation", "obj_ns", "obj_id"}
 
-	if in.Cursor == nil {
+	if in.GetCursor() == nil {
 		return nil, errors.New("cursor is nil")
 	}
 
-	pager := in.Cursor
-	cursorVal := pager.Val
+	pager := in.GetCursor()
+	cursorVal := pager.GetVal()
 
-	filterScope, err := pkg.ApplyFilter(in.Filters, validFilterFields, nil)
+	filterScope, err := pkg.ApplyFilter(in.GetFilters(), validFilterFields, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	tupleModels := []*Tuple{}
 	tx := r.db(c).
-		Limit(int(pager.Size)).
+		Limit(int(pager.GetSize())).
 		Scopes(
 			filterScope,
-			pkg.ApplySorter(in.Sorters),
+			pkg.ApplySorter(in.GetSorters()),
 		)
 
 	if cursorVal != nil {
@@ -117,25 +118,26 @@ func (r *ZanzibarLogicImpl) List(c context.Context, in *authzpbv1.ListTuplesIn) 
 	}
 
 	lastTuple := tuples[len(tuples)-1]
+
 	cursorData := &pkgpbv1.CursorData{
-		Fields: make([]*pkgpbv1.Field, len(in.Sorters)),
+		Fields: make([]*pkgpbv1.Field, len(in.GetSorters())),
 	}
-	for i, sorter := range in.Sorters {
+	for i, sorter := range in.GetSorters() {
 		field := &pkgpbv1.Field{
-			Asc: sorter.Asc,
-			Col: sorter.Field,
+			Asc: sorter.GetAsc(),
+			Col: sorter.GetField(),
 		}
-		switch sorter.Field {
+		switch sorter.GetField() {
 		case "sbj_ns":
-			field.Val = lastTuple.SbjNs
+			field.Val = lastTuple.GetSbjNs()
 		case "sbj_id":
-			field.Val = lastTuple.SbjId
+			field.Val = lastTuple.GetSbjId()
 		case "relation":
-			field.Val = lastTuple.Rel
+			field.Val = lastTuple.GetRel()
 		case "obj_ns":
-			field.Val = lastTuple.ObjNs
+			field.Val = lastTuple.GetObjNs()
 		case "obj_id":
-			field.Val = lastTuple.ObjId
+			field.Val = lastTuple.GetObjId()
 		}
 
 		cursorData.Fields[i] = field
@@ -173,25 +175,27 @@ func (r *ZanzibarLogicImpl) Find(c context.Context, filter *authzpbv1.TupleFilte
 
 func (r *ZanzibarLogicImpl) Create(c context.Context, tuple *authzpbv1.Tuple) error {
 	return r.db(c).Create(&Tuple{
-		SbjNs:    tuple.SbjNs,
-		SbjId:    tuple.SbjId,
-		Relation: tuple.Rel,
-		ObjNs:    tuple.ObjNs,
-		ObjId:    tuple.ObjId,
+		SbjNs:    tuple.GetSbjNs(),
+		SbjId:    tuple.GetSbjId(),
+		Relation: tuple.GetRel(),
+		ObjNs:    tuple.GetObjNs(),
+		ObjId:    tuple.GetObjId(),
 	}).Error
 }
 
 func (r *ZanzibarLogicImpl) Delete(c context.Context, in *authzpbv1.DeleteTuplesIn) error {
-	switch req := in.Mode.(type) {
+	switch req := in.GetMode().(type) {
 	case *authzpbv1.DeleteTuplesIn_Filter:
 		filter := req.Filter
+
 		return r.db(c).Scopes(ApplyTupleFilter(filter)).Delete(&Tuple{}).Error
 
 	case *authzpbv1.DeleteTuplesIn_DeleteTuples:
-		tuples := req.DeleteTuples.Tuples
+		tuples := req.DeleteTuples.GetTuples()
+
 		values := make([][]any, len(tuples))
 		for i, t := range tuples {
-			values[i] = []any{t.SbjNs, t.SbjId, t.Rel, t.ObjNs, t.ObjId}
+			values[i] = []any{t.GetSbjNs(), t.GetSbjId(), t.GetRel(), t.GetObjNs(), t.GetObjId()}
 		}
 
 		return r.db(c).
@@ -200,7 +204,7 @@ func (r *ZanzibarLogicImpl) Delete(c context.Context, in *authzpbv1.DeleteTuples
 
 	case *authzpbv1.DeleteTuplesIn_DeleteTupleIds:
 		if err := r.db(c).
-			Where("id IN ?", req.DeleteTupleIds.Ids).
+			Where("id IN ?", req.DeleteTupleIds.GetIds()).
 			Delete(&Tuple{}).Error; err != nil {
 			return err
 		}
@@ -215,29 +219,29 @@ func (r *ZanzibarLogicImpl) Check(c context.Context, in *authzpbv1.CheckIn) (
 	*authzpbv1.CheckOut, error,
 ) {
 	user := entity.Instance{
-		Ns: in.SbjNs,
-		Id: in.SbjId,
+		Ns: in.GetSbjNs(),
+		Id: in.GetSbjId(),
 	}
 
 	obj := entity.Instance{
-		Ns: in.ObjNs,
-		Id: in.ObjId,
+		Ns: in.GetObjNs(),
+		Id: in.GetObjId(),
 	}
 
-	ok, err := r.zm.Check(c, user, in.Rel, obj)
+	ok, err := r.zm.Check(c, user, in.GetRel(), obj)
 	if err != nil {
 		log.Print(err.Error())
+
 		return nil, err
 	}
 
 	return &authzpbv1.CheckOut{IsAllowed: ok}, nil
 }
 
-// What are all the objs that sbj has rel on
+// What are all the objs that sbj has rel on.
 func (r *ZanzibarLogicImpl) Lookup(c context.Context, user *entity.Instance, perm string) (
 	objs []*entity.Instance, err error,
 ) {
-
 	return objs, nil
 }
 
@@ -253,18 +257,23 @@ type permission struct {
 	perm  string
 }
 
-func (r *ZanzibarLogicImpl) GetPermissions(c context.Context, sbj *authzpbv1.Instance, nsType string) (
+func (r *ZanzibarLogicImpl) GetPermissions(
+	c context.Context,
+	sbj *authzpbv1.Instance,
+	nsType string,
+) (
 	perms []*rbacpb.Permission, err error,
 ) {
 	// Step 1: Load direct tuples for subject
 	var tuples []*Tuple
-	if err := r.db(c).Where("sbj_ns = ? AND sbj_id = ?", sbj.Ns, sbj.Id).Find(&tuples).Error; err != nil {
+	if err := r.db(c).Where("sbj_ns = ? AND sbj_id = ?", sbj.GetNs(), sbj.GetId()).Find(&tuples).Error; err != nil {
 		return nil, err
 	}
 
 	// Step 2: Group by namespace/object
 	nss := map[string][]string{}
 	permSet := map[permission]string{} // value = "direct" or "indirect"
+
 	for _, tuple := range tuples {
 		nss[tuple.ObjNs] = append(nss[tuple.ObjNs], tuple.ObjId)
 		permSet[permission{tuple.ObjNs, tuple.ObjId, tuple.Relation}] = "direct"
@@ -308,9 +317,10 @@ func (r *ZanzibarLogicImpl) GetPermissions(c context.Context, sbj *authzpbv1.Ins
 	return perms, nil
 }
 
-// Step 3 helper: Recursively check if rewrite matches any direct perms
+// Step 3 helper: Recursively check if rewrite matches any direct perms.
 func (r *ZanzibarLogicImpl) rewriteIncludesDirect(resNs, resId string, ur *schema.UsersetRewrite,
-	permSet map[permission]string) bool {
+	permSet map[permission]string,
+) bool {
 	// Check union
 	if len(ur.Union) > 0 {
 		for _, child := range ur.Union {
@@ -327,6 +337,7 @@ func (r *ZanzibarLogicImpl) rewriteIncludesDirect(resNs, resId string, ur *schem
 				return false
 			}
 		}
+
 		return true
 	}
 
@@ -365,19 +376,23 @@ func (r *ZanzibarLogicImpl) rewriteIncludesDirect(resNs, resId string, ur *schem
 func ApplyTupleFilter(f *authzpbv1.TupleFilter) func(*gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if f.SbjNs != nil {
-			db = db.Where("sbj_ns = ?", *f.SbjNs)
+			db = db.Where("sbj_ns = ?", f.GetSbjNs())
 		}
+
 		if f.SbjId != nil {
-			db = db.Where("sbj_id = ?", *f.SbjId)
+			db = db.Where("sbj_id = ?", f.GetSbjId())
 		}
+
 		if f.Rel != nil {
-			db = db.Where("relation = ?", *f.Rel)
+			db = db.Where("relation = ?", f.GetRel())
 		}
+
 		if f.ObjNs != nil {
-			db = db.Where("obj_ns = ?", *f.ObjNs)
+			db = db.Where("obj_ns = ?", f.GetObjNs())
 		}
+
 		if f.ObjId != nil {
-			db = db.Where("obj_id = ?", *f.ObjId)
+			db = db.Where("obj_id = ?", f.GetObjId())
 		}
 
 		return db

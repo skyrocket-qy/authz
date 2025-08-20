@@ -1,11 +1,11 @@
 package logger
 
 import (
-	"authz/internal/pkg"
 	"os"
 	"path/filepath"
 	"time"
 
+	"authz/internal/pkg"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )

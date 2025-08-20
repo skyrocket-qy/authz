@@ -22,13 +22,16 @@ func GetUserId(c context.Context) uint {
 
 func GenNumCode(n int) (string, error) {
 	code := ""
+
 	for range n {
 		v, err := srand.Intn(10)
 		if err != nil {
 			return "", erx.W(err)
 		}
+
 		code += strconv.Itoa(v)
 	}
+
 	return code, nil
 }
 

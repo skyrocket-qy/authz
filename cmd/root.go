@@ -1,11 +1,6 @@
 package cmd
 
 import (
-	"authz/cmd/service"
-	"authz/cmd/tool"
-	"authz/internal/pkg"
-	"authz/internal/service/logger"
-	"authz/internal/wire"
 	"context"
 	"fmt"
 	"net/http"
@@ -15,6 +10,11 @@ import (
 	"syscall"
 	"time"
 
+	"authz/cmd/service"
+	"authz/cmd/tool"
+	"authz/internal/pkg"
+	"authz/internal/service/logger"
+	"authz/internal/wire"
 	"connectrpc.com/connect"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/cors"
@@ -78,6 +78,7 @@ func RunServer(cmd *cobra.Command, args []string) {
 	}
 
 	logger.InitLogger()
+
 	lc := pkg.NewLifecycleParallel()
 
 	startConnectServer(lc)
@@ -89,6 +90,7 @@ func startConnectServer(lc *pkg.LifecycleParallel) {
 	connectH, err := wire.NewRbacHandler(context.TODO(), lc)
 	if err != nil {
 		log.Error().Msg(err.Error())
+
 		return
 	}
 
@@ -98,6 +100,7 @@ func startConnectServer(lc *pkg.LifecycleParallel) {
 		return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
 			inflight.Add(1)
 			defer inflight.Done()
+
 			return next(ctx, req)
 		}
 	})
@@ -114,6 +117,7 @@ func startConnectServer(lc *pkg.LifecycleParallel) {
 	mux := http.NewServeMux()
 	mux.Handle(rbacPath, rbacH)
 	mux.Handle(path, handler)
+
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"}, // Or "*" for dev
 		AllowCredentials: true,
@@ -129,6 +133,7 @@ func startConnectServer(lc *pkg.LifecycleParallel) {
 	// Run the server in a goroutine so the main thread can listen for signals.
 	go func() {
 		log.Info().Msgf("Starting server on %s", server.Addr)
+
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatal().Err(err).Msg("Could not start server")
 		}
@@ -142,10 +147,10 @@ func startConnectServer(lc *pkg.LifecycleParallel) {
 	// The server.Shutdown() call is registered in NewHttpServer and will be executed here.
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
+
 	lc.Shutdown(ctx)
 
 	log.Info().Msg("Server gracefully shut down.")
-
 }
 
 func NewHttpServer(lc *pkg.LifecycleParallel, handler http.Handler) *http.Server {
@@ -161,11 +166,13 @@ func NewHttpServer(lc *pkg.LifecycleParallel, handler http.Handler) *http.Server
 	lc.Add(server, func() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
+
 		if err := server.Shutdown(ctx); err != nil {
 			return err
 		}
 
 		inflight.Wait()
+
 		return nil
 	})
 

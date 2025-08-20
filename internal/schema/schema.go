@@ -20,6 +20,7 @@ func NewSchema() (*Schema, error) {
 	schema := Schema{Namespaces: map[string]*Namespace{}}
 	for _, path := range filePaths {
 		tmpSchema := Schema{}
+
 		f, err := os.ReadFile(path)
 		if err != nil {
 			return nil, err
@@ -29,6 +30,7 @@ func NewSchema() (*Schema, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		tmpSchema.Build()
 
 		if err := schema.Union(&tmpSchema); err != nil {
@@ -42,14 +44,16 @@ func NewSchema() (*Schema, error) {
 func getYamlFilesFromEnv() ([]string, error) {
 	pathStr := os.Getenv("SCHEMA_PATH")
 	if pathStr == "" {
-		return nil, fmt.Errorf("CONFIG_PATHS not set")
+		return nil, errors.New("CONFIG_PATHS not set")
 	}
 
 	paths := strings.Split(pathStr, ",")
+
 	var yamlFiles []string
 
 	for _, p := range paths {
 		p = strings.TrimSpace(p)
+
 		fi, err := os.Stat(p)
 		if err != nil {
 			return nil, err
@@ -61,9 +65,12 @@ func getYamlFilesFromEnv() ([]string, error) {
 				if err != nil {
 					return err
 				}
-				if !d.IsDir() && (strings.HasSuffix(d.Name(), ".yaml") || strings.HasSuffix(d.Name(), ".yml")) {
+
+				if !d.IsDir() &&
+					(strings.HasSuffix(d.Name(), ".yaml") || strings.HasSuffix(d.Name(), ".yml")) {
 					yamlFiles = append(yamlFiles, path)
 				}
+
 				return nil
 			})
 			if err != nil {
@@ -89,10 +96,10 @@ type Namespace struct {
 
 type Relation struct {
 	AllowSubjectNamespaces []string `yaml:"allow_subject_namespaces,omitempty"`
-	UsersetRewrite         `yaml:",inline"`
+	UsersetRewrite         `         yaml:",inline"`
 }
 
-// Recursive AST-like structure
+// Recursive AST-like structure.
 type UsersetRewrite struct {
 	Union           []*UsersetRewrite `yaml:"union,omitempty"`
 	Intersection    []*UsersetRewrite `yaml:"intersection,omitempty"`
@@ -137,53 +144,69 @@ func (r *UsersetRewrite) Validate() error {
 	count := 0
 	if r.Union != nil {
 		count++
+
 		for _, child := range r.Union {
 			if err := child.Validate(); err != nil {
 				return err
 			}
 		}
 	}
+
 	if r.Intersection != nil {
 		count++
+
 		for _, child := range r.Intersection {
 			if err := child.Validate(); err != nil {
 				return err
 			}
 		}
 	}
+
 	if r.Exclusion != nil {
 		count++
+
 		if r.Exclusion.Base == nil || r.Exclusion.Subtract == nil {
 			return errors.New("exclusion must have both base and subtract")
 		}
+
 		if err := r.Exclusion.Base.Validate(); err != nil {
 			return err
 		}
+
 		if err := r.Exclusion.Subtract.Validate(); err != nil {
 			return err
 		}
 	}
+
 	if r.ComputedUserSet != nil {
 		count++
+
 		if r.ComputedUserSet.Relation == "" {
 			return errors.New("computed_userset must have relation")
 		}
 	}
+
 	if r.TupleToUserset != nil {
 		count++
+
 		if r.TupleToUserset.Tupleset == nil || r.TupleToUserset.ComputedUserset == nil {
 			return errors.New("tuple_to_userset must have both tupleset and computed_userset")
 		}
-		if r.TupleToUserset.Tupleset.Relation == nil || r.TupleToUserset.ComputedUserset.Relation == "" {
+
+		if r.TupleToUserset.Tupleset.Relation == nil ||
+			r.TupleToUserset.ComputedUserset.Relation == "" {
 			return errors.New("tuple_to_userset fields must have non-empty relation")
 		}
 	}
+
 	if count > 1 {
 		return errors.New("only one rewrite type can be set in UsersetRewrite")
 	}
+
 	if count == 0 {
 		return errors.New("at least one rewrite type must be set in UsersetRewrite")
 	}
+
 	return nil
 }
 
@@ -209,12 +232,13 @@ func (s *Schema) Build() {
 	}
 }
 
-// TODO: union deeper
+// TODO: union deeper.
 func (s *Schema) Union(schema2 *Schema) error {
 	for ns, nsEntry := range schema2.Namespaces {
 		if _, exists := s.Namespaces[ns]; exists {
 			return fmt.Errorf("namespace %s already exists", ns)
 		}
+
 		s.Namespaces[ns] = nsEntry
 	}
 

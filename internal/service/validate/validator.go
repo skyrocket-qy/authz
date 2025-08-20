@@ -2,7 +2,6 @@ package validate
 
 import (
 	"authz/internal/pkg"
-
 	"github.com/go-playground/validator/v10"
 	"github.com/skyrocket-qy/erx"
 	"github.com/skyrocket-qy/gox/logx"

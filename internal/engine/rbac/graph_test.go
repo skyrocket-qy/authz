@@ -1,18 +1,19 @@
 package rbac_test
 
 import (
-	"authz/internal/entity"
 	"fmt"
 	"math/rand"
 	"strconv"
 	"sync"
 	"testing"
 	"time"
+
+	"authz/internal/entity"
 )
 
-//numShards = min(2*numGoroutines, numObjects)
+// numShards = min(2*numGoroutines, numObjects)
 
-// very high case
+// very high case.
 const (
 	numObjects    = 1000000
 	numRelations  = 8
@@ -57,7 +58,7 @@ const (
 // 	numShards     = 8192
 // )
 
-// -------------------- Per-Object Lock --------------------
+// -------------------- Per-Object Lock --------------------.
 type ObjEntry struct {
 	relations map[string]map[entity.Instance]struct{}
 	mu        sync.RWMutex
@@ -76,31 +77,40 @@ func (g *GraphPerObject) getObj(obj entity.Instance) *ObjEntry {
 	g.mu.RLock()
 	entry := g.graph[obj]
 	g.mu.RUnlock()
+
 	if entry == nil {
 		g.mu.Lock()
+
 		if g.graph[obj] == nil {
 			g.graph[obj] = &ObjEntry{relations: make(map[string]map[entity.Instance]struct{})}
 		}
+
 		entry = g.graph[obj]
 		g.mu.Unlock()
 	}
+
 	return entry
 }
 
 func (g *GraphPerObject) Read(obj entity.Instance, rel string, sbj entity.Instance) bool {
 	entry := g.getObj(obj)
+
 	entry.mu.RLock()
 	defer entry.mu.RUnlock()
+
 	return entry.relations[rel][sbj] != struct{}{}
 }
 
 func (g *GraphPerObject) Write(obj entity.Instance, rel string, sbj entity.Instance) {
 	entry := g.getObj(obj)
+
 	entry.mu.Lock()
 	defer entry.mu.Unlock()
+
 	if entry.relations[rel] == nil {
 		entry.relations[rel] = make(map[entity.Instance]struct{})
 	}
+
 	entry.relations[rel][sbj] = struct{}{}
 }
 
@@ -109,19 +119,23 @@ func (g *GraphPerObject) delete(obj entity.Instance, rel string, sbj entity.Inst
 	g.mu.RLock()
 	entry, exists := g.graph[obj]
 	g.mu.RUnlock()
+
 	if !exists {
 		return
 	}
 
 	// Lock only the object entry
 	entry.mu.Lock()
+
 	sbjMap, ok := entry.relations[rel]
 	if ok {
 		delete(sbjMap, sbj)
+
 		if len(sbjMap) == 0 {
 			delete(entry.relations, rel)
 		}
 	}
+
 	empty := len(entry.relations) == 0
 	entry.mu.Unlock()
 
@@ -132,11 +146,12 @@ func (g *GraphPerObject) delete(obj entity.Instance, rel string, sbj entity.Inst
 		if entry2, ok := g.graph[obj]; ok && entry2 == entry && len(entry2.relations) == 0 {
 			delete(g.graph, obj)
 		}
+
 		g.mu.Unlock()
 	}
 }
 
-// -------------------- Object + Relation Lock --------------------
+// -------------------- Object + Relation Lock --------------------.
 type RelEntry struct {
 	sbjs map[entity.Instance]struct{}
 	mu   sync.RWMutex
@@ -162,14 +177,18 @@ func (g *GraphPerObjRel) getObj(obj entity.Instance) *ObjREntry {
 	g.mu.RLock()
 	entry := g.graph[obj]
 	g.mu.RUnlock()
+
 	if entry == nil {
 		g.mu.Lock()
+
 		if g.graph[obj] == nil {
 			g.graph[obj] = &ObjREntry{relations: make(map[string]*RelEntry)}
 		}
+
 		entry = g.graph[obj]
 		g.mu.Unlock()
 	}
+
 	return entry
 }
 
@@ -177,31 +196,40 @@ func (entry *ObjREntry) getRel(rel string) *RelEntry {
 	entry.mu.RLock()
 	r := entry.relations[rel]
 	entry.mu.RUnlock()
+
 	if r == nil {
 		entry.mu.Lock()
+
 		if entry.relations[rel] == nil {
 			entry.relations[rel] = &RelEntry{sbjs: make(map[entity.Instance]struct{})}
 		}
+
 		r = entry.relations[rel]
 		entry.mu.Unlock()
 	}
+
 	return r
 }
 
 func (g *GraphPerObjRel) Read(obj entity.Instance, rel string, sbj entity.Instance) bool {
 	entry := g.getObj(obj)
 	rEntry := entry.getRel(rel)
+
 	rEntry.mu.RLock()
 	defer rEntry.mu.RUnlock()
+
 	_, exists := rEntry.sbjs[sbj]
+
 	return exists
 }
 
 func (g *GraphPerObjRel) Write(obj entity.Instance, rel string, sbj entity.Instance) {
 	entry := g.getObj(obj)
 	rEntry := entry.getRel(rel)
+
 	rEntry.mu.Lock()
 	defer rEntry.mu.Unlock()
+
 	rEntry.sbjs[sbj] = struct{}{}
 }
 
@@ -210,6 +238,7 @@ func (g *GraphPerObjRel) delete(obj entity.Instance, rel string, sbj entity.Inst
 	g.mu.RLock()
 	entry := g.graph[obj]
 	g.mu.RUnlock()
+
 	if entry == nil {
 		return
 	}
@@ -218,6 +247,7 @@ func (g *GraphPerObjRel) delete(obj entity.Instance, rel string, sbj entity.Inst
 	entry.mu.RLock()
 	rEntry := entry.relations[rel]
 	entry.mu.RUnlock()
+
 	if rEntry == nil {
 		return
 	}
@@ -244,7 +274,7 @@ func (g *GraphPerObjRel) delete(obj entity.Instance, rel string, sbj entity.Inst
 	}
 }
 
-// -------------------- Sharded Map --------------------
+// -------------------- Sharded Map --------------------.
 type RelSDEntry struct {
 	sbjs map[entity.Instance]struct{}
 	mu   sync.RWMutex
@@ -267,14 +297,16 @@ type GraphSharded struct {
 
 func NewGraphSharded(numShards int) *GraphSharded {
 	shards := make([]*shard, numShards)
-	for i := 0; i < numShards; i++ {
+	for i := range numShards {
 		shards[i] = &shard{graph: make(map[entity.Instance]*ObjSDEntry)}
 	}
+
 	return &GraphSharded{shards: shards, n: numShards}
 }
 
 func (g *GraphSharded) getShard(obj entity.Instance) *shard {
 	sum, _ := strconv.Atoi(obj.Id)
+
 	return g.shards[sum%g.n]
 }
 
@@ -283,14 +315,18 @@ func (g *GraphSharded) getObj(obj entity.Instance) *ObjSDEntry {
 	s.mu.RLock()
 	entry := s.graph[obj]
 	s.mu.RUnlock()
+
 	if entry == nil {
 		s.mu.Lock()
+
 		if s.graph[obj] == nil {
 			s.graph[obj] = &ObjSDEntry{relations: make(map[string]*RelSDEntry)}
 		}
+
 		entry = s.graph[obj]
 		s.mu.Unlock()
 	}
+
 	return entry
 }
 
@@ -298,33 +334,42 @@ func (entry *ObjSDEntry) getRel(rel string) *RelSDEntry {
 	entry.mu.RLock()
 	r := entry.relations[rel]
 	entry.mu.RUnlock()
+
 	if r == nil {
 		entry.mu.Lock()
+
 		if entry.relations[rel] == nil {
 			entry.relations[rel] = &RelSDEntry{sbjs: make(map[entity.Instance]struct{})}
 		}
+
 		r = entry.relations[rel]
 		entry.mu.Unlock()
 	}
+
 	return r
 }
 
-// Read returns true if the edge exists
+// Read returns true if the edge exists.
 func (g *GraphSharded) Read(obj entity.Instance, rel string, sbj entity.Instance) bool {
 	entry := g.getObj(obj)
 	rEntry := entry.getRel(rel)
+
 	rEntry.mu.RLock()
 	defer rEntry.mu.RUnlock()
+
 	_, exists := rEntry.sbjs[sbj]
+
 	return exists
 }
 
-// Write adds an edge
+// Write adds an edge.
 func (g *GraphSharded) Write(obj entity.Instance, rel string, sbj entity.Instance) {
 	entry := g.getObj(obj)
 	rEntry := entry.getRel(rel)
+
 	rEntry.mu.Lock()
 	defer rEntry.mu.Unlock()
+
 	rEntry.sbjs[sbj] = struct{}{}
 }
 
@@ -336,6 +381,7 @@ func (g *GraphSharded) delete(obj entity.Instance, rel string, sbj entity.Instan
 	s.mu.RLock()
 	entry := s.graph[obj]
 	s.mu.RUnlock()
+
 	if entry == nil {
 		return
 	}
@@ -344,6 +390,7 @@ func (g *GraphSharded) delete(obj entity.Instance, rel string, sbj entity.Instan
 	entry.mu.RLock()
 	rEntry := entry.relations[rel]
 	entry.mu.RUnlock()
+
 	if rEntry == nil {
 		return
 	}
@@ -370,7 +417,7 @@ func (g *GraphSharded) delete(obj entity.Instance, rel string, sbj entity.Instan
 	}
 }
 
-// ----only shared and sync on obj------
+// ----only shared and sync on obj------.
 type ObjSOEntry struct {
 	relations map[string]map[entity.Instance]struct{}
 	mu        sync.RWMutex
@@ -388,19 +435,21 @@ type GraphSOSharded struct {
 
 func NewGraphSOSharded(numShards int) *GraphSOSharded {
 	shards := make([]*shardSO, numShards)
-	for i := 0; i < numShards; i++ {
+	for i := range numShards {
 		shards[i] = &shardSO{graph: make(map[entity.Instance]*ObjSOEntry)}
 	}
+
 	return &GraphSOSharded{shards: shards, n: numShards}
 }
 
-// simple shard by obj.Id uint64
+// simple shard by obj.Id uint64.
 func (g *GraphSOSharded) getShard(obj entity.Instance) *shardSO {
 	sum, _ := strconv.Atoi(obj.Id)
+
 	return g.shards[sum%g.n]
 }
 
-// get or create object entry
+// get or create object entry.
 func (g *GraphSOSharded) getObj(obj entity.Instance) *ObjSOEntry {
 	s := g.getShard(obj)
 	s.mu.RLock()
@@ -409,42 +458,53 @@ func (g *GraphSOSharded) getObj(obj entity.Instance) *ObjSOEntry {
 
 	if entry == nil {
 		s.mu.Lock()
+
 		if s.graph[obj] == nil {
 			s.graph[obj] = &ObjSOEntry{relations: make(map[string]map[entity.Instance]struct{})}
 		}
+
 		entry = s.graph[obj]
 		s.mu.Unlock()
 	}
+
 	return entry
 }
 
-// Read only locks the object
+// Read only locks the object.
 func (g *GraphSOSharded) Read(obj entity.Instance, rel string, sbj entity.Instance) bool {
 	entry := g.getObj(obj)
+
 	entry.mu.RLock()
 	defer entry.mu.RUnlock()
+
 	sbjs, ok := entry.relations[rel]
 	if !ok {
 		return false
 	}
+
 	_, exists := sbjs[sbj]
+
 	return exists
 }
 
-// Write only locks the object
+// Write only locks the object.
 func (g *GraphSOSharded) Write(obj entity.Instance, rel string, sbj entity.Instance) {
 	entry := g.getObj(obj)
+
 	entry.mu.Lock()
 	defer entry.mu.Unlock()
+
 	if entry.relations[rel] == nil {
 		entry.relations[rel] = make(map[entity.Instance]struct{})
 	}
+
 	entry.relations[rel][sbj] = struct{}{}
 }
 
-// Delete only locks the object
+// Delete only locks the object.
 func (g *GraphSOSharded) delete(obj entity.Instance, rel string, sbj entity.Instance) {
 	entry := g.getObj(obj)
+
 	entry.mu.Lock()
 	defer entry.mu.Unlock()
 
@@ -452,7 +512,9 @@ func (g *GraphSOSharded) delete(obj entity.Instance, rel string, sbj entity.Inst
 	if !ok {
 		return
 	}
+
 	delete(sbjs, sbj)
+
 	if len(sbjs) == 0 {
 		delete(entry.relations, rel)
 	}
@@ -473,36 +535,37 @@ func benchmarkGraph(b *testing.B,
 	writeFunc func(obj entity.Instance, rel string, sbj entity.Instance),
 	deleteFunc func(obj entity.Instance, rel string, sbj entity.Instance),
 ) {
-
 	for i := 0; i < b.N; i++ {
 		var wg sync.WaitGroup
+
 		seeds := make([]int64, numGoroutines)
-		for i := 0; i < numGoroutines; i++ {
+		for i := range numGoroutines {
 			seeds[i] = time.Now().UnixNano() + int64(i)
 		}
 
-		for g := 0; g < numGoroutines; g++ {
+		for g := range numGoroutines {
 			go func(seed int64) {
 				rnd := rand.New(rand.NewSource(seed))
-				for i := 0; i < numOps; i++ {
+				for range numOps {
 					x := rnd.Intn(1000)
 					_ = x
 				}
 			}(seeds[g])
 		}
 
-		for g := 0; g < numGoroutines; g++ {
-
+		for g := range numGoroutines {
 			wg.Add(1)
+
 			go func() {
 				defer wg.Done()
 
 				rnd := rand.New(rand.NewSource(seeds[g]))
-				for op := 0; op < numOps; op++ {
+				for range numOps {
 					obj := entity.Instance{
 						Id: strconv.Itoa(rnd.Intn(numObjects)),
 					}
 					rel := fmt.Sprintf("r%d", rnd.Intn(numRelations))
+
 					sbj := entity.Instance{
 						Id: strconv.Itoa(rnd.Intn(numSubjects)),
 					}
@@ -518,6 +581,7 @@ func benchmarkGraph(b *testing.B,
 				}
 			}()
 		}
+
 		wg.Wait()
 	}
 }

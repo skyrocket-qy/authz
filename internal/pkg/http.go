@@ -22,15 +22,20 @@ type ErrResp struct {
 	Code  string `json:"code"`
 }
 
-// for some error, log as error, some log as debug
+// for some error, log as error, some log as debug.
 func Bind(c *gin.Context, err error) {
 	reqId := c.GetString("reqId")
+
 	var ctxErr *erx.CtxErr
 	if !errors.As(err, &ctxErr) {
 		c.JSON(http.StatusInternalServerError, ErrResp{ReqId: reqId, Code: ErrUnknown.Str()})
 
 		callerInfos := getCallStack(2)
-		log.Error().Err(err).Str("call", fmt.Sprintf("%+v", callerInfos)).Msg("error not wrapped by erx")
+		log.Error().
+			Err(err).
+			Str("call", fmt.Sprintf("%+v", callerInfos)).
+			Msg("error not wrapped by erx")
+
 		return
 	}
 
@@ -38,10 +43,12 @@ func Bind(c *gin.Context, err error) {
 	if ctxErr.Cause != "" {
 		e.Str("cause", ctxErr.Cause)
 	}
+
 	e.Str("code", ctxErr.Code.Str())
 
 	// Convert callerInfos to pretty strings
 	filtered := filterCallerInfos(ctxErr.CallerInfos)
+
 	trace := make([]string, 0, len(filtered))
 	for _, ci := range filtered {
 		trace = append(trace, fmt.Sprintf("%s %d %s",
@@ -50,6 +57,7 @@ func Bind(c *gin.Context, err error) {
 			extractFuncName(ci.Function),
 		))
 	}
+
 	e.Strs("callerTrace", trace)
 	e.Msg("error")
 
@@ -59,7 +67,6 @@ func Bind(c *gin.Context, err error) {
 	}
 
 	c.JSON(httpStatus, ErrResp{ReqId: reqId, Code: ctxErr.Code.Str()})
-
 }
 
 func trimToProject(path string) string {
@@ -67,6 +74,7 @@ func trimToProject(path string) string {
 	if rel, ok := strings.CutPrefix(path, projectRoot); ok {
 		return rel
 	}
+
 	return path
 }
 
@@ -76,12 +84,15 @@ func extractFuncName(fullFunc string) string {
 	if idx := strings.LastIndex(fullFunc, "/"); idx >= 0 {
 		return fullFunc[idx+1:]
 	}
+
 	return fullFunc
 }
 
 func filterCallerInfos(infos []erx.CallerInfo) []erx.CallerInfo {
 	projectPrefix, _ := os.Getwd()
+
 	var filtered []erx.CallerInfo
+
 	for _, ci := range infos {
 		if strings.HasPrefix(ci.File, projectPrefix) {
 			filtered = append(filtered, ci)
@@ -89,6 +100,7 @@ func filterCallerInfos(infos []erx.CallerInfo) []erx.CallerInfo {
 			break
 		}
 	}
+
 	return filtered
 }
 

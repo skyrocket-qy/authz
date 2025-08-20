@@ -19,7 +19,7 @@ func start(cmd *cobra.Command, args []string) {
 
 	for _, n := range shardConfigs {
 		shards := make([]map[int]struct{}, n)
-		for i := 0; i < n; i++ {
+		for i := range n {
 			shards[i] = make(map[int]struct{})
 		}
 

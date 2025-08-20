@@ -7,7 +7,10 @@ import (
 	"gorm.io/gorm"
 )
 
-func ApplySorter(seqSorters []*pkgpbv1.Sorter, dfSort ...*pkgpbv1.Sorter) func(db *gorm.DB) *gorm.DB {
+func ApplySorter(
+	seqSorters []*pkgpbv1.Sorter,
+	dfSort ...*pkgpbv1.Sorter,
+) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if len(seqSorters) == 0 {
 			if len(dfSort) == 0 {
@@ -15,20 +18,24 @@ func ApplySorter(seqSorters []*pkgpbv1.Sorter, dfSort ...*pkgpbv1.Sorter) func(d
 			}
 
 			df := dfSort[0]
-			expr := df.Field
-			if !df.Asc {
+
+			expr := df.GetField()
+			if !df.GetAsc() {
 				expr += " DESC"
 			}
+
 			return db.Order(expr)
 		}
 
 		for _, sorter := range seqSorters {
-			expr := ToPascalCase(sorter.Field)
-			if !sorter.Asc {
+			expr := ToPascalCase(sorter.GetField())
+			if !sorter.GetAsc() {
 				expr += " DESC"
 			}
+
 			db = db.Order(expr)
 		}
+
 		return db
 	}
 }

@@ -31,22 +31,22 @@ type UserAuth struct {
 	UserId uint `gorm:"not null"`
 }
 
-// metadata
+// metadata.
 type Role struct {
 	Id   uint64 `gorm:"primarykey"`
 	Name string `gorm:"unique;type:varchar(255);not null"`
 }
 
-// metadata
+// metadata.
 type Resource struct {
 	Id   uint64 `gorm:"primarykey"`
 	Ns   string `gorm:"uniqueindex:idx_ns_name;type:varchar(255);not null"`
 	Name string `gorm:"uniqueindex:idx_ns_name;type:varchar(255);not null"`
 }
 
-// TODO: use uint64 replace string for best performance but consider convert overhead
+// TODO: use uint64 replace string for best performance but consider convert overhead.
 type Tuple struct {
-	Id       uint64 `gorm:"primaryKey" json:"id"`
+	Id       uint64 `gorm:"primaryKey"                     json:"id"`
 	SbjNs    string `gorm:"uniqueIndex:idx_tuple;not null" json:"sbj_ns"`
 	SbjId    string `gorm:"uniqueIndex:idx_tuple;not null" json:"sbj_id"`
 	Relation string `gorm:"uniqueIndex:idx_tuple;not null" json:"relation"`

@@ -29,13 +29,14 @@ func main() {
 	total := 0
 
 	st := time.Now()
-	for i := 0; i < numNodes; i++ {
+
+	for i := range numNodes {
 		from := Instance{Ns: strconv.Itoa(i), Name: "Node" + strconv.Itoa(i)}
 		graph[from] = make(map[string]map[Instance]struct{})
 
 		for _, rel := range rels {
 			graph[from][rel] = make(map[Instance]struct{})
-			for j := 0; j < edgesPerNode; j++ {
+			for j := range edgesPerNode {
 				to := Instance{
 					Ns:   strconv.Itoa((i*edgesPerNode + j) % numNodes),
 					Name: "Node" + strconv.Itoa((i*edgesPerNode+j)%numNodes),

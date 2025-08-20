@@ -1,10 +1,10 @@
 package pkg
 
 import (
-	"authz/internal/cfg"
 	"strconv"
 	"time"
 
+	"authz/internal/cfg"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/skyrocket-qy/erx"

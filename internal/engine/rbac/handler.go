@@ -31,6 +31,7 @@ func (h *Handler) ListUsers(
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
+
 	return connect.NewResponse(out), nil
 }
 
@@ -41,6 +42,7 @@ func (h *Handler) UpdateUser(ctx context.Context, req *connect.Request[rbacpb.Up
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
+
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
@@ -51,6 +53,7 @@ func (h *Handler) DeleteUser(
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
+
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
@@ -61,6 +64,7 @@ func (h *Handler) CreateRole(
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
+
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
@@ -71,6 +75,7 @@ func (h *Handler) ListRoles(
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
+
 	return connect.NewResponse(out), nil
 }
 
@@ -81,6 +86,7 @@ func (h *Handler) UpdateRole(
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
+
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
@@ -91,6 +97,7 @@ func (h *Handler) DeleteRole(
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
+
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
@@ -101,6 +108,7 @@ func (h *Handler) CreateResource(
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
+
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
@@ -111,6 +119,7 @@ func (h *Handler) ListResources(
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
+
 	return connect.NewResponse(out), nil
 }
 
@@ -121,6 +130,7 @@ func (h *Handler) DeleteResource(
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
+
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
@@ -131,6 +141,7 @@ func (h *Handler) AssignRole(
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
+
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
@@ -141,6 +152,7 @@ func (h *Handler) RevokeRole(
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
+
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
@@ -151,6 +163,7 @@ func (h *Handler) GrantPerm(
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
+
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
@@ -161,6 +174,7 @@ func (h *Handler) RevokePerm(
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
+
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
@@ -222,7 +236,10 @@ func (h *Handler) ListResourceType(c context.Context, in *connect.Request[emptyp
 	return connect.NewResponse(res), nil
 }
 
-func (h *Handler) ListResourcesByType(c context.Context, in *connect.Request[rbacpb.ListResourcesByTypeIn]) (
+func (h *Handler) ListResourcesByType(
+	c context.Context,
+	in *connect.Request[rbacpb.ListResourcesByTypeIn],
+) (
 	*connect.Response[rbacpb.ListResourcesByTypeOut], error,
 ) {
 	res, err := h.rbacLogic.ListResourcesByType(c, in.Msg)

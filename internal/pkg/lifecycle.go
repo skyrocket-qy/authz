@@ -62,11 +62,13 @@ func (l *LifecycleParallel) Finish() {
 			if _, ok := l.appCloser[up]; !ok {
 				continue
 			}
+
 			l.appIndegrees[up]++
 		}
 	}
 
 	l.appIndegreesMutex = &sync.Mutex{}
+
 	l.readyCh = make(chan any, len(l.appIndegrees))
 	for app, indegree := range l.appIndegrees {
 		if indegree == 0 {
@@ -77,8 +79,12 @@ func (l *LifecycleParallel) Finish() {
 
 func (l *LifecycleParallel) Shutdown(c context.Context) error {
 	l.Finish()
-	var wg sync.WaitGroup
-	var firstErr atomic.Value
+
+	var (
+		wg       sync.WaitGroup
+		firstErr atomic.Value
+	)
+
 	wg.Add(len(l.readyCh))
 
 	go func() {
@@ -97,6 +103,7 @@ func (l *LifecycleParallel) Shutdown(c context.Context) error {
 			if closer, ok := l.appCloser[app]; ok {
 				if err := closer(); err != nil {
 					firstErr.Store(err)
+
 					return
 				}
 			}
@@ -106,8 +113,10 @@ func (l *LifecycleParallel) Shutdown(c context.Context) error {
 				l.appIndegrees[up]--
 				v := l.appIndegrees[up]
 				l.appIndegreesMutex.Unlock()
+
 				if v == 0 {
 					wg.Add(1)
+
 					l.readyCh <- up
 				}
 			}
@@ -152,6 +161,7 @@ func (l *LifecycleParallelSyncMap) Finish() {
 
 		for _, up := range ups {
 			actual, loaded := l.appIndegrees.LoadOrStore(up, new(int32))
+
 			val := actual.(*int32)
 			if loaded {
 				atomic.AddInt32(val, 1) // already existed, increment
@@ -165,15 +175,19 @@ func (l *LifecycleParallelSyncMap) Finish() {
 	l.appIndegrees.Range(func(key, value any) bool {
 		if atomic.LoadInt32(value.(*int32)) == 0 {
 			l.readyCh <- key
+
 			l.it++
 		}
+
 		return true
 	})
 }
 
 func (l *LifecycleParallelSyncMap) Shutdown() error {
-	var wg sync.WaitGroup
-	var firstErr atomic.Value
+	var (
+		wg       sync.WaitGroup
+		firstErr atomic.Value
+	)
 
 	wg.Add(l.it)
 
@@ -193,6 +207,7 @@ func (l *LifecycleParallelSyncMap) Shutdown() error {
 			if closer, ok := l.appCloser[app]; ok {
 				if err := closer(); err != nil {
 					firstErr.Store(err)
+
 					return
 				}
 			}
@@ -201,6 +216,7 @@ func (l *LifecycleParallelSyncMap) Shutdown() error {
 				if val, ok := l.appIndegrees.Load(up); ok {
 					if atomic.AddInt32(val.(*int32), -1) == 0 {
 						wg.Add(1)
+
 						l.readyCh <- up
 					}
 				}
@@ -209,6 +225,7 @@ func (l *LifecycleParallelSyncMap) Shutdown() error {
 	}
 
 	wg.Wait()
+
 	if err := firstErr.Load(); err != nil {
 		return err.(error)
 	}

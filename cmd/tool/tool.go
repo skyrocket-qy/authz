@@ -2,7 +2,6 @@ package tool
 
 import (
 	"authz/cmd/tool/shardmem"
-
 	"github.com/spf13/cobra"
 )
 

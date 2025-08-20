@@ -10,30 +10,36 @@ import (
 
 func ApplyCursor(c *pkgpbv1.CursorData) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-		if len(c.Fields) == 0 {
+		if len(c.GetFields()) == 0 {
 			return db
 		}
 
-		var orConditions []string
-		var orArgs [][]any
+		var (
+			orConditions []string
+			orArgs       [][]any
+		)
 
-		for i := range c.Fields {
-			var condParts []string
-			var args []any
+		for i := range c.GetFields() {
+			var (
+				condParts []string
+				args      []any
+			)
 
 			// Equal conditions for previous fields
-			for j := 0; j < i; j++ {
-				condParts = append(condParts, c.Fields[j].Col+" = ?")
-				args = append(args, c.Fields[j].Val)
+
+			for j := range i {
+				condParts = append(condParts, c.GetFields()[j].GetCol()+" = ?")
+				args = append(args, c.GetFields()[j].GetVal())
 			}
 
 			// Comparison condition for current field
 			op := ">"
-			if !c.Fields[i].Asc {
+			if !c.GetFields()[i].GetAsc() {
 				op = "<"
 			}
-			condParts = append(condParts, c.Fields[i].Col+" "+op+" ?")
-			args = append(args, c.Fields[i].Val)
+
+			condParts = append(condParts, c.GetFields()[i].GetCol()+" "+op+" ?")
+			args = append(args, c.GetFields()[i].GetVal())
 
 			orConditions = append(orConditions, "("+strings.Join(condParts, " AND ")+")")
 			orArgs = append(orArgs, args)
@@ -49,6 +55,7 @@ func ApplyCursor(c *pkgpbv1.CursorData) func(db *gorm.DB) *gorm.DB {
 
 		fmt.Println(fullWhere)
 		fmt.Println(allArgs)
+
 		return db.Where(fullWhere, allArgs...)
 	}
 }

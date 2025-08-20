@@ -1,9 +1,10 @@
 package rbac
 
 import (
-	"authz/internal/entity"
 	"strconv"
 	"sync"
+
+	"authz/internal/entity"
 )
 
 const NumShards = 8192
@@ -17,6 +18,7 @@ func NewGraph() *Graph {
 	for i := range NumShards {
 		shards[i] = &Shard{Graph: make(map[entity.Instance]*ObjEntry)}
 	}
+
 	return &Graph{Shards: shards}
 }
 
@@ -33,16 +35,18 @@ type ObjEntry struct {
 
 func (g *Graph) getShard(obj entity.Instance) *Shard {
 	sum, _ := strconv.Atoi(obj.Id) // TODO: use uint64 on obj
+
 	return g.Shards[sum%NumShards]
 }
 
 // TODO: wildcard support
-// Read only locks the object
+// Read only locks the object.
 func (g *Graph) Exist(obj entity.Instance, rel string, sbj entity.Instance) bool {
 	s := g.getShard(obj)
 	s.mu.RLock()
 	objEntry := s.Graph[obj]
 	s.mu.RUnlock()
+
 	if objEntry == nil {
 		return false
 	}
@@ -56,20 +60,24 @@ func (g *Graph) Exist(obj entity.Instance, rel string, sbj entity.Instance) bool
 	}
 
 	_, ok := relEntry[sbj]
+
 	return ok
 }
 
-// Write only locks the object
+// Write only locks the object.
 func (g *Graph) Create(obj entity.Instance, rel string, sbj entity.Instance) {
 	s := g.getShard(obj)
 	s.mu.RLock()
 	objEntry := s.Graph[obj]
 	s.mu.RUnlock()
+
 	if objEntry == nil {
 		s.mu.Lock()
+
 		if s.Graph[obj] == nil {
 			s.Graph[obj] = &ObjEntry{Relations: make(map[string]map[entity.Instance]struct{})}
 		}
+
 		objEntry = s.Graph[obj]
 		s.mu.Unlock()
 	}
@@ -86,33 +94,38 @@ func (g *Graph) Create(obj entity.Instance, rel string, sbj entity.Instance) {
 	relEntry[sbj] = struct{}{}
 }
 
-// Delete only locks the object
+// Delete only locks the object.
 func (g *Graph) Delete(obj entity.Instance, rel string, sbj entity.Instance) {
 	s := g.getShard(obj)
 
 	s.mu.RLock()
 	objEntry := s.Graph[obj]
 	s.mu.RUnlock()
+
 	if objEntry == nil {
 		return
 	}
 
 	objEntry.mu.Lock()
 	defer objEntry.mu.Unlock()
+
 	relEntry := objEntry.Relations[rel]
 	if relEntry == nil {
 		return
 	}
 
 	delete(relEntry, sbj)
+
 	if len(relEntry) == 0 {
 		delete(objEntry.Relations, rel)
 
 		if len(objEntry.Relations) == 0 {
 			s.mu.Lock()
+
 			if len(objEntry.Relations) == 0 {
 				delete(s.Graph, obj)
 			}
+
 			s.mu.Unlock()
 		}
 	}

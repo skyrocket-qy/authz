@@ -2,7 +2,6 @@ package service
 
 import (
 	"authz/internal/pkg"
-
 	"github.com/segmentio/kafka-go"
 )
 
@@ -13,5 +12,6 @@ func NewKafkaReader(lc *pkg.LifecycleParallel) *kafka.Reader {
 	})
 
 	lc.Add(r, r.Close)
+
 	return r
 }

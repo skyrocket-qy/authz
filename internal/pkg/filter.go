@@ -23,6 +23,7 @@ func ApplyFilter(filters []*pkgpbv1.Filter, validFields []string, filterExprs ma
 	func(db *gorm.DB) *gorm.DB, error,
 ) {
 	visited := map[string]struct{}{}
+
 	for _, ft := range filters {
 		if ft.Field == "" {
 			return nil, errors.New("field is empty")
@@ -35,6 +36,7 @@ func ApplyFilter(filters []*pkgpbv1.Filter, validFields []string, filterExprs ma
 		if _, ok := visited[ft.Field]; ok {
 			return nil, fmt.Errorf("duplicate field: %v", ft.Field)
 		}
+
 		visited[ft.Field] = struct{}{}
 
 		switch ft.Op {
@@ -61,6 +63,7 @@ func ApplyFilter(filters []*pkgpbv1.Filter, validFields []string, filterExprs ma
 
 	return func(db *gorm.DB) *gorm.DB {
 		joinVisited := map[string]struct{}{}
+
 		for _, ft := range filters {
 			if expr, ok := filterExprs[ft.Field]; ok {
 				for _, join := range expr {
@@ -72,7 +75,7 @@ func ApplyFilter(filters []*pkgpbv1.Filter, validFields []string, filterExprs ma
 			}
 
 			column := quoteIfNeeded(ft.Field)
-			tmpl, _ := opTemplate[ft.Op]
+			tmpl := opTemplate[ft.Op]
 
 			switch ft.Op {
 			case pkgpbv1.Operator_BETWEEN:
@@ -85,6 +88,7 @@ func ApplyFilter(filters []*pkgpbv1.Filter, validFields []string, filterExprs ma
 				}
 			}
 		}
+
 		return db
 	}, nil
 }
@@ -95,7 +99,9 @@ func quoteIfNeeded(field string) string {
 		for i, p := range parts {
 			parts[i] = "`" + p + "`"
 		}
+
 		return strings.Join(parts, ".")
 	}
+
 	return "`" + field + "`"
 }

@@ -6,4 +6,5 @@ package rest
 
 // GET /live (liveness probe) — only checks that the app process hasn’t crashed/hung.
 
-// GET /ready (readiness probe) — checks that the app is ready to handle requests (e.g., DB connected).
+// GET /ready (readiness probe) — checks that the app is ready to handle requests (e.g., DB
+// connected).
