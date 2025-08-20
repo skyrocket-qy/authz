@@ -55,3 +55,6 @@ gen-jwt-key:
 	openssl rand -base64 64
 
 
+cover:
+	go test ./... -coverprofile=coverage.out
+	go tool cover -func=coverage.out

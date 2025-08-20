@@ -9,7 +9,6 @@ spec:
   version: 4.0.0
   replicas: 1
   bootstrapServers: debezium-cluster-kafka-bootstrap:9092
-  # image: debezium/connect:3.0.0.Final
   config:
     config.providers: secrets
     config.providers.secrets.class: io.strimzi.kafka.KubernetesSecretConfigProvider
@@ -24,35 +23,9 @@ spec:
   build:
     output:
       type: docker
-      image: 10.102.110.42/debezium-connect-cluster:latest
+      image: 10.105.137.79/debezium-connect-mysql:latest
     plugins:
-      - name: debezium-postgresql-connector
+      - name: debezium-mysql-connector
         artifacts:
           - type: tgz
-            url: https://repo1.maven.org/maven2/io/debezium/debezium-connector-postgres/3.2.0.Final/debezium-connector-postgres-3.2.0.Final-plugin.tar.gz
----
-apiVersion: kafka.strimzi.io/v1beta2
-kind: KafkaConnector
-metadata:
-  name: debezium-connector-postgresql
-  namespace: authz
-  labels:
-    strimzi.io/cluster: debezium-connect-cluster
-spec:
-  class: io.debezium.connector.postgresql.PostgresConnector
-  tasksMax: 1
-  config:
-    tasks.max: 1
-    database.hostname: postgres
-    database.port: 5432
-    database.user: ${secrets:debezium-secret:username}
-    database.password: ${secrets:debezium-secret:password}
-    database.server.id: 184054
-    topic.prefix: postgresql
-    database.include.list: inventory
-    schema.history.internal.kafka.bootstrap.servers: debezium-cluster-kafka-bootstrap:9092
-    schema.history.internal.kafka.topic: schema-changes.inventory
-    # The following settings are crucial for PostgreSQL CDC
-    plugin.name: pgoutput
-    database.dbname: postgres
-    database.sslmode: prefer # or verify-full, etc.
+            url: https://repo1.maven.org/maven2/io/debezium/debezium-connector-mysql/3.2.0-Final/debezium-connector-mysql-3.2.0-Final-plugin.tar.gz

@@ -14,15 +14,15 @@ jobs:
       - name: Run tests
         run: go test ./... -coverprofile=coverage.out -failfast
 
-      - name: Display coverage
-        run: go tool cover -func=coverage.out
+    #   - name: Display coverage
+    #     run: go tool cover -func=coverage.out
 
       # Optional: upload coverage file as artifact
-      - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage.out
+    #   - name: Upload coverage artifact
+    #     uses: actions/upload-artifact@v4
+    #     with:
+    #       name: coverage-report
+    #       path: coverage.out
     #   - name: Generate HTML report
     #     run: go tool cover -html=coverage.out -o coverage.html
     #   - name: Upload HTML artifact

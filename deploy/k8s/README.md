@@ -12,15 +12,25 @@ kubectl create -f https://operatorhub.io/install/strimzi-kafka-operator.yaml
 
 # Creating Secrets, role for the Database
 kubectl apply -f debezium_1.yaml
+
+kubectl edit operatorgroup global-operators -n operators
 spec:
   targetNamespaces:
-    - debezium-example
+    - authz
 # Create kafka
-kubectl edit operatorgroup global-operators -n operators
 
-kubectl apply -f debezium_2.yaml
+kubectl apply -f debezium_3.yaml
 
 # Wait untail ready
 
 kubectl wait kafka/debezium-cluster --for=condition=Ready --timeout=300s -n example
+
+# mysql
+
+kubectl apply -f mysql.yaml
+
+# KafkaConnect
+kubectl -n kube-system get svc registry -o jsonpath='{.spec.clusterIP}' # get ip
+
+kubectl apply -f kafka-connect.yaml
 ```
