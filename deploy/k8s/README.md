@@ -1,7 +1,7 @@
 # Flow
 
 ```zsh
-minikube start --insecure-registry "10.0.0.0/24"
+minikube start --insecure-registry "10.0.0.0/24" --cpus=8 --memory=16g 
 minikube addons enable registry
 
 kubectl create ns authz
