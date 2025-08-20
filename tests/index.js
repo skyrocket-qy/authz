@@ -2,10 +2,10 @@ import http from 'k6/http';
 
 
 export const options = {
-    vus: 10,
+    vus: 16,
     setupTimeout: '6000s',
     // iterations: 1000,
-    duration: '60s',
+    duration: '30s',
 }
 
 let enforcements = [];
@@ -15,45 +15,45 @@ export function setup() {
     let resources = 1000
     let users     = 100000
 
-    for (let i = 0; i < users; i++){
-        let roleId = i % roles
-        assignRole(i,roleId)
-    }
+    // for (let i = 0; i < users; i++){
+    //     let roleId = i % roles
+    //     assignRole(i,roleId)
+    // }
 
-    for (let i = 0; i < roles; i++){
-        let resId = i % resources
-        grantPerm(i, resId, "read")
-    }
+    // for (let i = 0; i < roles; i++){
+    //     let resId = i % resources
+    //     grantPerm(i, resId, "read")
+    // }
 
-    for (let i = 0; i < 17; i++) {
-        const userNum = Math.floor(users / 17) * i;
-        const roleNum = userNum % roles;
-        let resourceNum = roleNum % resources;
+    // for (let i = 0; i < 17; i++) {
+    //     const userNum = Math.floor(users / 17) * i;
+    //     const roleNum = userNum % roles;
+    //     let resourceNum = roleNum % resources;
 
-        if (i % 2 === 0) {
-            resourceNum = (resourceNum + 1) % resources;
-        }
+    //     if (i % 2 === 0) {
+    //         resourceNum = (resourceNum + 1) % resources;
+    //     }
 
-        enforcements.push({
-            userId: userNum,
-            resourceId: resourceNum,
-            perm: "read",
-        });
-    }
+    //     enforcements.push({
+    //         userId: userNum,
+    //         resourceId: resourceNum,
+    //         perm: "read",
+    //     });
+    // }
 
     return { enforcements };
 }
 
 export default function(data){
-    // const userId = Math.floor(Math.random() * 100000);
-    // const resourceId = Math.floor(Math.random() * 1000);
+    const userId = Math.floor(Math.random() * 100000);
+    const resourceId = Math.floor(Math.random() * 1000);
 
-    // doRandomOp(userId, resourceId);
+    doRandomOp(userId, resourceId);
 }
 
 export function doRandomOp(userId, resourceId){
     const rand = Math.random() * 100;
-    if(rand < 98){                  // 0–93 = 94% read
+    if(rand < 100){                  // 0–93 = 94% read
         checkPerm(userId, resourceId, 'read');
     } else if(rand < 99){           // 94–96 = 3% create
         createTuple({
