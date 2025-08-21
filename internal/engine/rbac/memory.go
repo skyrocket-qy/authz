@@ -281,13 +281,13 @@ func (e *ZanzibarMemoryImpl) applyMessage(m kafka.Message) error {
 	return nil
 }
 
-func (e *ZanzibarMemoryImpl) sync(ctx context.Context) {
+func (e *ZanzibarMemoryImpl) sync(c context.Context) {
 	for {
 		select {
-		case <-ctx.Done():
+		case <-c.Done():
 			return
 		default:
-			m, err := e.kafkaR.ReadMessage(ctx)
+			m, err := e.kafkaR.ReadMessage(c)
 			if err != nil {
 				if errors.Is(err, context.Canceled) {
 					return
