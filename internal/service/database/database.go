@@ -8,7 +8,6 @@ import (
 	"authz/internal/cfg"
 	"authz/internal/engine/rbac"
 	"authz/internal/pkg"
-
 	"github.com/rs/zerolog/log"
 	"github.com/skyrocket-qy/erx"
 	"gorm.io/driver/postgres"

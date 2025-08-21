@@ -25,39 +25,39 @@ func ApplyFilter(filters []*pkgpbv1.Filter, validFields []string, filterExprs ma
 	visited := map[string]struct{}{}
 
 	for _, ft := range filters {
-		if ft.Field == "" {
+		if ft.GetField() == "" {
 			return nil, errors.New("field is empty")
 		}
 
-		if !slices.Contains(validFields, ft.Field) {
-			return nil, fmt.Errorf("invalid field: %v", ft.Field)
+		if !slices.Contains(validFields, ft.GetField()) {
+			return nil, fmt.Errorf("invalid field: %v", ft.GetField())
 		}
 
-		if _, ok := visited[ft.Field]; ok {
-			return nil, fmt.Errorf("duplicate field: %v", ft.Field)
+		if _, ok := visited[ft.GetField()]; ok {
+			return nil, fmt.Errorf("duplicate field: %v", ft.GetField())
 		}
 
-		visited[ft.Field] = struct{}{}
+		visited[ft.GetField()] = struct{}{}
 
-		switch ft.Op {
+		switch ft.GetOp() {
 		case pkgpbv1.Operator_EQ,
 			pkgpbv1.Operator_GT,
 			pkgpbv1.Operator_GTE,
 			pkgpbv1.Operator_LT,
 			pkgpbv1.Operator_LTE:
-			if len(ft.Values) != 1 {
-				return nil, fmt.Errorf("%v filter requires one value", ft.Op)
+			if len(ft.GetValues()) != 1 {
+				return nil, fmt.Errorf("%v filter requires one value", ft.GetOp())
 			}
 		case pkgpbv1.Operator_BETWEEN:
-			if len(ft.Values) != 2 {
+			if len(ft.GetValues()) != 2 {
 				return nil, errors.New("between filter requires two values")
 			}
 			// Optional: check range
-			if ft.Values[1] <= ft.Values[0] {
+			if ft.GetValues()[1] <= ft.GetValues()[0] {
 				return nil, errors.New("between: second value must be >= first")
 			}
 		default:
-			return nil, fmt.Errorf("unsupported operator: %v", ft.Op)
+			return nil, fmt.Errorf("unsupported operator: %v", ft.GetOp())
 		}
 	}
 
@@ -65,7 +65,7 @@ func ApplyFilter(filters []*pkgpbv1.Filter, validFields []string, filterExprs ma
 		joinVisited := map[string]struct{}{}
 
 		for _, ft := range filters {
-			if expr, ok := filterExprs[ft.Field]; ok {
+			if expr, ok := filterExprs[ft.GetField()]; ok {
 				for _, join := range expr {
 					if _, seen := joinVisited[join]; !seen {
 						db = db.Joins(join)
@@ -74,17 +74,17 @@ func ApplyFilter(filters []*pkgpbv1.Filter, validFields []string, filterExprs ma
 				}
 			}
 
-			column := quoteIfNeeded(ft.Field)
-			tmpl := opTemplate[ft.Op]
+			column := quoteIfNeeded(ft.GetField())
+			tmpl := opTemplate[ft.GetOp()]
 
-			switch ft.Op {
+			switch ft.GetOp() {
 			case pkgpbv1.Operator_BETWEEN:
-				if len(ft.Values) >= 2 {
-					db = db.Where(fmt.Sprintf(tmpl, column), ft.Values[0], ft.Values[1])
+				if len(ft.GetValues()) >= 2 {
+					db = db.Where(fmt.Sprintf(tmpl, column), ft.GetValues()[0], ft.GetValues()[1])
 				}
 			default:
-				if len(ft.Values) >= 1 {
-					db = db.Where(fmt.Sprintf(tmpl, column), ft.Values[0])
+				if len(ft.GetValues()) >= 1 {
+					db = db.Where(fmt.Sprintf(tmpl, column), ft.GetValues()[0])
 				}
 			}
 		}

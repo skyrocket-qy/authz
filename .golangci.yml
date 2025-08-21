@@ -17,6 +17,7 @@ linters:
     - depguard
     - cyclop
     - interfacebloat
+    - exhaustive
     
   enable:
     - wsl_v5

@@ -16,6 +16,7 @@ func NewSchema() (*Schema, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	log.Info().Msgf("schema files: %v", filePaths)
 
 	schema := Schema{Namespaces: map[string]*Namespace{}}
@@ -41,6 +42,7 @@ func NewSchema() (*Schema, error) {
 
 	return &schema, nil
 }
+
 func getYamlFilesFromEnv() ([]string, error) {
 	pathStr := os.Getenv("SCHEMA_PATH")
 	if pathStr == "" {
@@ -48,6 +50,7 @@ func getYamlFilesFromEnv() ([]string, error) {
 	}
 
 	paths := strings.Split(pathStr, ",")
+
 	var yamlFiles []string
 
 	for _, p := range paths {
@@ -64,6 +67,7 @@ func getYamlFilesFromEnv() ([]string, error) {
 			if err != nil {
 				return nil, err
 			}
+
 			for _, entry := range entries {
 				if !entry.IsDir() &&
 					(strings.HasSuffix(entry.Name(), ".yaml") || strings.HasSuffix(entry.Name(), ".yml")) {
@@ -89,8 +93,9 @@ type Namespace struct {
 }
 
 type Relation struct {
+	UsersetRewrite `yaml:"inline"`
+
 	AllowSubjectNamespaces []string `yaml:"allow_subject_namespaces,omitempty"`
-	UsersetRewrite         `         yaml:",inline"`
 }
 
 // Recursive AST-like structure.

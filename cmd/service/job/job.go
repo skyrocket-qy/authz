@@ -8,7 +8,6 @@ import (
 	"authz/internal/service"
 	"authz/internal/service/database"
 	"authz/internal/service/logger"
-
 	"github.com/skyrocket-qy/gox/logx"
 	"github.com/spf13/cobra"
 )
@@ -27,7 +26,11 @@ func start(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	logger.InitLogger()
+	if err := logger.InitLogger(); err != nil {
+		logx.Error(err.Error())
+
+		return
+	}
 
 	lc := pkg.NewLifecycleParallel()
 

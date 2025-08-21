@@ -6,7 +6,6 @@ import (
 
 	"authz/internal/pkg"
 	"authz/internal/schema"
-
 	rbacpb "github.com/skyrocket-qy/protos/gen/authzpb/rbacpb"
 	authzpbv1 "github.com/skyrocket-qy/protos/gen/authzpb/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -329,7 +328,6 @@ func (r *RbacLogicImpl) AssignRole(c context.Context, in *rbacpb.AssignRoleIn) e
 		// 	Take(&Role{}).Error; err != nil {
 		// 	return err
 		// }
-
 		return r.zbLogic.Create(pkg.WithDB(c, tx),
 			&authzpbv1.Tuple{
 				SbjNs: "user",
@@ -368,7 +366,6 @@ func (r *RbacLogicImpl) GrantPerm(c context.Context, in *rbacpb.GrantPermIn) err
 		// if err := tx.Where("id = ?", in.GetResourceId()).Take(&res).Error; err != nil {
 		// 	return err
 		// }
-
 		return r.zbLogic.Create(pkg.WithDB(c, tx),
 			&authzpbv1.Tuple{
 				SbjNs: "role",

@@ -15,7 +15,6 @@ import (
 	"authz/internal/pkg"
 	"authz/internal/service/logger"
 	"authz/internal/wire"
-
 	"connectrpc.com/connect"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/cors"
@@ -78,7 +77,11 @@ func RunServer(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	logger.InitLogger()
+	if err := logger.InitLogger(); err != nil {
+		logx.Error(err.Error())
+
+		return
+	}
 
 	lc := pkg.NewLifecycleParallel()
 
@@ -149,7 +152,11 @@ func startConnectServer(lc *pkg.LifecycleParallel) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	lc.Shutdown(ctx)
+	if err := lc.Shutdown(ctx); err != nil {
+		log.Error().Msg(err.Error())
+
+		return
+	}
 
 	log.Info().Msg("Server gracefully shut down.")
 }
