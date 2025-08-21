@@ -18,6 +18,7 @@ linters:
     - cyclop
     - interfacebloat
     - exhaustive
+    - funcorder
     
   enable:
     - wsl_v5

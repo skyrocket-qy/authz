@@ -71,8 +71,8 @@ services:
       - "8080:8080"
     env_file:
       - .env.docker
-    mem_limit: 16g       # max memory
-    cpus: 8 
+    mem_limit: 8g       # max memory
+    cpus: 4 
     depends_on:
       - kafka
       - postgres
