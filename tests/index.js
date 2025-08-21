@@ -5,7 +5,7 @@ import http from 'k6/http';
 const baseUrl = 'http://localhost:8080'
 
 export const options = {
-    vus: 10,
+    vus: 1,
     setupTimeout: '6000s',
     // iterations: 1000,
     duration: '10s',
