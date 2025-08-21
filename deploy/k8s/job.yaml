@@ -1,3 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: authz-job-config
+  namespace: authz
+data:
+  MAX_CHECK_NODES: "6561"
+  DB_USER: "postgres"
+  DB_HOST: postgres.authz.svc.cluster.local
+  DB_PORT: "5432"
+  DB_DB: "postgres"
+  KAFKA_HOST: debezium-cluster-kafka-bootstrap.authz.svc.cluster.local
+  KAFKA_PORT: "9092"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: authz-job-secret
+  namespace: authz
+type: Opaque
+stringData:
+  DB_PASSWORD: "password"
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -14,10 +39,11 @@ spec:
         app: authz-job
     spec:
       containers:
-        - name: job
-          image: myregistry/authz-job:latest
-          env:
-            - name: POSTGRES_URL
-              value: "postgresql://postgres:supersecret@authz-postgres:5432/authzdb"
-            - name: KAFKA_BROKER
-              value: "authz-kafka:9092"
+        - name: authz-job
+          image: authz-job:latest
+          imagePullPolicy: Never   # <-- Important for minikube local images
+          envFrom:
+            - configMapRef:
+                name: authz-job-config
+            - secretRef:
+                name: authz-job-secret

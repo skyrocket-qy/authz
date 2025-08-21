@@ -73,7 +73,6 @@ services:
       - .env.docker
     mem_limit: 16g       # max memory
     cpus: 8 
-
     depends_on:
       - kafka
       - postgres
@@ -86,7 +85,6 @@ services:
     container_name: authz-job
     env_file:
       - .env.docker
-
     depends_on:
       - kafka
       - postgres

@@ -14,3 +14,6 @@
 - multi-tenant example
 - Time-based conditions (e.g. access valid until X) stored as metadata
 - update operatr-controller version
+- cilint
+- add error hanling
+- add middleware for request log

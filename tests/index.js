@@ -1,11 +1,14 @@
 import http from 'k6/http';
 
 
+// const baseUrl = 'http://localhost:8080'
+const baseUrl = 'http://localhost:8080'
+
 export const options = {
     vus: 16,
     setupTimeout: '6000s',
     // iterations: 1000,
-    duration: '30s',
+    duration: '1s',
 }
 
 let enforcements = [];
@@ -15,40 +18,40 @@ export function setup() {
     let resources = 1000
     let users     = 100000
 
-    // for (let i = 0; i < users; i++){
-    //     let roleId = i % roles
-    //     assignRole(i,roleId)
-    // }
+    for (let i = 0; i < users; i++){
+        let roleId = i % roles
+        assignRole(i,roleId)
+    }
 
-    // for (let i = 0; i < roles; i++){
-    //     let resId = i % resources
-    //     grantPerm(i, resId, "read")
-    // }
+    for (let i = 0; i < roles; i++){
+        let resId = i % resources
+        grantPerm(i, resId, "read")
+    }
 
-    // for (let i = 0; i < 17; i++) {
-    //     const userNum = Math.floor(users / 17) * i;
-    //     const roleNum = userNum % roles;
-    //     let resourceNum = roleNum % resources;
+    for (let i = 0; i < 17; i++) {
+        const userNum = Math.floor(users / 17) * i;
+        const roleNum = userNum % roles;
+        let resourceNum = roleNum % resources;
 
-    //     if (i % 2 === 0) {
-    //         resourceNum = (resourceNum + 1) % resources;
-    //     }
+        if (i % 2 === 0) {
+            resourceNum = (resourceNum + 1) % resources;
+        }
 
-    //     enforcements.push({
-    //         userId: userNum,
-    //         resourceId: resourceNum,
-    //         perm: "read",
-    //     });
-    // }
+        enforcements.push({
+            userId: userNum,
+            resourceId: resourceNum,
+            perm: "read",
+        });
+    }
 
     return { enforcements };
 }
 
 export default function(data){
-    const userId = Math.floor(Math.random() * 100000);
-    const resourceId = Math.floor(Math.random() * 1000);
+    // const userId = Math.floor(Math.random() * 100000);
+    // const resourceId = Math.floor(Math.random() * 1000);
 
-    doRandomOp(userId, resourceId);
+    // doRandomOp(userId, resourceId);
 }
 
 export function doRandomOp(userId, resourceId){
@@ -74,21 +77,21 @@ export function doRandomOp(userId, resourceId){
 // }
 
 export function assignRole(userId, roleId) {
-  return http.post('http://localhost:8080/authzpb.rbacpb.RbacService/AssignRole', 
+  return http.post(`${baseUrl}/authzpb.rbacpb.RbacService/AssignRole`, 
     JSON.stringify({ userId, roleId }), {
     headers: { 'Content-Type': 'application/json' },
   });
 }
 
 export function grantPerm(roleId, resourceId, perm) {
-  return http.post('http://localhost:8080/authzpb.rbacpb.RbacService/GrantPerm', 
+  return http.post(`${baseUrl}/authzpb.rbacpb.RbacService/GrantPerm`, 
     JSON.stringify({ roleId, resourceId, perm }), {
     headers: { 'Content-Type': 'application/json' },
   });
 }
 
 export function checkPerm(userId, resourceId, perm) {
-    return http.post('http://localhost:8080/authzpb.v1.AuthzService/Check', JSON.stringify({
+    return http.post(`${baseUrl}/authzpb.v1.AuthzService/Check`, JSON.stringify({
         sbjId: userId.toString(),
         sbjNs: 'user',
         rel: perm,
@@ -99,7 +102,7 @@ export function checkPerm(userId, resourceId, perm) {
 
 export function createTuple(tuple){
     return http.post(
-        'http://localhost:8080/authzpb.v1.AuthzService/CreateTuple', 
+        `${baseUrl}/authzpb.v1.AuthzService/CreateTuple`, 
         JSON.stringify(tuple), 
         {headers: { 'Content-Type': 'application/json' }}
     );
@@ -107,7 +110,7 @@ export function createTuple(tuple){
 
 export function deleteTuples(id){
     return http.post(
-        'http://localhost:8080/authzpb.v1.AuthzService/DeleteTuples', 
+        `${baseUrl}/authzpb.v1.AuthzService/DeleteTuples`, 
         JSON.stringify({
             "delete_tuple_ids": {
                 "ids": [id]

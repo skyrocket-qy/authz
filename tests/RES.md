@@ -1,3 +1,5 @@
+# RES
+
 1 cpu, 1G, 100 vus
 1000/s
 http_req_duration..............: avg=106.53ms min=280.99µs med=88.22ms max=2.51s p(90)=291.95ms p(95)=401.14ms 

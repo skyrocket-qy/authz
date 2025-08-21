@@ -15,6 +15,7 @@ import (
 	"authz/internal/pkg"
 	"authz/internal/service/logger"
 	"authz/internal/wire"
+
 	"connectrpc.com/connect"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/cors"
@@ -46,7 +47,7 @@ func init() {
 	Cmd.AddCommand(service.Cmd)
 	Cmd.AddCommand(tool.Cmd)
 
-	Cmd.Flags().StringVarP(&pkg.Env, `env`, "e", "local", `default: local`)
+	Cmd.PersistentFlags().StringVarP(&pkg.Env, `env`, "e", "local", `default: local`)
 	Cmd.Flags().StringP("engine", `g`, "rbac", "default: rbac")
 
 	Cmd.PreRunE = func(cmd *cobra.Command, args []string) error {

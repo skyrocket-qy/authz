@@ -12,6 +12,7 @@ import (
 	"authz/internal/entity"
 	"authz/internal/pkg"
 	"authz/internal/schema"
+
 	"github.com/rs/zerolog/log"
 	"github.com/segmentio/kafka-go"
 	"gorm.io/gorm"
@@ -297,6 +298,7 @@ func (e *ZanzibarMemoryImpl) sync(ctx context.Context) {
 				continue
 			}
 
+			log.Debug().Msg("read kafk amessage")
 			if err := e.applyMessage(m); err != nil {
 				log.Error().Err(err).Msg("Failed to apply message")
 

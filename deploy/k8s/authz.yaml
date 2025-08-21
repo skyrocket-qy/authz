@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: authz-config
+  namespace: authz
+data:
+  MAX_CHECK_NODES: "6561"
+  SCHEMA_PATH: "./"
+  PORT: "8080"
+  DB_USER: "postgres"
+  DB_HOST: postgres.authz.svc.cluster.local
+  DB_PORT: "5432"
+  DB_DB: "postgres"
+  KAFKA_HOST: debezium-cluster-kafka-bootstrap.authz.svc.cluster.local
+  KAFKA_PORT: "9092"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: authz-secret
+  namespace: authz
+type: Opaque
+stringData:
+  DB_PASSWORD: "password"
+  JWT_SECRET: "0bOW2BPVCb5yYVZzsM9sCUuGv6u+7CZZzW1iy7WzC0s9d2oKxiJezS2tR/Oa9wWGeLyrNvyj92pF3SEOjWBjEQ=="
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: authz
+  namespace: authz
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: authz
+  template:
+    metadata:
+      labels:
+        app: authz
+    spec:
+      containers:
+        - name: authz
+          image: authz:latest
+          imagePullPolicy: Never   # <-- Important for minikube local images
+          envFrom:
+            - configMapRef:
+                name: authz-config
+            - secretRef:
+                name: authz-secret
+          ports:
+            - containerPort: 8080  # the port your app listens on
+---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: authz
+#   namespace: authz
+# spec:
+#   type: LoadBalancer # only on cloud
+#   selector:
+#     app: authz
+#   ports:
+#     - name: http
+#       port: 8083         # external port
+#       targetPort: 8083   # container port
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: authz
+  namespace: authz
+spec:
+  type: NodePort
+  selector:
+    app: authz
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      nodePort: 30080  # Kubernetes picks if you don’t set

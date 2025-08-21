@@ -8,6 +8,7 @@ import (
 	"authz/internal/service"
 	"authz/internal/service/database"
 	"authz/internal/service/logger"
+
 	"github.com/skyrocket-qy/gox/logx"
 	"github.com/spf13/cobra"
 )
