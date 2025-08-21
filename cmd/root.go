@@ -15,7 +15,9 @@ import (
 	"authz/internal/pkg"
 	"authz/internal/service/logger"
 	"authz/internal/wire"
+
 	"connectrpc.com/connect"
+	"connectrpc.com/otelconnect"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/cors"
 	"github.com/rs/zerolog/log"
@@ -98,6 +100,13 @@ func startConnectServer(lc *pkg.LifecycleParallel) {
 		return
 	}
 
+	otelInterceptor, err := otelconnect.NewInterceptor()
+	if err != nil {
+		log.Error().Msg(err.Error())
+
+		return
+	}
+
 	inflightInterceptor := connect.UnaryInterceptorFunc(func(
 		next connect.UnaryFunc,
 	) connect.UnaryFunc {
@@ -112,11 +121,13 @@ func startConnectServer(lc *pkg.LifecycleParallel) {
 	path, handler := authzpbv1connect.NewAuthzServiceHandler(connectH,
 		connect.WithCompressMinBytes(512),
 		connect.WithInterceptors(inflightInterceptor),
+		connect.WithInterceptors(otelInterceptor),
 	)
 
 	rbacPath, rbacH := rbacpbconnect.NewRbacServiceHandler(connectH,
 		connect.WithCompressMinBytes(512),
 		connect.WithInterceptors(inflightInterceptor),
+		connect.WithInterceptors(otelInterceptor),
 	)
 	mux := http.NewServeMux()
 	mux.Handle(rbacPath, rbacH)

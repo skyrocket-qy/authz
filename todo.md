@@ -3,8 +3,6 @@
 - use pprof for profiling
 - batch operation
 - integrate authn
-- test the performance
-- finish the job service
 - add more schema types
 - cmd to inspect tuples cycle, run check, benchmark, schema check
 - A simple web dashboard for viewing the relationship graph.
@@ -17,3 +15,4 @@
 - cilint
 - add error hanling
 - add middleware for request log
+- use ai do abnormal analyze
