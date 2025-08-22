@@ -12,8 +12,11 @@ import (
 
 	"authz/cmd/server"
 	"authz/cmd/tool"
+	"authz/internal/handler/connect/middleware"
+	"authz/internal/handler/rest"
 	"authz/internal/pkg"
 	"authz/internal/service"
+	"authz/internal/service/database"
 	"authz/internal/service/logger"
 	"authz/internal/wire"
 
@@ -93,12 +96,21 @@ func RunServer(cmd *cobra.Command, args []string) {
 var inflight = &sync.WaitGroup{}
 
 func startConnectServer(lc *pkg.LifecycleParallel) {
-	connectH, err := wire.NewRbacHandler(context.TODO(), lc)
+	db, err := database.New(lc)
 	if err != nil {
 		log.Error().Msg(err.Error())
 
 		return
 	}
+
+	connectH, err := wire.NewRbacHandler(context.TODO(), lc, db)
+	if err != nil {
+		log.Error().Msg(err.Error())
+
+		return
+	}
+
+	restH := rest.NewHandler(db)
 
 	otelInterceptor, err := otelconnect.NewInterceptor()
 	if err != nil {
@@ -121,17 +133,20 @@ func startConnectServer(lc *pkg.LifecycleParallel) {
 	path, handler := authzpbv1connect.NewAuthzServiceHandler(connectH,
 		connect.WithCompressMinBytes(512),
 		connect.WithInterceptors(inflightInterceptor),
+		connect.WithInterceptors(middleware.NewLogRequest()),
 		connect.WithInterceptors(otelInterceptor), // TODO: for prod, it will cause the perf degrade
 	)
 
 	rbacPath, rbacH := rbacpbconnect.NewRbacServiceHandler(connectH,
 		connect.WithCompressMinBytes(512),
 		connect.WithInterceptors(inflightInterceptor),
+		connect.WithInterceptors(middleware.NewLogRequest()),
 		connect.WithInterceptors(otelInterceptor),
 	)
 	mux := http.NewServeMux()
 	mux.Handle(rbacPath, rbacH)
 	mux.Handle(path, handler)
+	restH.RegisterRoutes(mux)
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"}, // Or "*" for dev

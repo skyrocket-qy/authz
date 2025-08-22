@@ -8,16 +8,15 @@ import (
 	"authz/internal/pkg"
 	"authz/internal/schema"
 	"authz/internal/service"
-	"authz/internal/service/database"
 	"authz/internal/service/redis"
 	"context"
 
 	"github.com/google/wire"
+	"gorm.io/gorm"
 )
 
-func NewRbacHandler(context.Context, *pkg.LifecycleParallel) (*rbac.Handler, error) {
+func NewRbacHandler(context.Context, *pkg.LifecycleParallel, *gorm.DB) (*rbac.Handler, error) {
 	wire.Build(
-		database.New,
 		redis.New,
 		schema.NewSchema,
 

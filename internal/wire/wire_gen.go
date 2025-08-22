@@ -11,18 +11,14 @@ import (
 	"authz/internal/pkg"
 	"authz/internal/schema"
 	"authz/internal/service"
-	"authz/internal/service/database"
 	"authz/internal/service/redis"
 	"context"
+	"gorm.io/gorm"
 )
 
 // Injectors from wire.go:
 
-func NewRbacHandler(contextContext context.Context, lifecycleParallel *pkg.LifecycleParallel) (*rbac.Handler, error) {
-	db, err := database.New(lifecycleParallel)
-	if err != nil {
-		return nil, err
-	}
+func NewRbacHandler(contextContext context.Context, lifecycleParallel *pkg.LifecycleParallel, db *gorm.DB) (*rbac.Handler, error) {
 	client := redis.New(lifecycleParallel)
 	schemaSchema, err := schema.NewSchema()
 	if err != nil {
