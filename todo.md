@@ -6,7 +6,6 @@
 - add more schema types
 - cmd to inspect tuples cycle, run check, benchmark, schema check
 - A simple web dashboard for viewing the relationship graph.
-- Metrics and tracing (Prometheus / OpenTelemetry)
 - Health checks and live config reload(Ready/Live probes for k8s.)
 - No downtime when updating schema.
 - multi-tenant example

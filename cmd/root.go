@@ -1,6 +1,15 @@
 package cmd
 
 import (
+	"authz/cmd/server"
+	"authz/cmd/tool"
+	"authz/internal/handler/connect/middleware"
+	"authz/internal/handler/rest"
+	"authz/internal/pkg"
+	"authz/internal/service"
+	"authz/internal/service/database"
+	"authz/internal/service/logx"
+	"authz/internal/wire"
 	"context"
 	"fmt"
 	"net/http"
@@ -10,21 +19,11 @@ import (
 	"syscall"
 	"time"
 
-	"authz/cmd/server"
-	"authz/cmd/tool"
-	"authz/internal/handler/connect/middleware"
-	"authz/internal/handler/rest"
-	"authz/internal/pkg"
-	"authz/internal/service"
-	"authz/internal/service/database"
-	"authz/internal/service/logger"
-	"authz/internal/wire"
+	"github.com/rs/zerolog/log"
 
 	"connectrpc.com/connect"
 	"connectrpc.com/otelconnect"
 	"github.com/rs/cors"
-	"github.com/rs/zerolog/log"
-	"github.com/skyrocket-qy/gox/logx"
 	"github.com/skyrocket-qy/protos/gen/authzpb/rbacpb/rbacpbconnect"
 	"github.com/skyrocket-qy/protos/gen/authzpb/v1/authzpbv1connect"
 	"github.com/spf13/cobra"
@@ -43,7 +42,7 @@ var Cmd = &cobra.Command{
 func Execute() {
 	err := Cmd.Execute()
 	if err != nil {
-		log.Fatal().Msg(err.Error())
+		log.Fatal().Err(err).Msg("Failed to execute")
 	}
 }
 
@@ -69,13 +68,13 @@ func init() {
 
 func RunServer(cmd *cobra.Command, args []string) {
 	if err := pkg.NewConfig(); err != nil {
-		logx.Error(err.Error())
+		log.Err(err).Msg("Failed to load config")
 
 		return
 	}
 
-	if err := logger.InitLogger(); err != nil {
-		logx.Error(err.Error())
+	if err := logx.InitLogger(); err != nil {
+		log.Err(err).Msg("Failed to init logger")
 
 		return
 	}
@@ -84,7 +83,7 @@ func RunServer(cmd *cobra.Command, args []string) {
 
 	shutdown, err := service.SetupOTelSDK(context.TODO())
 	if err != nil {
-		logx.Error(err.Error())
+		log.Err(err).Msg("Failed to init otel")
 
 		return
 	}
@@ -98,14 +97,14 @@ var inflight = &sync.WaitGroup{}
 func startConnectServer(lc *pkg.LifecycleParallel) {
 	db, err := database.New(lc)
 	if err != nil {
-		log.Error().Msg(err.Error())
+		log.Err(err).Msg("Failed to init db")
 
 		return
 	}
 
 	connectH, err := wire.NewRbacHandler(context.TODO(), lc, db)
 	if err != nil {
-		log.Error().Msg(err.Error())
+		log.Err(err).Msg("Failed to init connect handler")
 
 		return
 	}
@@ -114,7 +113,7 @@ func startConnectServer(lc *pkg.LifecycleParallel) {
 
 	otelInterceptor, err := otelconnect.NewInterceptor()
 	if err != nil {
-		log.Error().Msg(err.Error())
+		log.Err(err).Msg("Failed to init otel interceptor")
 
 		return
 	}
@@ -165,7 +164,7 @@ func startConnectServer(lc *pkg.LifecycleParallel) {
 		log.Info().Msgf("Starting server on %s", server.Addr)
 
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatal().Err(err).Msg("Could not start server")
+			log.Err(err).Msg("Failed to start server")
 		}
 	}()
 
@@ -179,7 +178,7 @@ func startConnectServer(lc *pkg.LifecycleParallel) {
 	defer cancel()
 
 	if err := lc.Shutdown(ctx); err != nil {
-		log.Error().Msg(err.Error())
+		log.Err(err).Msg("Failed to shutdown")
 
 		return
 	}
