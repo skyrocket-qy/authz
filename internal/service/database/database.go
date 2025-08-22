@@ -3,7 +3,6 @@ package database
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"authz/internal/cfg"
@@ -18,8 +17,6 @@ import (
 	"gorm.io/gorm/schema"
 )
 
-var initOnce sync.Once
-
 type zerologWriter struct{}
 
 func (z *zerologWriter) Printf(format string, v ...any) {
@@ -27,45 +24,42 @@ func (z *zerologWriter) Printf(format string, v ...any) {
 }
 
 func New(lc *pkg.LifecycleParallel) (db *gorm.DB, err error) {
-	initOnce.Do(func() {
-		log.Info().Msg("New db")
+	log.Info().Msg("New db")
 
-		config := gorm.Config{
-			NamingStrategy: schema.NamingStrategy{
-				// NoLowerCase: true,
+	config := gorm.Config{
+		NamingStrategy: schema.NamingStrategy{
+			// NoLowerCase: true,
+		},
+		Logger: logger.New(
+			&zerologWriter{},
+			logger.Config{
+				SlowThreshold:             time.Second,
+				LogLevel:                  logger.Warn,
+				IgnoreRecordNotFoundError: false,
+				ParameterizedQueries:      true,
+				Colorful:                  true,
 			},
-			Logger: logger.New(
-				&zerologWriter{},
-				logger.Config{
-					SlowThreshold:             time.Second,
-					LogLevel:                  logger.Warn,
-					IgnoreRecordNotFoundError: false,
-					ParameterizedQueries:      true,
-					Colorful:                  true,
-				},
-			),
-		}
+		),
+	}
 
-		log.Info().Msg("Connecting to Postgres")
+	dbCfg := cfg.Cfg.Db
+	connStr := fmt.Sprintf(
+		"host=%s port=%d user=%s password=%s dbname=%s TimeZone=%s",
+		dbCfg.Host,
+		dbCfg.Port,
+		dbCfg.User,
+		dbCfg.Password,
+		dbCfg.Db,
+		"UTC",
+	)
 
-		dbCfg := cfg.Cfg.Db
-		connStr := fmt.Sprintf(
-			"host=%s port=%d user=%s password=%s dbname=%s TimeZone=%s",
-			dbCfg.Host,
-			dbCfg.Port,
-			dbCfg.User,
-			dbCfg.Password,
-			dbCfg.Db,
-			"UTC",
-		)
+	db, err = gorm.Open(postgres.Open(connStr), &config)
+	// db, err = gorm.Open(postgres.Open(connStr))
+	if err != nil {
+		err = erx.W(err).SetCode(pkg.ErrDBUnavailable)
 
-		db, err = gorm.Open(postgres.Open(connStr), &config)
-		if err != nil {
-			err = erx.W(err).SetCode(pkg.ErrDBUnavailable)
-
-			return
-		}
-	})
+		return
+	}
 
 	lc.Add(db, func(c context.Context) error {
 		if db == nil {
