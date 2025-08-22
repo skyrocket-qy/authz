@@ -19,4 +19,4 @@
 - Optional child spans inside your business logic
 - log collector
 - tempo/grafana and otel collector integration (otlpfile + otel receiver + tempo)
-  
+  https://grafana.com/docs/tempo/next/docker-example/
