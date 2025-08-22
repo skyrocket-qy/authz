@@ -18,5 +18,5 @@
 - Custom metrics
 - Optional child spans inside your business logic
 - log collector
-- tempo/grafana and otel collector integration
+- tempo/grafana and otel collector integration (otlpfile + otel receiver + tempo)
   
