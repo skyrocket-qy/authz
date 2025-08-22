@@ -10,15 +10,15 @@ import (
 	"syscall"
 	"time"
 
-	"authz/cmd/service"
+	"authz/cmd/server"
 	"authz/cmd/tool"
 	"authz/internal/pkg"
+	"authz/internal/service"
 	"authz/internal/service/logger"
 	"authz/internal/wire"
 
 	"connectrpc.com/connect"
 	"connectrpc.com/otelconnect"
-	"github.com/gin-gonic/gin"
 	"github.com/rs/cors"
 	"github.com/rs/zerolog/log"
 	"github.com/skyrocket-qy/gox/logx"
@@ -45,7 +45,7 @@ func Execute() {
 }
 
 func init() {
-	Cmd.AddCommand(service.Cmd)
+	Cmd.AddCommand(server.Cmd)
 	Cmd.AddCommand(tool.Cmd)
 
 	Cmd.PersistentFlags().StringVarP(&pkg.Env, `env`, "e", "local", `default: local`)
@@ -64,14 +64,6 @@ func init() {
 	}
 }
 
-func NewGinEngine() *gin.Engine {
-	if pkg.Env == "prod" {
-		gin.SetMode(gin.ReleaseMode)
-	}
-
-	return gin.Default()
-}
-
 func RunServer(cmd *cobra.Command, args []string) {
 	if err := pkg.NewConfig(); err != nil {
 		logx.Error(err.Error())
@@ -86,6 +78,14 @@ func RunServer(cmd *cobra.Command, args []string) {
 	}
 
 	lc := pkg.NewLifecycleParallel()
+
+	shutdown, err := service.SetupOTelSDK(context.TODO())
+	if err != nil {
+		logx.Error(err.Error())
+
+		return
+	}
+	lc.Add("otel", shutdown)
 
 	startConnectServer(lc)
 }
@@ -121,7 +121,7 @@ func startConnectServer(lc *pkg.LifecycleParallel) {
 	path, handler := authzpbv1connect.NewAuthzServiceHandler(connectH,
 		connect.WithCompressMinBytes(512),
 		connect.WithInterceptors(inflightInterceptor),
-		connect.WithInterceptors(otelInterceptor),
+		connect.WithInterceptors(otelInterceptor), // TODO: for prod, it will cause the perf degrade
 	)
 
 	rbacPath, rbacH := rbacpbconnect.NewRbacServiceHandler(connectH,
@@ -182,11 +182,8 @@ func NewHttpServer(lc *pkg.LifecycleParallel, handler http.Handler) *http.Server
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
-	lc.Add(server, func() error {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-
-		if err := server.Shutdown(ctx); err != nil {
+	lc.Add(server, func(c context.Context) error {
+		if err := server.Shutdown(c); err != nil {
 			return err
 		}
 

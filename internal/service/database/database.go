@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -8,6 +9,7 @@ import (
 	"authz/internal/cfg"
 	"authz/internal/engine/rbac"
 	"authz/internal/pkg"
+
 	"github.com/rs/zerolog/log"
 	"github.com/skyrocket-qy/erx"
 	"gorm.io/driver/postgres"
@@ -65,7 +67,7 @@ func New(lc *pkg.LifecycleParallel) (db *gorm.DB, err error) {
 		}
 	})
 
-	lc.Add(db, func() error {
+	lc.Add(db, func(c context.Context) error {
 		if db == nil {
 			return nil
 		}

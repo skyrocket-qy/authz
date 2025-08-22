@@ -6,6 +6,7 @@ import (
 
 	"authz/internal/cfg"
 	"authz/internal/pkg"
+
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
@@ -20,7 +21,9 @@ func New(lc *pkg.LifecycleParallel) *redis.Client {
 		DB:       0,
 	})
 
-	lc.Add(rdb, rdb.Close)
+	lc.Add(rdb, func(c context.Context) error {
+		return rdb.Close()
+	})
 
 	return rdb
 }

@@ -73,7 +73,7 @@ func NewZanzibarMemory(c context.Context, lc *pkg.LifecycleParallel, db *gorm.DB
 	return &engine, nil
 }
 
-func (e *ZanzibarMemoryImpl) Close() error {
+func (e *ZanzibarMemoryImpl) Close(c context.Context) error {
 	e.cancel()
 
 	return nil

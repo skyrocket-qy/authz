@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 )
 
-type Closer func() error
+type Closer func(context.Context) error
 
 type SimpleLifecycle struct {
 	closers []Closer
@@ -20,9 +20,9 @@ func (l *SimpleLifecycle) Add(fn Closer) {
 	l.closers = append(l.closers, fn)
 }
 
-func (l *SimpleLifecycle) Shutdown(ctx context.Context) error {
+func (l *SimpleLifecycle) Shutdown(c context.Context) error {
 	for i := len(l.closers) - 1; i >= 0; i-- {
-		if err := l.closers[i](); err != nil {
+		if err := l.closers[i](c); err != nil {
 			return err
 		}
 	}
@@ -101,7 +101,7 @@ func (l *LifecycleParallel) Shutdown(c context.Context) error {
 			}
 
 			if closer, ok := l.appCloser[app]; ok {
-				if err := closer(); err != nil {
+				if err := closer(c); err != nil {
 					firstErr.Store(err)
 
 					return
@@ -183,7 +183,7 @@ func (l *LifecycleParallelSyncMap) Finish() {
 	})
 }
 
-func (l *LifecycleParallelSyncMap) Shutdown() error {
+func (l *LifecycleParallelSyncMap) Shutdown(c context.Context) error {
 	var (
 		wg       sync.WaitGroup
 		firstErr atomic.Value
@@ -205,7 +205,7 @@ func (l *LifecycleParallelSyncMap) Shutdown() error {
 			}
 
 			if closer, ok := l.appCloser[app]; ok {
-				if err := closer(); err != nil {
+				if err := closer(c); err != nil {
 					firstErr.Store(err)
 
 					return

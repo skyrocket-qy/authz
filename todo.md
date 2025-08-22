@@ -16,3 +16,7 @@
 - add error hanling
 - add middleware for request log
 - use ai do abnormal analyze
+- add opentelemetry
+- Custom metrics
+- Optional child spans inside your business logic
+- log collector

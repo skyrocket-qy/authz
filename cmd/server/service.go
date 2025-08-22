@@ -1,12 +1,13 @@
-package service
+package server
 
 import (
-	"authz/cmd/service/job"
+	"authz/cmd/server/job"
+
 	"github.com/spf13/cobra"
 )
 
 var Cmd = &cobra.Command{
-	Use:   "service",
+	Use:   "server",
 	Short: "run service",
 	// Long:  `The longer description`,
 	// Run: RunServer,

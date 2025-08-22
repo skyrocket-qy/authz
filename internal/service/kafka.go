@@ -1,10 +1,12 @@
 package service
 
 import (
+	"context"
 	"fmt"
 
 	"authz/internal/cfg"
 	"authz/internal/pkg"
+
 	"github.com/rs/zerolog/log"
 	"github.com/segmentio/kafka-go"
 )
@@ -17,7 +19,9 @@ func NewKafkaReader(lc *pkg.LifecycleParallel) *kafka.Reader {
 		Topic:   "pg.public.tuples",
 	})
 
-	lc.Add(r, r.Close)
+	lc.Add(r, func(c context.Context) error {
+		return r.Close()
+	})
 
 	return r
 }
