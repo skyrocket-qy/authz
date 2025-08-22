@@ -10,7 +10,7 @@
 - multi-tenant example
 - Time-based conditions (e.g. access valid until X) stored as metadata
 - update operatr-controller version
-- cilint
+- ci-lint
 - add error hanling
 - add middleware for request log
 - use ai do abnormal analyze
