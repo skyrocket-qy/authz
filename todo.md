@@ -6,7 +6,6 @@
 - add more schema types
 - cmd to inspect tuples cycle, run check, benchmark, schema check
 - A simple web dashboard for viewing the relationship graph.
-- Health checks and live config reload(Ready/Live probes for k8s.)
 - No downtime when updating schema.
 - multi-tenant example
 - Time-based conditions (e.g. access valid until X) stored as metadata
@@ -19,3 +18,5 @@
 - Custom metrics
 - Optional child spans inside your business logic
 - log collector
+- tempo/grafana and otel collector integration
+  
