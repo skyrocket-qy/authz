@@ -2,19 +2,11 @@ package pkg
 
 import (
 	"context"
-	"io"
 	"strconv"
 
-	"github.com/rs/zerolog/log"
 	"github.com/skyrocket-qy/erx"
 	"github.com/skyrocket-qy/srand"
 )
-
-func Close(closer io.ReadCloser) {
-	if err := closer.Close(); err != nil {
-		log.Error().Err(err).Msg("Failed to close")
-	}
-}
 
 func GetUserId(c context.Context) uint {
 	return c.Value("userID").(uint)

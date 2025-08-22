@@ -7,8 +7,8 @@ import (
 	"authz/internal/entity"
 	"authz/internal/pkg"
 	"authz/internal/schema"
+
 	"github.com/redis/go-redis/v9"
-	"github.com/rs/zerolog/log"
 	"github.com/skyrocket-qy/protos/gen/authzpb/rbacpb"
 	authzpbv1 "github.com/skyrocket-qy/protos/gen/authzpb/v1"
 	pkgpbv1 "github.com/skyrocket-qy/protos/gen/pkgpb/v1"
@@ -230,8 +230,6 @@ func (r *ZanzibarLogicImpl) Check(c context.Context, in *authzpbv1.CheckIn) (
 
 	ok, err := r.zm.Check(c, user, in.GetRel(), obj)
 	if err != nil {
-		log.Print(err.Error())
-
 		return nil, err
 	}
 
