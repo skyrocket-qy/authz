@@ -1,6 +1,9 @@
 version: "2"
 
 linters:
+  settings:
+    nestif:
+      min-complexity: 9
   default: all
   disable:
     - revive
@@ -20,6 +23,7 @@ linters:
     - exhaustive
     - funcorder
     - unused
+    - tagliatelle
     
   enable:
     - wsl_v5

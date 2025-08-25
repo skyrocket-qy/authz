@@ -1,1 +1,1 @@
-package entity
+package entity_test
