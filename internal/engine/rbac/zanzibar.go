@@ -7,7 +7,6 @@ import (
 	"authz/internal/entity"
 	"authz/internal/pkg"
 	"authz/internal/schema"
-
 	"github.com/redis/go-redis/v9"
 	"github.com/skyrocket-qy/protos/gen/authzpb/rbacpb"
 	authzpbv1 "github.com/skyrocket-qy/protos/gen/authzpb/v1"

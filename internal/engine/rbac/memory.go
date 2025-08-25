@@ -12,7 +12,6 @@ import (
 	"authz/internal/entity"
 	"authz/internal/pkg"
 	"authz/internal/schema"
-
 	"github.com/rs/zerolog/log"
 	"github.com/segmentio/kafka-go"
 	"gorm.io/gorm"

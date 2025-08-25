@@ -1,12 +1,12 @@
 package rest
 
 import (
-	"authz/internal/cfg"
 	"context"
 	"fmt"
 	"net/http"
 	"time"
 
+	"authz/internal/cfg"
 	"github.com/segmentio/kafka-go"
 	"gorm.io/gorm"
 )
@@ -44,6 +44,7 @@ func (h *Handler) ReadinessProbe(w http.ResponseWriter, r *http.Request) {
 	if err != nil || sqlDB.PingContext(ctx) != nil {
 		w.WriteHeader(http.StatusServiceUnavailable)
 		w.Write([]byte("not ready"))
+
 		return
 	}
 
@@ -54,8 +55,10 @@ func (h *Handler) ReadinessProbe(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusServiceUnavailable)
 		w.Write([]byte("not ready"))
+
 		return
 	}
+
 	conn.Close()
 
 	// ✅ All checks passed

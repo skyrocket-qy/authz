@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"authz/internal/pkg"
-
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )

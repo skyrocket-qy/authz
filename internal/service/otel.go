@@ -26,7 +26,9 @@ func SetupOTelSDK(ctx context.Context) (shutdown func(context.Context) error, er
 		for _, fn := range shutdownFuncs {
 			err = errors.Join(err, fn(ctx))
 		}
+
 		shutdownFuncs = nil
+
 		return err
 	}
 
@@ -43,8 +45,10 @@ func SetupOTelSDK(ctx context.Context) (shutdown func(context.Context) error, er
 	tracerProvider, err := newTracerProvider()
 	if err != nil {
 		handleErr(err)
-		return
+
+		return shutdown, err
 	}
+
 	shutdownFuncs = append(shutdownFuncs, tracerProvider.Shutdown)
 	otel.SetTracerProvider(tracerProvider)
 
@@ -52,12 +56,14 @@ func SetupOTelSDK(ctx context.Context) (shutdown func(context.Context) error, er
 	meterProvider, err := newMeterProvider()
 	if err != nil {
 		handleErr(err)
-		return
+
+		return shutdown, err
 	}
+
 	shutdownFuncs = append(shutdownFuncs, meterProvider.Shutdown)
 	otel.SetMeterProvider(meterProvider)
 
-	return
+	return shutdown, err
 }
 
 func newPropagator() propagation.TextMapPropagator {
@@ -80,6 +86,7 @@ func newTracerProvider() (*trace.TracerProvider, error) {
 			trace.WithBatchTimeout(time.Second),
 		),
 	)
+
 	return tracerProvider, nil
 }
 
@@ -94,5 +101,6 @@ func newMeterProvider() (*metric.MeterProvider, error) {
 			// Default is 1m. Set to 3s for demonstrative purposes.
 			metric.WithInterval(3*time.Second))),
 	)
+
 	return meterProvider, nil
 }

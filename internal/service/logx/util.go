@@ -26,10 +26,12 @@ func Error(ctx context.Context) *zerolog.Event {
 
 func newWithSpan(ctx context.Context, lvl zerolog.Level) *zerolog.Event {
 	span := trace.SpanFromContext(ctx)
-	e := log.WithLevel(lvl).CallerSkipFrame(1)
+
+	e := log.WithLevel(lvl).CallerSkipFrame(1) //nolint:zerologlint
 	if span.SpanContext().IsValid() {
 		e = e.Str("trace_id", span.SpanContext().TraceID().String()).
 			Str("span_id", span.SpanContext().SpanID().String())
 	}
+
 	return e
 }

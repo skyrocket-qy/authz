@@ -1,15 +1,6 @@
 package cmd
 
 import (
-	"authz/cmd/server"
-	"authz/cmd/tool"
-	"authz/internal/handler/connect/middleware"
-	"authz/internal/handler/rest"
-	"authz/internal/pkg"
-	"authz/internal/service"
-	"authz/internal/service/database"
-	"authz/internal/service/logx"
-	"authz/internal/wire"
 	"context"
 	"fmt"
 	"net/http"
@@ -19,11 +10,19 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/rs/zerolog/log"
-
+	"authz/cmd/server"
+	"authz/cmd/tool"
+	"authz/internal/handler/connect/middleware"
+	"authz/internal/handler/rest"
+	"authz/internal/pkg"
+	"authz/internal/service"
+	"authz/internal/service/database"
+	"authz/internal/service/logx"
+	"authz/internal/wire"
 	"connectrpc.com/connect"
 	"connectrpc.com/otelconnect"
 	"github.com/rs/cors"
+	"github.com/rs/zerolog/log"
 	"github.com/skyrocket-qy/protos/gen/authzpb/rbacpb/rbacpbconnect"
 	"github.com/skyrocket-qy/protos/gen/authzpb/v1/authzpbv1connect"
 	"github.com/spf13/cobra"
@@ -87,6 +86,7 @@ func RunServer(cmd *cobra.Command, args []string) {
 
 		return
 	}
+
 	lc.Add("otel", shutdown)
 
 	startConnectServer(lc)
@@ -129,7 +129,7 @@ func startConnectServer(lc *pkg.LifecycleParallel) {
 		}
 	})
 
-	// TODO:  for prod, the otel will degrate the perf, consider add switch to control
+	// TODO:  for prod, the otel will degrade the perf, consider add switch to control
 	path, handler := authzpbv1connect.NewAuthzServiceHandler(connectH,
 		connect.WithCompressMinBytes(512),
 		connect.WithInterceptors(inflightInterceptor),

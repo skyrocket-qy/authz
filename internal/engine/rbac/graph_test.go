@@ -535,7 +535,9 @@ func benchmarkGraph(b *testing.B,
 	writeFunc func(obj entity.Instance, rel string, sbj entity.Instance),
 	deleteFunc func(obj entity.Instance, rel string, sbj entity.Instance),
 ) {
-	for range b.N {
+	b.Helper()
+
+	for b.Loop() {
 		var wg sync.WaitGroup
 
 		seeds := make([]int64, numGoroutines)

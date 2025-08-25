@@ -8,7 +8,6 @@ import (
 	"authz/internal/service"
 	"authz/internal/service/database"
 	"authz/internal/service/logx"
-
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )

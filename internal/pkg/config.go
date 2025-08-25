@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"authz/internal/cfg"
-
 	"github.com/caarlos0/env/v11"
 	"github.com/joho/godotenv"
 )

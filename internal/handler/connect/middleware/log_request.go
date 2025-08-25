@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"connectrpc.com/connect"
@@ -16,10 +17,10 @@ func NewLogRequest() connect.UnaryInterceptorFunc {
 			) (connect.AnyResponse, error) {
 				// Call the real handler
 				res, err := next(ctx, req)
-
 				if err != nil {
 					// Try to see if it's a Connect error (to get code)
-					if cerr, ok := err.(*connect.Error); ok {
+					cerr := &connect.Error{}
+					if errors.As(err, &cerr) {
 						fmt.Printf("Request %s failed: code=%s, err=%v\n",
 							req.Spec().Procedure,
 							cerr.Code(),

@@ -8,7 +8,6 @@ import (
 	"authz/internal/cfg"
 	"authz/internal/engine/rbac"
 	"authz/internal/pkg"
-
 	"github.com/rs/zerolog/log"
 	"github.com/skyrocket-qy/erx"
 	"gorm.io/driver/postgres"
@@ -58,7 +57,7 @@ func New(lc *pkg.LifecycleParallel) (db *gorm.DB, err error) {
 	if err != nil {
 		err = erx.W(err).SetCode(pkg.ErrDBUnavailable)
 
-		return
+		return db, err
 	}
 
 	lc.Add(db, func(c context.Context) error {
