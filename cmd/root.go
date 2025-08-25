@@ -129,11 +129,12 @@ func startConnectServer(lc *pkg.LifecycleParallel) {
 		}
 	})
 
+	// TODO:  for prod, the otel will degrate the perf, consider add switch to control
 	path, handler := authzpbv1connect.NewAuthzServiceHandler(connectH,
 		connect.WithCompressMinBytes(512),
 		connect.WithInterceptors(inflightInterceptor),
 		connect.WithInterceptors(middleware.NewLogRequest()),
-		connect.WithInterceptors(otelInterceptor), // TODO: for prod, it will cause the perf degrade
+		connect.WithInterceptors(otelInterceptor),
 	)
 
 	rbacPath, rbacH := rbacpbconnect.NewRbacServiceHandler(connectH,
