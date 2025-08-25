@@ -49,15 +49,15 @@ services:
       - "-tempo-query-url=http://tempo1:3200"
       - "-tempo-retention-duration=1h"
 
-  prometheus:
-    image: prom/prometheus:latest
-    command:
-      - --config.file=/etc/prometheus.yaml
-      - --web.enable-remote-write-receiver
-      - --enable-feature=exemplar-storage
-      - --enable-feature=native-histograms
-    volumes:
-      - ./prometheus.yaml:/etc/prometheus.yaml
+  # prometheus:
+  #   image: prom/prometheus:latest
+  #   command:
+  #     - --config.file=/etc/prometheus.yaml
+  #     - --web.enable-remote-write-receiver
+  #     - --enable-feature=exemplar-storage
+  #     - --enable-feature=native-histograms
+  #   volumes:
+  #     - ./prometheus.yaml:/etc/prometheus.yaml
 
   grafana:
     image: grafana/grafana:11.0.0
@@ -80,10 +80,10 @@ services:
     ports:
       - 9001:9001
 
-  k6-tracing:
-    image: ghcr.io/grafana/xk6-client-tracing:v0.0.7
-    environment:
-      - ENDPOINT=tempo1:4317
-    restart: always
-    depends_on:
-      - tempo1
+  # k6-tracing:
+  #   image: ghcr.io/grafana/xk6-client-tracing:v0.0.7
+  #   environment:
+  #     - ENDPOINT=tempo1:4317
+  #   restart: always
+  #   depends_on:
+  #     - tempo1
