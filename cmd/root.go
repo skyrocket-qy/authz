@@ -19,6 +19,7 @@ import (
 	"authz/internal/service/database"
 	"authz/internal/service/logx"
 	"authz/internal/wire"
+
 	"connectrpc.com/connect"
 	"connectrpc.com/otelconnect"
 	"github.com/rs/cors"
@@ -111,13 +112,6 @@ func startConnectServer(lc *pkg.LifecycleParallel) {
 
 	restH := rest.NewHandler(db)
 
-	otelInterceptor, err := otelconnect.NewInterceptor()
-	if err != nil {
-		log.Err(err).Msg("Failed to init otel interceptor")
-
-		return
-	}
-
 	inflightInterceptor := connect.UnaryInterceptorFunc(func(
 		next connect.UnaryFunc,
 	) connect.UnaryFunc {
@@ -129,20 +123,25 @@ func startConnectServer(lc *pkg.LifecycleParallel) {
 		}
 	})
 
-	// TODO:  for prod, the otel will degrade the perf, consider add switch to control
-	path, handler := authzpbv1connect.NewAuthzServiceHandler(connectH,
+	handlerOpts := []connect.HandlerOption{
 		connect.WithCompressMinBytes(512),
 		connect.WithInterceptors(inflightInterceptor),
 		connect.WithInterceptors(middleware.NewLogRequest()),
-		connect.WithInterceptors(otelInterceptor),
-	)
+	}
 
-	rbacPath, rbacH := rbacpbconnect.NewRbacServiceHandler(connectH,
-		connect.WithCompressMinBytes(512),
-		connect.WithInterceptors(inflightInterceptor),
-		connect.WithInterceptors(middleware.NewLogRequest()),
-		connect.WithInterceptors(otelInterceptor),
-	)
+	if pkg.Env == "prod" {
+		otelInterceptor, err := otelconnect.NewInterceptor()
+		if err != nil {
+			log.Err(err).Msg("Failed to init otel interceptor")
+
+			return
+		}
+
+		handlerOpts = append(handlerOpts, connect.WithInterceptors(otelInterceptor))
+	}
+
+	path, handler := authzpbv1connect.NewAuthzServiceHandler(connectH, handlerOpts...)
+	rbacPath, rbacH := rbacpbconnect.NewRbacServiceHandler(connectH, handlerOpts...)
 	mux := http.NewServeMux()
 	mux.Handle(rbacPath, rbacH)
 	mux.Handle(path, handler)
