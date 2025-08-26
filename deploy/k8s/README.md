@@ -8,6 +8,8 @@ kubectl create ns authz
 
 # Deploying OLM
 curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.20.0/install.sh | bash -s v0.20.0
+
+sleep 5
 kubectl apply -f global-operators.yaml 
 
 # Deploying Strimzi Operator
@@ -37,7 +39,9 @@ TODO: need to wait
 
 # debezium connector
 kubectl apply -f debezium_connector.yaml
+
 TODO: need to wait
+kubectl describe KafkaConnector/debezium-connector-postgres
 
 # watch
 kubectl run -n authz -it --rm --image=quay.io/debezium/tooling:1.2  --restart=Never watcher -- kcat -b debezium-cluster-kafka-bootstrap:9092 -C -o beginning -t mysql.inventory.customers
