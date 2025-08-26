@@ -10,10 +10,10 @@ This Helm chart deploys a Debezium instance on Kubernetes.
 
 ## Installing the Chart
 
-To install the chart with the release name `my-debezium`:
+To install the chart with the release name `debezium`:
 
 ```bash
-helm install my-debezium .
+helm install debezium .
 ```
 
 ## Configuration
