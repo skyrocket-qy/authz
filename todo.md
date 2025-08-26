@@ -14,8 +14,4 @@
 - use ai do abnormal analyze
 - Custom metrics
 - Optional child spans inside your business logic
-- log collector
-- tempo/grafana and otel collector integration (otlpfile + otel receiver + tempo)
-  https://grafana.com/docs/tempo/next/docker-example/
-
 - metric with grafana/mimir

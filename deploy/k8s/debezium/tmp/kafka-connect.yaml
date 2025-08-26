@@ -23,7 +23,7 @@ spec:
   build:
     output:
       type: docker
-      image: registry.kube-system.svc.cluster.local:5000/debezium-connect-postgres:latest
+      image: 10.106.100.49/debezium-connect-postgres:latest
     plugins:
       - name: debezium-postgres-connector
         artifacts:
