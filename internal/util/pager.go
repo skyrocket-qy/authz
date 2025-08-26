@@ -1,4 +1,4 @@
-package pkg
+package util
 
 import (
 	pkgpbv1 "github.com/skyrocket-qy/protos/gen/pkgpb/v1"

@@ -2356,7 +2356,7 @@ provisioner:
   # -- Provisioner image to Utilize
   image:
     # -- The Docker registry
-    registry: us-docker.pkg.dev
+    registry: us-docker.util.dev
     # -- Docker image repository
     repository: grafanalabs-global/docker-enterprise-provisioner-prod/enterprise-provisioner
     # -- Overrides the image tag whose default is the chart's appVersion

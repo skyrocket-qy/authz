@@ -7,7 +7,7 @@ import (
 
 	"authz/internal/config"
 	"authz/internal/engine/rbac"
-	"authz/internal/pkg"
+	"authz/internal/util"
 
 	"github.com/rs/zerolog/log"
 	"github.com/skyrocket-qy/erx"
@@ -23,7 +23,7 @@ func (z *zerologWriter) Printf(format string, v ...any) {
 	log.Info().Msgf(format, v...)
 }
 
-func New(lc *pkg.LifecycleParallel) (db *gorm.DB, err error) {
+func New(lc *util.LifecycleParallel) (db *gorm.DB, err error) {
 	log.Info().Msg("New db")
 
 	gormConf := gorm.Config{
@@ -55,7 +55,7 @@ func New(lc *pkg.LifecycleParallel) (db *gorm.DB, err error) {
 
 	db, err = gorm.Open(postgres.Open(connStr), &gormConf)
 	if err != nil {
-		err = erx.W(err).SetCode(pkg.ErrDBUnavailable)
+		err = erx.W(err).SetCode(util.ErrDBUnavailable)
 
 		return db, err
 	}

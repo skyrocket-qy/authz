@@ -5,17 +5,17 @@ package wire
 
 import (
 	"authz/internal/engine/rbac"
-	"authz/internal/pkg"
 	"authz/internal/schema"
 	"authz/internal/service"
 	"authz/internal/service/redis"
+	"authz/internal/util"
 	"context"
 
 	"github.com/google/wire"
 	"gorm.io/gorm"
 )
 
-func NewRbacHandler(context.Context, *pkg.LifecycleParallel, *gorm.DB) (*rbac.Handler, error) {
+func NewRbacHandler(context.Context, *util.LifecycleParallel, *gorm.DB) (*rbac.Handler, error) {
 	wire.Build(
 		redis.New,
 		schema.NewSchema,
@@ -33,7 +33,7 @@ func NewRbacHandler(context.Context, *pkg.LifecycleParallel, *gorm.DB) (*rbac.Ha
 	return nil, nil
 }
 
-// func NewJobService(context.Context, *pkg.LifecycleParallel) (*service.JobService, error) {
+// func NewJobService(context.Context, *util.LifecycleParallel) (*service.JobService, error) {
 // 	wire.Build(
 // 		service.NewJobService,
 // 	)

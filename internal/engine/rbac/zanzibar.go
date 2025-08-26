@@ -5,8 +5,9 @@ import (
 	"errors"
 
 	"authz/internal/entity"
-	"authz/internal/pkg"
 	"authz/internal/schema"
+	"authz/internal/util"
+
 	"github.com/redis/go-redis/v9"
 	"github.com/skyrocket-qy/protos/gen/authzpb/rbacpb"
 	authzpbv1 "github.com/skyrocket-qy/protos/gen/authzpb/v1"
@@ -51,7 +52,7 @@ func NewZanzibarLogic(db *gorm.DB, rdb *redis.Client, zm ZanzibarMemory,
 }
 
 func (r *ZanzibarLogicImpl) db(c context.Context) *gorm.DB {
-	if db, ok := c.Value(pkg.DbCtxKey{}).(*gorm.DB); ok && db != nil {
+	if db, ok := c.Value(util.DbCtxKey{}).(*gorm.DB); ok && db != nil {
 		return db
 	}
 
@@ -70,7 +71,7 @@ func (r *ZanzibarLogicImpl) List(c context.Context, in *authzpbv1.ListTuplesIn) 
 	pager := in.GetCursor()
 	cursorVal := pager.GetVal()
 
-	filterScope, err := pkg.ApplyFilter(in.GetFilters(), validFilterFields, nil)
+	filterScope, err := util.ApplyFilter(in.GetFilters(), validFilterFields, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +81,7 @@ func (r *ZanzibarLogicImpl) List(c context.Context, in *authzpbv1.ListTuplesIn) 
 		Limit(int(pager.GetSize())).
 		Scopes(
 			filterScope,
-			pkg.ApplySorter(in.GetSorters()),
+			util.ApplySorter(in.GetSorters()),
 		)
 
 	if cursorVal != nil {
@@ -89,7 +90,7 @@ func (r *ZanzibarLogicImpl) List(c context.Context, in *authzpbv1.ListTuplesIn) 
 			return nil, err
 		}
 
-		tx = tx.Scopes(pkg.ApplyCursor(nextCursorData))
+		tx = tx.Scopes(util.ApplyCursor(nextCursorData))
 	}
 
 	if err := tx.

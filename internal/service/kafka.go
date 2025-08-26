@@ -5,13 +5,13 @@ import (
 	"fmt"
 
 	"authz/internal/config"
-	"authz/internal/pkg"
+	"authz/internal/util"
 
 	"github.com/rs/zerolog/log"
 	"github.com/segmentio/kafka-go"
 )
 
-func NewKafkaReader(lc *pkg.LifecycleParallel) *kafka.Reader {
+func NewKafkaReader(lc *util.LifecycleParallel) *kafka.Reader {
 	log.Info().Msgf("start kafka reader")
 
 	r := kafka.NewReader(kafka.ReaderConfig{

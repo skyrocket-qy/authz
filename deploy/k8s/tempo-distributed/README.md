@@ -794,10 +794,10 @@ The memcached default args are removed and should be provided manually. The sett
 | provisioner.extraVolumeMounts | list | `[]` | Volume mounts to add to the provisioner pods |
 | provisioner.extraVolumes | list | `[]` | Volumes to add to the provisioner pods |
 | provisioner.hookType | string | `"post-install"` | Hook type(s) to customize when the job runs.  defaults to post-install |
-| provisioner.image | object | `{"digest":null,"pullPolicy":"IfNotPresent","registry":"us-docker.pkg.dev","repository":"grafanalabs-global/docker-enterprise-provisioner-prod/enterprise-provisioner","tag":null}` | Provisioner image to Utilize |
+| provisioner.image | object | `{"digest":null,"pullPolicy":"IfNotPresent","registry":"us-docker.util.dev","repository":"grafanalabs-global/docker-enterprise-provisioner-prod/enterprise-provisioner","tag":null}` | Provisioner image to Utilize |
 | provisioner.image.digest | string | `nil` | Overrides the image tag with an image digest |
 | provisioner.image.pullPolicy | string | `"IfNotPresent"` | Docker image pull policy |
-| provisioner.image.registry | string | `"us-docker.pkg.dev"` | The Docker registry |
+| provisioner.image.registry | string | `"us-docker.util.dev"` | The Docker registry |
 | provisioner.image.repository | string | `"grafanalabs-global/docker-enterprise-provisioner-prod/enterprise-provisioner"` | Docker image repository |
 | provisioner.image.tag | string | `nil` | Overrides the image tag whose default is the chart's appVersion |
 | provisioner.labels | object | `{}` | Additional labels for the `provisioner` Job |

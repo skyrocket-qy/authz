@@ -14,10 +14,10 @@ import (
 	"authz/internal/config"
 	"authz/internal/handler/connect/middleware"
 	"authz/internal/handler/rest"
-	"authz/internal/pkg"
 	"authz/internal/service"
 	"authz/internal/service/database"
 	"authz/internal/service/logx"
+	"authz/internal/util"
 	"authz/internal/wire"
 
 	"connectrpc.com/connect"
@@ -52,15 +52,15 @@ func init() {
 	Cmd.AddCommand(server.Cmd)
 	Cmd.AddCommand(tool.Cmd)
 
-	Cmd.PersistentFlags().StringVarP(&pkg.Env, `env`, "e", "local", `default: local`)
+	Cmd.PersistentFlags().StringVarP(&util.Env, `env`, "e", "local", `default: local`)
 	Cmd.Flags().StringP("engine", `g`, "rbac", "default: rbac")
 
 	Cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
 		// validEnvs := map[string]bool{"local": true, "dev": true, "prod": true, "stage": true}
-		// if !validEnvs[pkg.Env] {
+		// if !validEnvs[util.Env] {
 		// 	return fmt.Errorf(
 		// 		"invalid environment value: %s. Must be one of: dev, prod",
-		// 		pkg.Env,
+		// 		util.Env,
 		// 	)
 		// }
 
@@ -72,7 +72,7 @@ func RunServer(cmd *cobra.Command, args []string) {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop() // Release resources when the function returns
 
-	lc := pkg.NewLifecycleParallel()
+	lc := util.NewLifecycleParallel()
 	defer func() {
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
@@ -98,8 +98,8 @@ func RunServer(cmd *cobra.Command, args []string) {
 	log.Info().Msg("Shutdown signal received, initiating graceful shutdown...")
 }
 
-func setupBase(ctx context.Context, lc *pkg.LifecycleParallel) error {
-	if err := pkg.NewConfig(); err != nil {
+func setupBase(ctx context.Context, lc *util.LifecycleParallel) error {
+	if err := util.NewConfig(); err != nil {
 		return err
 	}
 
@@ -119,7 +119,7 @@ func setupBase(ctx context.Context, lc *pkg.LifecycleParallel) error {
 	return nil
 }
 
-func startConnectServer(ctx context.Context, lc *pkg.LifecycleParallel) error {
+func startConnectServer(ctx context.Context, lc *util.LifecycleParallel) error {
 	db, err := database.New(lc)
 	if err != nil {
 		log.Err(err).Msg("Failed to init db")
@@ -188,7 +188,7 @@ func startConnectServer(ctx context.Context, lc *pkg.LifecycleParallel) error {
 	return nil
 }
 
-func NewHttpServer(lc *pkg.LifecycleParallel, handler http.Handler) *http.Server {
+func NewHttpServer(lc *util.LifecycleParallel, handler http.Handler) *http.Server {
 	server := &http.Server{
 		Addr:              ":8080",
 		Handler:           handler,

@@ -4,8 +4,9 @@ import (
 	"context"
 	"strconv"
 
-	"authz/internal/pkg"
 	"authz/internal/schema"
+	"authz/internal/util"
+
 	rbacpb "github.com/skyrocket-qy/protos/gen/authzpb/rbacpb"
 	authzpbv1 "github.com/skyrocket-qy/protos/gen/authzpb/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -80,7 +81,7 @@ func (r *RbacLogicImpl) ListUsers(c context.Context, in *rbacpb.ListUsersIn) (
 		"user_auths.type", "orgs.name",
 	}
 
-	filterScope, err := pkg.ApplyFilter(in.GetFilters(), validFilterFields, filterExprs)
+	filterScope, err := util.ApplyFilter(in.GetFilters(), validFilterFields, filterExprs)
 	if err != nil {
 		return nil, err
 	}
@@ -94,8 +95,8 @@ func (r *RbacLogicImpl) ListUsers(c context.Context, in *rbacpb.ListUsersIn) (
 	if err := r.db(c).
 		Scopes(
 			filterScope,
-			pkg.ApplyPager(in.GetPager()),
-			pkg.ApplySorter(in.GetSorters()),
+			util.ApplyPager(in.GetPager()),
+			util.ApplySorter(in.GetSorters()),
 		).
 		Preload("Orgs").
 		Preload("UserAuths").
@@ -150,11 +151,11 @@ func (r *RbacLogicImpl) DeleteUser(c context.Context, in *rbacpb.DeleteUserIn) e
 			return err
 		}
 
-		return r.zbLogic.Delete(pkg.WithDB(c, tx), &authzpbv1.DeleteTuplesIn{
+		return r.zbLogic.Delete(util.WithDB(c, tx), &authzpbv1.DeleteTuplesIn{
 			Mode: &authzpbv1.DeleteTuplesIn_Filter{
 				Filter: &authzpbv1.TupleFilter{
-					SbjNs: pkg.Str("user"),
-					SbjId: pkg.Str(strconv.FormatUint(in.GetId(), 10)),
+					SbjNs: util.Str("user"),
+					SbjId: util.Str(strconv.FormatUint(in.GetId(), 10)),
 				},
 			},
 		})
@@ -174,7 +175,7 @@ func (r *RbacLogicImpl) ListRoles(c context.Context, in *rbacpb.ListRolesIn) (
 ) {
 	validFilterFields := []string{"name"}
 
-	filterScope, err := pkg.ApplyFilter(in.GetFilters(), validFilterFields, nil)
+	filterScope, err := util.ApplyFilter(in.GetFilters(), validFilterFields, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -188,8 +189,8 @@ func (r *RbacLogicImpl) ListRoles(c context.Context, in *rbacpb.ListRolesIn) (
 	if err := r.db(c).
 		Scopes(
 			filterScope,
-			pkg.ApplyPager(in.GetPager()),
-			pkg.ApplySorter(in.GetSorters()),
+			util.ApplyPager(in.GetPager()),
+			util.ApplySorter(in.GetSorters()),
 		).
 		Find(&roleMds).Error; err != nil {
 		return nil, err
@@ -218,16 +219,16 @@ func (r *RbacLogicImpl) DeleteRole(c context.Context, in *rbacpb.DeleteRoleIn) e
 			return err
 		}
 
-		cWithDb := pkg.WithDB(c, tx)
+		cWithDb := util.WithDB(c, tx)
 
 		if err := r.zbLogic.Delete(cWithDb,
 			&authzpbv1.DeleteTuplesIn{
 				Mode: &authzpbv1.DeleteTuplesIn_Filter{
 					Filter: &authzpbv1.TupleFilter{
-						SbjNs: pkg.Str("user"),
-						Rel:   pkg.Str("member"),
-						ObjNs: pkg.Str("role"),
-						ObjId: pkg.Str(strconv.FormatUint(in.GetId(), 10)),
+						SbjNs: util.Str("user"),
+						Rel:   util.Str("member"),
+						ObjNs: util.Str("role"),
+						ObjId: util.Str(strconv.FormatUint(in.GetId(), 10)),
 					},
 				},
 			},
@@ -239,8 +240,8 @@ func (r *RbacLogicImpl) DeleteRole(c context.Context, in *rbacpb.DeleteRoleIn) e
 			&authzpbv1.DeleteTuplesIn{
 				Mode: &authzpbv1.DeleteTuplesIn_Filter{
 					Filter: &authzpbv1.TupleFilter{
-						SbjNs: pkg.Str("role"),
-						Rel:   pkg.Str(strconv.FormatUint(in.GetId(), 10)),
+						SbjNs: util.Str("role"),
+						Rel:   util.Str(strconv.FormatUint(in.GetId(), 10)),
 					},
 				},
 			},
@@ -261,7 +262,7 @@ func (r *RbacLogicImpl) ListResources(c context.Context, in *rbacpb.ListResource
 ) {
 	validFilterFields := []string{"ns", "name"}
 
-	filterScope, err := pkg.ApplyFilter(in.GetFilters(), validFilterFields, nil)
+	filterScope, err := util.ApplyFilter(in.GetFilters(), validFilterFields, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -275,8 +276,8 @@ func (r *RbacLogicImpl) ListResources(c context.Context, in *rbacpb.ListResource
 	if err := r.db(c).
 		Scopes(
 			filterScope,
-			pkg.ApplyPager(in.GetPager()),
-			pkg.ApplySorter(in.GetSorters()),
+			util.ApplyPager(in.GetPager()),
+			util.ApplySorter(in.GetSorters()),
 		).
 		Find(&resMds).Error; err != nil {
 		return nil, err
@@ -300,12 +301,12 @@ func (r *RbacLogicImpl) DeleteResource(c context.Context, in *rbacpb.DeleteResou
 			return err
 		}
 
-		if err := r.zbLogic.Delete(pkg.WithDB(c, tx),
+		if err := r.zbLogic.Delete(util.WithDB(c, tx),
 			&authzpbv1.DeleteTuplesIn{
 				Mode: &authzpbv1.DeleteTuplesIn_Filter{
 					Filter: &authzpbv1.TupleFilter{
-						ObjNs: pkg.Str(res.Ns),
-						ObjId: pkg.Str(strconv.FormatUint(in.GetId(), 10)),
+						ObjNs: util.Str(res.Ns),
+						ObjId: util.Str(strconv.FormatUint(in.GetId(), 10)),
 					},
 				},
 			},
@@ -328,7 +329,7 @@ func (r *RbacLogicImpl) AssignRole(c context.Context, in *rbacpb.AssignRoleIn) e
 		// 	Take(&Role{}).Error; err != nil {
 		// 	return err
 		// }
-		return r.zbLogic.Create(pkg.WithDB(c, tx),
+		return r.zbLogic.Create(util.WithDB(c, tx),
 			&authzpbv1.Tuple{
 				SbjNs: "user",
 				SbjId: strconv.FormatUint(in.GetUserId(), 10),
@@ -366,7 +367,7 @@ func (r *RbacLogicImpl) GrantPerm(c context.Context, in *rbacpb.GrantPermIn) err
 		// if err := tx.Where("id = ?", in.GetResourceId()).Take(&res).Error; err != nil {
 		// 	return err
 		// }
-		return r.zbLogic.Create(pkg.WithDB(c, tx),
+		return r.zbLogic.Create(util.WithDB(c, tx),
 			&authzpbv1.Tuple{
 				SbjNs: "role",
 				SbjId: strconv.FormatUint(in.GetRoleId(), 10),

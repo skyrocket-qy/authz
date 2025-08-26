@@ -10,8 +10,8 @@ import (
 
 	"authz/internal/config"
 	"authz/internal/entity"
-	"authz/internal/pkg"
 	"authz/internal/schema"
+	"authz/internal/util"
 
 	"github.com/rs/zerolog/log"
 	"github.com/segmentio/kafka-go"
@@ -38,7 +38,7 @@ type ZanzibarMemoryImpl struct {
 	mutex  sync.RWMutex
 }
 
-func NewZanzibarMemory(c context.Context, lc *pkg.LifecycleParallel, db *gorm.DB, s *schema.Schema,
+func NewZanzibarMemory(c context.Context, lc *util.LifecycleParallel, db *gorm.DB, s *schema.Schema,
 	kafkaR *kafka.Reader) (*ZanzibarMemoryImpl, error,
 ) {
 	engine := ZanzibarMemoryImpl{
@@ -213,7 +213,7 @@ func (e *ZanzibarMemoryImpl) build(c context.Context) error {
 	}
 
 	if tx.RowsAffected > 0 {
-		if err := pkg.DecodeGob(cp.Data, e.graph); err != nil {
+		if err := util.DecodeGob(cp.Data, e.graph); err != nil {
 			return fmt.Errorf("failed to decode graph: %w", err)
 		}
 
@@ -332,7 +332,7 @@ func (e *ZanzibarMemoryImpl) SyncGraphCheckpoint(c context.Context) {
 			if tx.RowsAffected == 0 {
 				e.mutex.RLock()
 
-				bytes, err := pkg.EncodeGob(&e.graph)
+				bytes, err := util.EncodeGob(&e.graph)
 				if err != nil {
 					log.Warn().Err(err).Msg("Failed to encode graph")
 					e.mutex.RUnlock()
@@ -353,7 +353,7 @@ func (e *ZanzibarMemoryImpl) SyncGraphCheckpoint(c context.Context) {
 			} else if e.Offest-cp.LastOffset > 1000 {
 				e.mutex.RLock()
 
-				bytes, err := pkg.EncodeGob(&e.graph)
+				bytes, err := util.EncodeGob(&e.graph)
 				if err != nil {
 					log.Warn().Err(err).Msg("Failed to encode graph")
 					e.mutex.RUnlock()

@@ -5,14 +5,14 @@ import (
 	"time"
 
 	"authz/internal/config"
-	"authz/internal/pkg"
+	"authz/internal/util"
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
 )
 
-func New(lc *pkg.LifecycleParallel) *redis.Client {
+func New(lc *util.LifecycleParallel) *redis.Client {
 	log.Info().Msgf("start redis ")
 
 	rdb := redis.NewClient(&redis.Options{

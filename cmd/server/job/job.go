@@ -4,10 +4,11 @@ import (
 	"context"
 
 	"authz/internal/engine/rbac"
-	"authz/internal/pkg"
 	"authz/internal/service"
 	"authz/internal/service/database"
 	"authz/internal/service/logx"
+	"authz/internal/util"
+
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
@@ -20,7 +21,7 @@ var Cmd = &cobra.Command{
 }
 
 func start(cmd *cobra.Command, args []string) {
-	if err := pkg.NewConfig(); err != nil {
+	if err := util.NewConfig(); err != nil {
 		log.Err(err).Msg("Failed to load config")
 
 		return
@@ -32,7 +33,7 @@ func start(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	lc := pkg.NewLifecycleParallel()
+	lc := util.NewLifecycleParallel()
 
 	db, err := database.New(lc)
 	if err != nil {
