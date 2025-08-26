@@ -9,7 +9,12 @@ import (
 )
 
 func GetUserId(c context.Context) uint {
-	return c.Value("userID").(uint)
+	userId, ok := c.Value("userID").(uint)
+	if !ok {
+		return 0
+	}
+
+	return userId
 }
 
 func GenNumCode(n int) (string, error) {

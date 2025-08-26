@@ -3,9 +3,9 @@ package middleware
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"connectrpc.com/connect"
+	"github.com/rs/zerolog/log"
 )
 
 func NewLogRequest() connect.UnaryInterceptorFunc {
@@ -21,17 +21,17 @@ func NewLogRequest() connect.UnaryInterceptorFunc {
 					// Try to see if it's a Connect error (to get code)
 					cerr := &connect.Error{}
 					if errors.As(err, &cerr) {
-						fmt.Printf("Request %s failed: code=%s, err=%v\n",
+						log.Printf("Request %s failed: code=%s, err=%v\n",
 							req.Spec().Procedure,
 							cerr.Code(),
 							cerr.Message(),
 						)
 					} else {
-						fmt.Printf("Request %s failed: err=%v\n",
+						log.Printf("Request %s failed: err=%v\n",
 							req.Spec().Procedure, err)
 					}
 				} else {
-					fmt.Printf("Request %s succeeded\n", req.Spec().Procedure)
+					log.Printf("Request %s succeeded\n", req.Spec().Procedure)
 				}
 
 				return res, err

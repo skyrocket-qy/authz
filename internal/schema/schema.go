@@ -23,7 +23,9 @@ func NewSchema() (*Schema, error) {
 	for _, path := range filePaths {
 		tmpSchema := Schema{}
 
-		f, err := os.ReadFile(path)
+		clean := filepath.Clean(path)
+
+		f, err := os.ReadFile(clean)
 		if err != nil {
 			return nil, err
 		}
@@ -45,6 +47,10 @@ func NewSchema() (*Schema, error) {
 
 func getYamlFilesFromEnv() ([]string, error) {
 	pathStr := os.Getenv("SCHEMA_PATH")
+	if strings.HasPrefix(pathStr, "/") {
+		return nil, fmt.Errorf("schema path %s is not allowed", pathStr)
+	}
+
 	if pathStr == "" {
 		return nil, errors.New("CONFIG_PATHS not set")
 	}

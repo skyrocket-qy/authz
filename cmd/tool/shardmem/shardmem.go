@@ -1,9 +1,9 @@
 package shardmem
 
 import (
-	"fmt"
 	"runtime"
 
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
@@ -25,11 +25,11 @@ func start(cmd *cobra.Command, args []string) {
 
 		var m runtime.MemStats
 		runtime.ReadMemStats(&m)
-		fmt.Printf("NumShards: %4d, Memory Alloc: %.2f MB\n", n, float64(m.Alloc)/1024/1024)
+		log.Printf("NumShards: %4d, Memory Alloc: %.2f MB\n", n, float64(m.Alloc)/1024/1024)
 
 		// Prevent compiler optimizing away
 		if len(shards[0]) == 0 && n == 0 {
-			fmt.Println()
+			log.Print()
 		}
 	}
 }

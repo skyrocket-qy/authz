@@ -349,28 +349,26 @@ func (e *ZanzibarMemoryImpl) SyncGraphCheckpoint(c context.Context) {
 
 					continue
 				}
-			} else {
-				if e.Offest-cp.LastOffset > 1000 {
-					e.mutex.RLock()
+			} else if e.Offest-cp.LastOffset > 1000 {
+				e.mutex.RLock()
 
-					bytes, err := pkg.EncodeGob(&e.graph)
-					if err != nil {
-						log.Warn().Err(err).Msg("Failed to encode graph")
-						e.mutex.RUnlock()
-
-						continue
-					}
-
-					cp.LastOffset = e.Offest
+				bytes, err := pkg.EncodeGob(&e.graph)
+				if err != nil {
+					log.Warn().Err(err).Msg("Failed to encode graph")
 					e.mutex.RUnlock()
 
-					cp.Data = bytes
+					continue
+				}
 
-					if err := e.db.WithContext(c).Save(&cp).Error; err != nil {
-						log.Error().Err(err).Msg("Failed to update graph checkpoint")
+				cp.LastOffset = e.Offest
+				e.mutex.RUnlock()
 
-						continue
-					}
+				cp.Data = bytes
+
+				if err := e.db.WithContext(c).Save(&cp).Error; err != nil {
+					log.Error().Err(err).Msg("Failed to update graph checkpoint")
+
+					continue
 				}
 			}
 		}

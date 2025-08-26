@@ -30,7 +30,7 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 // Only checks that the app process hasn’t crashed/hung.
 func (h *Handler) LivenessProbe(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("alive"))
+	_, _ = w.Write([]byte("alive"))
 }
 
 // ReadinessProbe handles GET /healthz/ready
@@ -43,7 +43,7 @@ func (h *Handler) ReadinessProbe(w http.ResponseWriter, r *http.Request) {
 	sqlDB, err := h.pgdb.DB()
 	if err != nil || sqlDB.PingContext(ctx) != nil {
 		w.WriteHeader(http.StatusServiceUnavailable)
-		w.Write([]byte("not ready"))
+		_, _ = w.Write([]byte("not ready"))
 
 		return
 	}
@@ -54,14 +54,14 @@ func (h *Handler) ReadinessProbe(w http.ResponseWriter, r *http.Request) {
 	)
 	if err != nil {
 		w.WriteHeader(http.StatusServiceUnavailable)
-		w.Write([]byte("not ready"))
+		_, _ = w.Write([]byte("not ready"))
 
 		return
 	}
 
-	conn.Close()
+	_ = conn.Close()
 
 	// ✅ All checks passed
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("ready"))
+	_, _ = w.Write([]byte("ready"))
 }

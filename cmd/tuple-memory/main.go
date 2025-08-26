@@ -1,10 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"runtime"
 	"strconv"
 	"time"
+
+	"github.com/rs/zerolog/log"
 )
 
 type Instance struct {
@@ -18,7 +19,7 @@ func main() {
 	runtime.GC()
 	runtime.ReadMemStats(&m)
 	baseline := m.Alloc
-	fmt.Printf("Baseline memory: %.2f MB\n", float64(baseline)/1024/1024)
+	log.Printf("Baseline memory: %.2f MB\n", float64(baseline)/1024/1024)
 
 	// Create a big mock graph
 	graph := make(map[Instance]map[string]map[Instance]struct{})
@@ -47,18 +48,18 @@ func main() {
 		}
 	}
 
-	fmt.Printf("Time to create graph: %s\n", time.Since(st))
+	log.Printf("Time to create graph: %s\n", time.Since(st))
 
 	// Force GC and check memory usage again
 	runtime.GC()
 	runtime.ReadMemStats(&m)
 	used := m.Alloc - baseline
-	fmt.Printf("After graph creation: %.2f MB\n", float64(used)/1024/1024)
+	log.Printf("After graph creation: %.2f MB\n", float64(used)/1024/1024)
 
 	// Keep the graph alive so GC doesn't free it before measurement
 	if len(graph) == 0 {
-		fmt.Println("graph is empty")
+		log.Print("graph is empty")
 	}
 
-	fmt.Printf("Total tuples: %d w\n ", total/10000)
+	log.Printf("Total tuples: %d w\n ", total/10000)
 }

@@ -1,9 +1,9 @@
 package pkg
 
 import (
-	"fmt"
 	"strings"
 
+	"github.com/rs/zerolog/log"
 	pkgpbv1 "github.com/skyrocket-qy/protos/gen/pkgpb/v1"
 	"gorm.io/gorm"
 )
@@ -53,8 +53,8 @@ func ApplyCursor(c *pkgpbv1.CursorData) func(db *gorm.DB) *gorm.DB {
 			allArgs = append(allArgs, args...)
 		}
 
-		fmt.Println(fullWhere)
-		fmt.Println(allArgs)
+		log.Print(fullWhere)
+		log.Print(allArgs)
 
 		return db.Where(fullWhere, allArgs...)
 	}

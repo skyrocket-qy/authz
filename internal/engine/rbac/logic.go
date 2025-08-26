@@ -17,19 +17,19 @@ type RbacLogic interface {
 	UpdateUser(c context.Context, in *rbacpb.UpdateUserIn) error
 	DeleteUser(c context.Context, in *rbacpb.DeleteUserIn) error
 
-	GetRole(context.Context, *rbacpb.GetRoleIn) (*rbacpb.GetRoleOut, error)
+	GetRole(ctx context.Context, in *rbacpb.GetRoleIn) (*rbacpb.GetRoleOut, error)
 	CreateRole(c context.Context, in *rbacpb.CreateRoleIn) error
 	ListRoles(c context.Context, in *rbacpb.ListRolesIn) (*rbacpb.ListRolesOut, error)
 	UpdateRole(c context.Context, in *rbacpb.UpdateRoleIn) error
 	DeleteRole(c context.Context, in *rbacpb.DeleteRoleIn) error
 
-	ListResourceTypes(context.Context) (
+	ListResourceTypes(ctx context.Context) (
 		*rbacpb.ListResourceTypeOut, error,
 	)
-	ListResourcesByType(context.Context, *rbacpb.ListResourcesByTypeIn) (
+	ListResourcesByType(ctx context.Context, in *rbacpb.ListResourcesByTypeIn) (
 		*rbacpb.ListResourcesByTypeOut, error,
 	)
-	ListPermissionByResource(context.Context, *rbacpb.ListPermissionByResourceIn) (
+	ListPermissionByResource(ctx context.Context, in *rbacpb.ListPermissionByResourceIn) (
 		*rbacpb.ListPermissionByResourceOut, error,
 	)
 	CreateResource(c context.Context, in *rbacpb.CreateResourceIn) error
@@ -283,11 +283,11 @@ func (r *RbacLogicImpl) ListResources(c context.Context, in *rbacpb.ListResource
 	}
 
 	resources := make([]*rbacpb.Resource, len(resMds))
-	for _, resMd := range resMds {
-		resources = append(resources, &rbacpb.Resource{
+	for i, resMd := range resMds {
+		resources[i] = &rbacpb.Resource{
 			Ns:   resMd.Ns,
 			Name: resMd.Name,
-		})
+		}
 	}
 
 	return &rbacpb.ListResourcesOut{Resources: resources, Total: cnt}, nil

@@ -12,7 +12,7 @@ import (
 
 func GenerateJWT(userID uint) (string, error) {
 	claims := jwt.RegisteredClaims{
-		Subject:   strconv.Itoa(int(userID)),
+		Subject:   strconv.FormatUint(uint64(userID), 10),
 		ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 	}
 

@@ -24,7 +24,9 @@ linters:
     - funcorder
     - unused
     - tagliatelle
-    
+    - ireturn
+    - godox
+    - gocognit
   enable:
     - wsl_v5
   exclusions:

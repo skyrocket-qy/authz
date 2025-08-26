@@ -547,6 +547,7 @@ func benchmarkGraph(b *testing.B,
 
 		for g := range numGoroutines {
 			go func(seed int64) {
+				//nolint:gosec // math/rand is fine here for tests
 				rnd := rand.New(rand.NewSource(seed))
 				for range numOps {
 					x := rnd.Intn(1000)
@@ -561,6 +562,7 @@ func benchmarkGraph(b *testing.B,
 			go func() {
 				defer wg.Done()
 
+				//nolint:gosec // math/rand is fine here for tests
 				rnd := rand.New(rand.NewSource(seeds[g]))
 				for range numOps {
 					obj := entity.Instance{
