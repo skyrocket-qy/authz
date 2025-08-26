@@ -1,12 +1,12 @@
 package rest
 
 import (
+	"authz/internal/config"
 	"context"
 	"fmt"
 	"net/http"
 	"time"
 
-	"authz/internal/cfg"
 	"github.com/segmentio/kafka-go"
 	"gorm.io/gorm"
 )
@@ -50,7 +50,7 @@ func (h *Handler) ReadinessProbe(w http.ResponseWriter, r *http.Request) {
 
 	// 2️⃣ Check Kafka (connection only, don't consume messages)
 	conn, err := kafka.DialLeader(ctx, "tcp",
-		fmt.Sprintf("%s:%s", cfg.Cfg.Kafka.Host, cfg.Cfg.Kafka.Port), "pg.public.tuples", 0,
+		fmt.Sprintf("%s:%s", config.Conf.Kafka.Host, config.Conf.Kafka.Port), "pg.public.tuples", 0,
 	)
 	if err != nil {
 		w.WriteHeader(http.StatusServiceUnavailable)

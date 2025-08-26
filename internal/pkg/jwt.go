@@ -1,10 +1,10 @@
 package pkg
 
 import (
+	"authz/internal/config"
 	"strconv"
 	"time"
 
-	"authz/internal/cfg"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/skyrocket-qy/erx"
@@ -18,7 +18,7 @@ func GenerateJWT(userID uint) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	tokenString, err := token.SignedString([]byte(cfg.Cfg.Jwt.Secret))
+	tokenString, err := token.SignedString([]byte(config.Conf.Jwt.Secret))
 	if err != nil {
 		return "", erx.W(err)
 	}

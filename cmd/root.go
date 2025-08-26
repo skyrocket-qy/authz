@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -12,6 +11,7 @@ import (
 
 	"authz/cmd/server"
 	"authz/cmd/tool"
+	"authz/internal/config"
 	"authz/internal/handler/connect/middleware"
 	"authz/internal/handler/rest"
 	"authz/internal/pkg"
@@ -19,6 +19,7 @@ import (
 	"authz/internal/service/database"
 	"authz/internal/service/logx"
 	"authz/internal/wire"
+
 	"connectrpc.com/connect"
 	"connectrpc.com/otelconnect"
 	"github.com/rs/cors"
@@ -27,6 +28,8 @@ import (
 	"github.com/skyrocket-qy/protos/gen/authzpb/v1/authzpbv1connect"
 	"github.com/spf13/cobra"
 )
+
+var inflight = &sync.WaitGroup{}
 
 // rootCmd represents the base command when called without any subcommands.
 var Cmd = &cobra.Command{
@@ -53,60 +56,81 @@ func init() {
 	Cmd.Flags().StringP("engine", `g`, "rbac", "default: rbac")
 
 	Cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
-		validEnvs := map[string]bool{"local": true, "dev": true, "prod": true, "stage": true}
-		if !validEnvs[pkg.Env] {
-			return fmt.Errorf(
-				"invalid environment value: %s. Must be one of: dev, prod",
-				pkg.Env,
-			)
-		}
+		// validEnvs := map[string]bool{"local": true, "dev": true, "prod": true, "stage": true}
+		// if !validEnvs[pkg.Env] {
+		// 	return fmt.Errorf(
+		// 		"invalid environment value: %s. Must be one of: dev, prod",
+		// 		pkg.Env,
+		// 	)
+		// }
 
 		return nil
 	}
 }
 
 func RunServer(cmd *cobra.Command, args []string) {
-	if err := pkg.NewConfig(); err != nil {
-		log.Err(err).Msg("Failed to load config")
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop() // Release resources when the function returns
 
+	lc := pkg.NewLifecycleParallel()
+	defer func() {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		if err := lc.Shutdown(shutdownCtx); err != nil {
+			log.Err(err).Msg("Failed to shutdown gracefully")
+		}
+
+		log.Info().Msg("Server gracefully shut down.")
+	}()
+
+	if err := setupBase(ctx, lc); err != nil {
+		log.Err(err).Msg("Failed to setup base")
 		return
+	}
+
+	if err := startConnectServer(ctx, lc); err != nil {
+		log.Err(err).Msg("Failed to start connect server")
+		return
+	}
+
+	// 4. Wait for the context to be cancelled (from an OS signal).
+	<-ctx.Done()
+	log.Info().Msg("Shutdown signal received, initiating graceful shutdown...")
+}
+
+func setupBase(ctx context.Context, lc *pkg.LifecycleParallel) error {
+	if err := pkg.NewConfig(); err != nil {
+		return err
 	}
 
 	if err := logx.InitLogger(); err != nil {
-		log.Err(err).Msg("Failed to init logger")
-
-		return
+		return err
 	}
 
-	lc := pkg.NewLifecycleParallel()
-
-	shutdown, err := service.SetupOTelSDK(context.TODO())
-	if err != nil {
-		log.Err(err).Msg("Failed to init otel")
-
-		return
+	// Use the application context here instead of context.TODO()
+	if config.Env != config.EnvProd {
+		shutdown, err := service.SetupOTelSDK(ctx)
+		if err != nil {
+			return err
+		}
+		lc.Add("otel", shutdown)
 	}
 
-	lc.Add("otel", shutdown)
-
-	startConnectServer(lc)
+	return nil
 }
 
-var inflight = &sync.WaitGroup{}
-
-func startConnectServer(lc *pkg.LifecycleParallel) {
+func startConnectServer(ctx context.Context, lc *pkg.LifecycleParallel) error {
 	db, err := database.New(lc)
 	if err != nil {
 		log.Err(err).Msg("Failed to init db")
-
-		return
+		return err
 	}
 
-	connectH, err := wire.NewRbacHandler(context.TODO(), lc, db)
+	// Use the application context here instead of context.TODO()
+	connectH, err := wire.NewRbacHandler(ctx, lc, db)
 	if err != nil {
 		log.Err(err).Msg("Failed to init connect handler")
-
-		return
+		return err
 	}
 
 	restH := rest.NewHandler(db)
@@ -117,7 +141,6 @@ func startConnectServer(lc *pkg.LifecycleParallel) {
 		return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
 			inflight.Add(1)
 			defer inflight.Done()
-
 			return next(ctx, req)
 		}
 	})
@@ -128,14 +151,12 @@ func startConnectServer(lc *pkg.LifecycleParallel) {
 		connect.WithInterceptors(middleware.NewLogRequest()),
 	}
 
-	if pkg.Env == "prod" {
+	if config.Env == config.EnvProd {
 		otelInterceptor, err := otelconnect.NewInterceptor()
 		if err != nil {
 			log.Err(err).Msg("Failed to init otel interceptor")
-
-			return
+			return err
 		}
-
 		handlerOpts = append(handlerOpts, connect.WithInterceptors(otelInterceptor))
 	}
 
@@ -155,34 +176,16 @@ func startConnectServer(lc *pkg.LifecycleParallel) {
 
 	handlerWithCors := c.Handler(mux)
 	server := NewHttpServer(lc, handlerWithCors)
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 
-	// Run the server in a goroutine so the main thread can listen for signals.
+	// 2. Run the server in a goroutine so it doesn't block.
 	go func() {
 		log.Info().Msgf("Starting server on %s", server.Addr)
-
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Err(err).Msg("Failed to start server")
 		}
 	}()
 
-	// Block the main function until an OS signal is received.
-	<-stop
-	log.Info().Msg("Received interrupt signal, initiating graceful shutdown...")
-
-	// Call the lifecycle shutdown method with a timeout.
-	// The server.Shutdown() call is registered in NewHttpServer and will be executed here.
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	if err := lc.Shutdown(ctx); err != nil {
-		log.Err(err).Msg("Failed to shutdown")
-
-		return
-	}
-
-	log.Info().Msg("Server gracefully shut down.")
+	return nil
 }
 
 func NewHttpServer(lc *pkg.LifecycleParallel, handler http.Handler) *http.Server {

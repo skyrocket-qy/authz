@@ -4,8 +4,9 @@ import (
 	"context"
 	"time"
 
-	"authz/internal/cfg"
+	"authz/internal/config"
 	"authz/internal/pkg"
+
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
@@ -15,8 +16,8 @@ func New(lc *pkg.LifecycleParallel) *redis.Client {
 	log.Info().Msgf("start redis ")
 
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     cfg.Cfg.Redis.Host + ":" + cfg.Cfg.Redis.Port,
-		Password: cfg.Cfg.Redis.Password,
+		Addr:     config.Conf.Redis.Host + ":" + config.Conf.Redis.Port,
+		Password: config.Conf.Redis.Password,
 		DB:       0,
 	})
 

@@ -1,6 +1,6 @@
-package cfg
+package config
 
-var Cfg Config
+var Conf Config
 
 type Config struct {
 	// MaxCheckDepth int `env:"MAX_CHECK_DEPTH"` // TODO: not implemented but optional

@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"authz/internal/cfg"
+	"authz/internal/config"
 	"authz/internal/engine/rbac"
 	"authz/internal/pkg"
+
 	"github.com/rs/zerolog/log"
 	"github.com/skyrocket-qy/erx"
 	"gorm.io/driver/postgres"
@@ -25,7 +26,7 @@ func (z *zerologWriter) Printf(format string, v ...any) {
 func New(lc *pkg.LifecycleParallel) (db *gorm.DB, err error) {
 	log.Info().Msg("New db")
 
-	config := gorm.Config{
+	gormConf := gorm.Config{
 		NamingStrategy: schema.NamingStrategy{
 			// NoLowerCase: true,
 		},
@@ -41,7 +42,7 @@ func New(lc *pkg.LifecycleParallel) (db *gorm.DB, err error) {
 		),
 	}
 
-	dbCfg := cfg.Cfg.Db
+	dbCfg := config.Conf.Db
 	connStr := fmt.Sprintf(
 		"host=%s port=%d user=%s password=%s dbname=%s TimeZone=%s",
 		dbCfg.Host,
@@ -52,8 +53,7 @@ func New(lc *pkg.LifecycleParallel) (db *gorm.DB, err error) {
 		"UTC",
 	)
 
-	db, err = gorm.Open(postgres.Open(connStr), &config)
-	// db, err = gorm.Open(postgres.Open(connStr))
+	db, err = gorm.Open(postgres.Open(connStr), &gormConf)
 	if err != nil {
 		err = erx.W(err).SetCode(pkg.ErrDBUnavailable)
 

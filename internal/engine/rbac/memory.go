@@ -8,10 +8,11 @@ import (
 	"sync"
 	"time"
 
-	"authz/internal/cfg"
+	"authz/internal/config"
 	"authz/internal/entity"
 	"authz/internal/pkg"
 	"authz/internal/schema"
+
 	"github.com/rs/zerolog/log"
 	"github.com/segmentio/kafka-go"
 	"gorm.io/gorm"
@@ -108,7 +109,7 @@ func (e *ZanzibarMemoryImpl) check(user entity.Instance, perm string,
 func (e *ZanzibarMemoryImpl) evalUsersetRewrite(rewrite *schema.UsersetRewrite,
 	user, obj entity.Instance, visited map[entity.Instance]struct{},
 ) bool {
-	if _, ok := visited[obj]; ok || (len(visited) >= cfg.Cfg.MaxCheckNodes) {
+	if _, ok := visited[obj]; ok || (len(visited) >= config.Conf.MaxCheckNodes) {
 		// the return boolean will not tell caller to stop checking, but it will stop recursion
 		return false
 	}
