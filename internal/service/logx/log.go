@@ -1,7 +1,7 @@
 package logx
 
 import (
-	"authz/internal/util"
+	"authz/internal/config"
 	"os"
 	"path/filepath"
 	"time"
@@ -11,7 +11,7 @@ import (
 )
 
 func InitLogger() error {
-	if util.Env == "local" || util.Env == "dev" {
+	if config.Env == config.EnvLocal || config.Env == config.EnvDev {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	} else {
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)

@@ -52,7 +52,7 @@ func init() {
 	Cmd.AddCommand(server.Cmd)
 	Cmd.AddCommand(tool.Cmd)
 
-	Cmd.PersistentFlags().StringVarP(&util.Env, `env`, "e", "local", `default: local`)
+	Cmd.PersistentFlags().StringVarP(&config.Env, `env`, "e", "local", `default: local`)
 	Cmd.Flags().StringP("engine", `g`, "rbac", "default: rbac")
 
 	Cmd.PreRunE = func(cmd *cobra.Command, args []string) error {

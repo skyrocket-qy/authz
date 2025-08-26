@@ -45,4 +45,8 @@ kubectl describe KafkaConnector/debezium-connector-postgres
 
 # watch
 kubectl run -n authz -it --rm --image=quay.io/debezium/tooling:1.2  --restart=Never watcher -- kcat -b debezium-cluster-kafka-bootstrap:9092 -C -o beginning -t mysql.inventory.customers
+
+kubectl port-forward svc/postgres 5432:5432
+kubectl port-forward svc/debezium-cluster-kafka-external-bootstrap 9094:9094
+
 ```

@@ -53,6 +53,7 @@ func New(lc *util.LifecycleParallel) (db *gorm.DB, err error) {
 		"UTC",
 	)
 
+	log.Print(connStr)
 	db, err = gorm.Open(postgres.Open(connStr), &gormConf)
 	if err != nil {
 		err = erx.W(err).SetCode(util.ErrDBUnavailable)

@@ -1,13 +1,11 @@
 package config
 
-var Env Environment
-
-type Environment string
+var Env string
 
 const (
-	EnvProd  Environment = "prod"
-	EnvStage Environment = "stage"
-	EnvQa    Environment = "qa"
-	EnvDev   Environment = "dev"
-	EnvLocal Environment = "local"
+	EnvProd  string = "prod"
+	EnvStage string = "stage"
+	EnvQa    string = "qa"
+	EnvDev   string = "dev"
+	EnvLocal string = "local"
 )
