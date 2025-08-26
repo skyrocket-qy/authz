@@ -1,0 +1,59 @@
+operatorGroup:
+  create: true
+  namespace: operators
+
+subscription:
+  create: true
+  namespace: operators
+  channel: stable
+  name: strimzi-kafka-operator
+  source: operatorhubio-catalog
+  sourceNamespace: olm
+
+kafka:
+  replicas: 1
+  version: 4.0.0
+  metadataVersion: 4.0-IV3
+  storage:
+    size: 20Gi
+  externalListener:
+    type: nodeport
+  config:
+    offsetsTopicReplicationFactor: 1
+    transactionStateLogReplicationFactor: 1
+    transactionStateLogMinIsr: 1
+    defaultReplicationFactor: 1
+    minInsyncReplicas: 1
+
+kafkaConnect:
+  version: 4.0.0
+  replicas: 1
+  build:
+    output:
+      image: 10.106.188.150/debezium-connect-postgres:latest
+    plugins:
+      - name: debezium-postgres-connector
+        artifacts:
+          - type: tgz
+            url: https://repo1.maven.org/maven2/io/debezium/debezium-connector-postgres/3.2.0.Final/debezium-connector-postgres-3.2.0.Final-plugin.tar.gz
+
+debezium:
+  username: postgres
+  password: password
+  connector:
+    tasksMax: 1
+  database:
+    hostname: postgres
+    port: 5432
+    dbname: postgres
+    serverName: pgserver1
+    serverId: 184054
+    includeList: authz
+  publication:
+    name: debezium
+  slot:
+    name: debezium_slot
+  topic:
+    prefix: pg
+  table:
+    includeList: tuples

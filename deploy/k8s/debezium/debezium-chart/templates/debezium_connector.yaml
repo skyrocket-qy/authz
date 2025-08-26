@@ -1,0 +1,37 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnector
+metadata:
+  name: {{ include "debezium.fullname" . }}-debezium-connector-postgres
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "debezium.labels" . | nindent 4 }}
+    strimzi.io/cluster: {{ include "debezium.fullname" . }}-debezium-connect-cluster
+spec:
+  class: io.debezium.connector.postgresql.PostgresConnector
+  tasksMax: {{ .Values.debezium.connector.tasksMax }}
+  config:
+    tasks.max: {{ .Values.debezium.connector.tasksMax }}
+    database.hostname: {{ .Values.debezium.database.hostname }}
+    database.port: {{ .Values.debezium.database.port }}
+    database.user: ${secrets:{{ .Release.Namespace }}/{{ include "debezium.fullname" . }}-debezium-secret:username}
+    database.password: ${secrets:{{ .Release.Namespace }}/{{ include "debezium.fullname" . }}-debezium-secret:password}
+    database.dbname: {{ .Values.debezium.database.dbname }}
+    database.server.name: {{ .Values.debezium.database.serverName }}
+    database.server.id: {{ .Values.debezium.database.serverId }}
+    publication.name: {{ .Values.debezium.publication.name }}
+    slot.name: {{ .Values.debezium.slot.name }}
+    plugin.name: pgoutput
+    topic.prefix: {{ .Values.debezium.topic.prefix }}
+    database.include.list: {{ .Values.debezium.database.includeList }}
+    table.include.list: {{ .Values.debezium.table.includeList }}
+    key.converter: org.apache.kafka.connect.json.JsonConverter
+    key.converter.schemas.enable: "false"
+    value.converter: org.apache.kafka.connect.json.JsonConverter
+    value.converter.schemas.enable: "false"
+    schema.history.internal.kafka.bootstrap.servers: {{ include "debezium.fullname" . }}-debezium-cluster-kafka-bootstrap:9092
+    schema.history.internal.kafka.topic: schema-changes.{{ .Release.Namespace }}
+    transforms: "unwrap"
+    transforms.unwrap.type: "io.debezium.transforms.ExtractNewRecordState"
+    transforms.unwrap.drop.tombstones: "true"
+    transforms.unwrap.delete.handling.mode: "drop"
+    transforms.unwrap.add.fields: "op"

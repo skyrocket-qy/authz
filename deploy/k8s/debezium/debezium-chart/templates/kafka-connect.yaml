@@ -1,0 +1,33 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnect
+metadata:
+  name: {{ include "debezium.fullname" . }}-debezium-connect-cluster
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "debezium.labels" . | nindent 4 }}
+  annotations:
+    strimzi.io/use-connector-resources: "true"
+spec:
+  version: {{ .Values.kafkaConnect.version }}
+  replicas: {{ .Values.kafkaConnect.replicas }}
+  bootstrapServers: {{ include "debezium.fullname" . }}-debezium-cluster-kafka-bootstrap:9092
+  config:
+    config.providers: secrets
+    config.providers.secrets.class: io.strimzi.kafka.KubernetesSecretConfigProvider
+    group.id: {{ include "debezium.fullname" . }}-connect-cluster
+    offset.storage.topic: {{ include "debezium.fullname" . }}-connect-cluster-offsets
+    config.storage.topic: {{ include "debezium.fullname" . }}-connect-cluster-configs
+    status.storage.topic: {{ include "debezium.fullname" . }}-connect-cluster-status
+    # -1 means it will use the default replication factor configured in the broker
+    config.storage.replication.factor: -1
+    offset.storage.replication.factor: -1
+    status.storage.replication.factor: -1
+  build:
+    output:
+      type: docker
+      image: {{ .Values.kafkaConnect.build.output.image }}
+    plugins:
+      - name: debezium-postgres-connector
+        artifacts:
+          - type: tgz
+            url: {{ (index (index .Values.kafkaConnect.build.plugins 0).artifacts 0).url }}

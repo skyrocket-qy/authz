@@ -1,0 +1,64 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaNodePool
+metadata:
+  name: {{ include "debezium.fullname" . }}-dual-role
+  labels:
+    {{- include "debezium.labels" . | nindent 4 }}
+    strimzi.io/cluster: {{ include "debezium.fullname" . }}-debezium-cluster
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.kafka.replicas }}
+  roles:
+    - controller
+    - broker
+  storage:
+    type: jbod
+    volumes:
+      - id: 0
+        type: persistent-claim
+        size: {{ .Values.kafka.storage.size }}
+        deleteClaim: false
+        kraftMetadata: shared
+---
+
+apiVersion: kafka.strimzi.io/v1beta2
+kind: Kafka
+metadata:
+  name: {{ include "debezium.fullname" . }}-debezium-cluster
+  annotations:
+    strimzi.io/node-pools: enabled
+    strimzi.io/kraft: enabled
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "debezium.labels" . | nindent 4 }}
+spec:
+  kafka:
+    replicas: {{ .Values.kafka.replicas }}
+    version: {{ .Values.kafka.version }}
+    metadataVersion: {{ .Values.kafka.metadataVersion }}
+    listeners:
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+      - name: tls
+        port: 9093
+        type: internal
+        tls: true
+      - name: external
+        port: 9094
+        type: {{ .Values.kafka.externalListener.type }}
+        tls: false
+        {{- if eq .Values.kafka.externalListener.type "nodeport" }}
+        configuration:
+          preferredNodePortAddressType: InternalDNS
+        {{- end }}
+    config:
+      offsets.topic.replication.factor: {{ .Values.kafka.config.offsetsTopicReplicationFactor }}
+      transaction.state.log.replication.factor: {{ .Values.kafka.config.transactionStateLogReplicationFactor }}
+      transaction.state.log.min.isr: {{ .Values.kafka.config.transactionStateLogMinIsr }}
+      default.replication.factor: {{ .Values.kafka.config.defaultReplicationFactor }}
+      min.insync.replicas: {{ .Values.kafka.config.minInsyncReplicas }}
+  entityOperator:
+    topicOperator: {}
+    userOperator: {}
