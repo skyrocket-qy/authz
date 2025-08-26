@@ -232,7 +232,7 @@ loki:
     configs:
     - from: "2020-09-07"
       store: boltdb-shipper
-      object_store: filesystem
+      object_store: s3
       schema: v11
       index:
         prefix: loki_index_
@@ -241,12 +241,19 @@ loki:
   # -- Check https://grafana.com/docs/loki/latest/configuration/#storage_config for more info on how to configure storages
   storageConfig:
     boltdb_shipper:
-      shared_store: filesystem
+      shared_store: s3
       active_index_directory: /var/loki/index
       cache_location: /var/loki/cache
       cache_ttl: 168h
     filesystem:
       directory: /var/loki/chunks
+    s3:
+      endpoint: minio:9000
+      bucketnames: loki
+      access_key_id: minio
+      secret_access_key: minio123
+      insecure: true
+      s3forcepathstyle: true
 # -- Uncomment to configure each storage individually
 #   azure: {}
 #   gcs: {}
