@@ -19,7 +19,6 @@ import (
 	"authz/internal/service/database"
 	"authz/internal/service/logx"
 	"authz/internal/wire"
-
 	"connectrpc.com/connect"
 	"connectrpc.com/otelconnect"
 	"github.com/rs/cors"
