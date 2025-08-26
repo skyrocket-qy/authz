@@ -1,0 +1,18 @@
+namespaces:
+  - name: resource
+    relations:
+      - name: owner
+        allow_subject_namespaces:
+          - user
+      - name: read
+        userset_rewrite:
+          computed_userset:
+            relation: owner
+      - name: write
+        userset_rewrite:
+          computed_userset:
+            relation: owner
+      - name: delete
+        userset_rewrite:
+          computed_userset:
+            relation: owner

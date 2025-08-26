@@ -1,0 +1,13 @@
+namespaces:
+  - name: group
+    relations:
+      - name: member
+        allow_subject_namespaces:
+          - user
+          - group
+      - name: parent
+        allow_subject_namespaces:
+          - group
+      - name: manager
+        allow_subject_namespaces:
+          - user
