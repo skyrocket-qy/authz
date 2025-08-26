@@ -105,7 +105,6 @@ func (e *ZanzibarMemoryImpl) check(user entity.Instance, perm string,
 	return e.evalUsersetRewrite(&relation.UsersetRewrite, user, obj, visited), nil
 }
 
-// TODO: seems no need context.
 func (e *ZanzibarMemoryImpl) evalUsersetRewrite(rewrite *schema.UsersetRewrite,
 	user, obj entity.Instance, visited map[entity.Instance]struct{},
 ) bool {
