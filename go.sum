@@ -185,12 +185,12 @@ github.com/rs/zerolog v1.34.0/go.mod h1:bJsvje4Z08ROH4Nhs5iH600c3IkWhwp44iRc54W6
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
 github.com/segmentio/kafka-go v0.4.49 h1:GJiNX1d/g+kG6ljyJEoi9++PUMdXGAxb7JGPiDCuNmk=
 github.com/segmentio/kafka-go v0.4.49/go.mod h1:Y1gn60kzLEEaW28YshXyk2+VCUKbJ3Qr6DrnT3i4+9E=
-github.com/skyrocket-qy/erx v0.3.20 h1:9DHOAtD1VmNC16fuOwzxgoPiRKxVN/iPH0dFfrF3sxs=
-github.com/skyrocket-qy/erx v0.3.20/go.mod h1:VNuuSMK0LFEe1KkHrtqNUnDpCv2mA0TyzN2j8sz0LEY=
+github.com/skyrocket-qy/erx v0.3.21 h1:JdWagHkDANnAlVOCh/CRsWb5lcqP4qysDqcX1zgk+Zk=
+github.com/skyrocket-qy/erx v0.3.21/go.mod h1:VNuuSMK0LFEe1KkHrtqNUnDpCv2mA0TyzN2j8sz0LEY=
 github.com/skyrocket-qy/gox v1.2.29 h1:oNKcjtNFPsSczAHVOZPI1x7Uw3b6D2k2Jp3W8QR6O8I=
 github.com/skyrocket-qy/gox v1.2.29/go.mod h1:V6eYakPO73Y2xHDLf1SKn0BxyExpcuaNPstxDgHANgU=
-github.com/skyrocket-qy/protos v0.1.50 h1:phX+A2nyci+i7h4KNdWPbYEBV+1bZHUSR10maWYOZaY=
-github.com/skyrocket-qy/protos v0.1.50/go.mod h1:BfcArsgU7HMSJK+A/FHrVOo5IenOve9Rx2vQQbV7TQs=
+github.com/skyrocket-qy/protos v0.1.52 h1:b7DPwHKEjoKFy1vRvhFOFGDKnI6B0H9sPz1bZaDImVs=
+github.com/skyrocket-qy/protos v0.1.52/go.mod h1:BfcArsgU7HMSJK+A/FHrVOo5IenOve9Rx2vQQbV7TQs=
 github.com/skyrocket-qy/srand v0.1.0 h1:tz0nTtzIRAILn/zRjznZpxHHRtGXCFLTQYbO57ItnrY=
 github.com/skyrocket-qy/srand v0.1.0/go.mod h1:fmp+W5WFo+e2f7jUWt9dYDkgpjst1bFrFud7RIz0WUQ=
 github.com/spf13/cobra v1.9.1 h1:CXSaggrXdbHK9CF+8ywj8Amf7PBRmPCOJugH954Nnlo=

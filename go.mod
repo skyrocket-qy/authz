@@ -17,9 +17,9 @@ require (
 	github.com/rs/cors v1.11.1
 	github.com/rs/zerolog v1.34.0
 	github.com/segmentio/kafka-go v0.4.49
-	github.com/skyrocket-qy/erx v0.3.20
+	github.com/skyrocket-qy/erx v0.3.21
 	github.com/skyrocket-qy/gox v1.2.29
-	github.com/skyrocket-qy/protos v0.1.50
+	github.com/skyrocket-qy/protos v0.1.52
 	github.com/skyrocket-qy/srand v0.1.0
 	github.com/spf13/cobra v1.9.1
 	go.opentelemetry.io/otel v1.37.0
