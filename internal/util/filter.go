@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/skyrocket-qy/erx"
 	pkgpbv1 "github.com/skyrocket-qy/protos/gen/pkgpb/v1"
 	"gorm.io/gorm"
 )
@@ -26,11 +27,11 @@ func ApplyFilter(filters []*pkgpbv1.Filter, validFields []string, filterExprs ma
 
 	for _, ft := range filters {
 		if ft.GetField() == "" {
-			return nil, errors.New("field is empty")
+			return nil, erx.New(ErrBadRequest, "field is empty")
 		}
 
 		if !slices.Contains(validFields, ft.GetField()) {
-			return nil, fmt.Errorf("invalid field: %v", ft.GetField())
+			return nil, erx.New(ErrBadRequest, fmt.Sprintf("invalid field: %v", ft.GetField()))
 		}
 
 		if _, ok := visited[ft.GetField()]; ok {

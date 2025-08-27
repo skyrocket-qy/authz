@@ -1,6 +1,7 @@
 package rbac
 
 import (
+	"authz/internal/util"
 	"context"
 
 	"connectrpc.com/connect"
@@ -29,7 +30,7 @@ func (h *Handler) ListUsers(
 ) (*connect.Response[rbacpb.ListUsersOut], error) {
 	out, err := h.rbacLogic.ListUsers(ctx, req.Msg)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, util.NewApiErr(ctx, err)
 	}
 
 	return connect.NewResponse(out), nil
@@ -40,7 +41,7 @@ func (h *Handler) UpdateUser(ctx context.Context, req *connect.Request[rbacpb.Up
 ) {
 	err := h.rbacLogic.UpdateUser(ctx, req.Msg)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, util.NewApiErr(ctx, err)
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
@@ -51,7 +52,7 @@ func (h *Handler) DeleteUser(
 ) (*connect.Response[emptypb.Empty], error) {
 	err := h.rbacLogic.DeleteUser(ctx, req.Msg)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, util.NewApiErr(ctx, err)
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
@@ -62,7 +63,7 @@ func (h *Handler) CreateRole(
 ) (*connect.Response[emptypb.Empty], error) {
 	err := h.rbacLogic.CreateRole(ctx, req.Msg)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, util.NewApiErr(ctx, err)
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
@@ -73,7 +74,7 @@ func (h *Handler) ListRoles(
 ) (*connect.Response[rbacpb.ListRolesOut], error) {
 	out, err := h.rbacLogic.ListRoles(ctx, req.Msg)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, util.NewApiErr(ctx, err)
 	}
 
 	return connect.NewResponse(out), nil
@@ -84,7 +85,7 @@ func (h *Handler) UpdateRole(
 ) (*connect.Response[emptypb.Empty], error) {
 	err := h.rbacLogic.UpdateRole(ctx, req.Msg)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, util.NewApiErr(ctx, err)
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
@@ -95,7 +96,7 @@ func (h *Handler) DeleteRole(
 ) (*connect.Response[emptypb.Empty], error) {
 	err := h.rbacLogic.DeleteRole(ctx, req.Msg)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, util.NewApiErr(ctx, err)
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
@@ -106,7 +107,7 @@ func (h *Handler) CreateResource(
 ) (*connect.Response[emptypb.Empty], error) {
 	err := h.rbacLogic.CreateResource(ctx, req.Msg)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, util.NewApiErr(ctx, err)
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
@@ -117,7 +118,7 @@ func (h *Handler) ListResources(
 ) (*connect.Response[rbacpb.ListResourcesOut], error) {
 	out, err := h.rbacLogic.ListResources(ctx, req.Msg)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, util.NewApiErr(ctx, err)
 	}
 
 	return connect.NewResponse(out), nil
@@ -128,7 +129,7 @@ func (h *Handler) DeleteResource(
 ) (*connect.Response[emptypb.Empty], error) {
 	err := h.rbacLogic.DeleteResource(ctx, req.Msg)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, util.NewApiErr(ctx, err)
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
@@ -139,7 +140,7 @@ func (h *Handler) AssignRole(
 ) (*connect.Response[emptypb.Empty], error) {
 	err := h.rbacLogic.AssignRole(ctx, req.Msg)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, util.NewApiErr(ctx, err)
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
@@ -150,7 +151,7 @@ func (h *Handler) RevokeRole(
 ) (*connect.Response[emptypb.Empty], error) {
 	err := h.rbacLogic.RevokeRole(ctx, req.Msg)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, util.NewApiErr(ctx, err)
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
@@ -161,7 +162,7 @@ func (h *Handler) GrantPerm(
 ) (*connect.Response[emptypb.Empty], error) {
 	err := h.rbacLogic.GrantPerm(ctx, req.Msg)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, util.NewApiErr(ctx, err)
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
@@ -172,7 +173,7 @@ func (h *Handler) RevokePerm(
 ) (*connect.Response[emptypb.Empty], error) {
 	err := h.rbacLogic.RevokePerm(ctx, req.Msg)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, util.NewApiErr(ctx, err)
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
@@ -184,7 +185,7 @@ func (h *Handler) ListTuples(
 ) {
 	resp, err := h.zLogic.List(ctx, req.Msg)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, util.NewApiErr(ctx, err)
 	}
 
 	return connect.NewResponse(resp), nil
@@ -195,7 +196,7 @@ func (h *Handler) CreateTuple(
 ) (*connect.Response[emptypb.Empty], error) {
 	err := h.zLogic.Create(ctx, req.Msg)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, util.NewApiErr(ctx, err)
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
@@ -207,7 +208,7 @@ func (h *Handler) DeleteTuples(
 ) {
 	err := h.zLogic.Delete(ctx, req.Msg)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, util.NewApiErr(ctx, err)
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
@@ -219,55 +220,55 @@ func (h *Handler) Check(
 ) {
 	res, err := h.zLogic.Check(ctx, req.Msg)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, util.NewApiErr(ctx, err)
 	}
 
 	return connect.NewResponse(res), nil
 }
 
-func (h *Handler) ListResourceType(c context.Context, in *connect.Request[emptypb.Empty]) (
+func (h *Handler) ListResourceType(ctx context.Context, in *connect.Request[emptypb.Empty]) (
 	*connect.Response[rbacpb.ListResourceTypeOut], error,
 ) {
-	res, err := h.rbacLogic.ListResourceTypes(c)
+	res, err := h.rbacLogic.ListResourceTypes(ctx)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, util.NewApiErr(ctx, err)
 	}
 
 	return connect.NewResponse(res), nil
 }
 
 func (h *Handler) ListResourcesByType(
-	c context.Context,
+	ctx context.Context,
 	in *connect.Request[rbacpb.ListResourcesByTypeIn],
 ) (
 	*connect.Response[rbacpb.ListResourcesByTypeOut], error,
 ) {
-	res, err := h.rbacLogic.ListResourcesByType(c, in.Msg)
+	res, err := h.rbacLogic.ListResourcesByType(ctx, in.Msg)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, util.NewApiErr(ctx, err)
 	}
 
 	return connect.NewResponse(res), nil
 }
 
-func (h *Handler) ListPermissionByResource(c context.Context,
+func (h *Handler) ListPermissionByResource(ctx context.Context,
 	in *connect.Request[rbacpb.ListPermissionByResourceIn]) (
 	*connect.Response[rbacpb.ListPermissionByResourceOut], error,
 ) {
-	res, err := h.rbacLogic.ListPermissionByResource(c, in.Msg)
+	res, err := h.rbacLogic.ListPermissionByResource(ctx, in.Msg)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, util.NewApiErr(ctx, err)
 	}
 
 	return connect.NewResponse(res), nil
 }
 
-func (h *Handler) GetRole(c context.Context, in *connect.Request[rbacpb.GetRoleIn]) (
+func (h *Handler) GetRole(ctx context.Context, in *connect.Request[rbacpb.GetRoleIn]) (
 	*connect.Response[rbacpb.GetRoleOut], error,
 ) {
-	res, err := h.rbacLogic.GetRole(c, in.Msg)
+	res, err := h.rbacLogic.GetRole(ctx, in.Msg)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, util.NewApiErr(ctx, err)
 	}
 
 	return connect.NewResponse(res), nil
