@@ -31,11 +31,11 @@ func ApplyFilter(filters []*pkgpbv1.Filter, validFields []string, filterExprs ma
 		}
 
 		if !slices.Contains(validFields, ft.GetField()) {
-			return nil, erx.New(ErrBadRequest, fmt.Sprintf("invalid field: %v", ft.GetField()))
+			return nil, erx.Newf(ErrBadRequest, "invalid field: %v", ft.GetField())
 		}
 
 		if _, ok := visited[ft.GetField()]; ok {
-			return nil, fmt.Errorf("duplicate field: %v", ft.GetField())
+			return nil, erx.Newf(ErrBadRequest, "duplicate field: %v", ft.GetField())
 		}
 
 		visited[ft.GetField()] = struct{}{}
