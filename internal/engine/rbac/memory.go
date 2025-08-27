@@ -213,7 +213,7 @@ func (e *ZanzibarMemoryImpl) build(c context.Context) error {
 
 	if tx.RowsAffected > 0 {
 		if err := util.DecodeGob(cp.Data, e.graph); err != nil {
-			return erx.W(err, util.ErrUnknown, "failed to decode graph")
+			return erx.W(err, "failed to decode graph")
 		}
 
 		e.Offest = cp.LastOffset
@@ -223,7 +223,7 @@ func (e *ZanzibarMemoryImpl) build(c context.Context) error {
 
 	// Build from all messages
 	if err := r.SetOffset(kafka.FirstOffset); err != nil {
-		return erx.W(err, util.ErrUnknown, "failed to set offset to earliest")
+		return erx.W(err, "failed to set offset to earliest")
 	}
 
 	for {
