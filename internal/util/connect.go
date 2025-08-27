@@ -15,7 +15,7 @@ import (
 )
 
 func NewApiErr(ctx context.Context, err error) *connect.Error {
-	var appErr erx.CtxErr
+	var appErr *erx.CtxErr
 	if ok := errors.As(err, &appErr); !ok {
 		return connect.NewError(connect.CodeUnknown, err)
 	}
@@ -35,7 +35,7 @@ func NewApiErr(ctx context.Context, err error) *connect.Error {
 	return cErr
 }
 
-func logError(traceId string, err erx.CtxErr) {
+func logError(traceId string, err *erx.CtxErr) {
 	e := log.Error().Str("traceId", traceId)
 	if cause := err.Unwrap().Error(); cause != "" {
 		e.Str("cause", cause)
