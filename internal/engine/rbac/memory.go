@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 
@@ -15,6 +14,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/segmentio/kafka-go"
+	"github.com/skyrocket-qy/erx"
 	"gorm.io/gorm"
 )
 
@@ -61,7 +61,7 @@ func NewZanzibarMemory(c context.Context, lc *util.LifecycleParallel, db *gorm.D
 	engine.cancel = cancel
 
 	if err := engine.kafkaR.SetOffset(engine.Offest + 1); err != nil {
-		return nil, fmt.Errorf("failed to set offset to earliest: %w", err)
+		return nil, erx.W(err, "failed to set offset to earliest")
 	}
 
 	go engine.sync(cc)
@@ -90,12 +90,12 @@ func (e *ZanzibarMemoryImpl) check(user entity.Instance, perm string,
 ) {
 	ns, ok := e.schema.Namespaces[obj.Ns]
 	if !ok {
-		return false, fmt.Errorf("unknown namespace: %s", obj.Ns)
+		return false, erx.Newf(util.ErrBadRequest, "unknown namespace: %s", obj.Ns)
 	}
 
 	relation, ok := ns.Relations[perm]
 	if !ok {
-		return false, fmt.Errorf("unknown relation: %s", perm)
+		return false, erx.Newf(util.ErrBadRequest, "unknown relation: %s", perm)
 	}
 
 	if relation == nil {
@@ -207,13 +207,13 @@ func (e *ZanzibarMemoryImpl) build(c context.Context) error {
 	tx := e.db.WithContext(c).Take(&cp)
 	if err := tx.Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			return fmt.Errorf("failed to get graph checkpoint: %w", err)
+			return erx.W(err, "failed to get graph checkpoint")
 		}
 	}
 
 	if tx.RowsAffected > 0 {
 		if err := util.DecodeGob(cp.Data, e.graph); err != nil {
-			return fmt.Errorf("failed to decode graph: %w", err)
+			return erx.W(err, "failed to decode graph")
 		}
 
 		e.Offest = cp.LastOffset
@@ -223,7 +223,7 @@ func (e *ZanzibarMemoryImpl) build(c context.Context) error {
 
 	// Build from all messages
 	if err := r.SetOffset(kafka.FirstOffset); err != nil {
-		return fmt.Errorf("failed to set offset to earliest: %w", err)
+		return erx.W(err, "failed to set offset to earliest")
 	}
 
 	for {
@@ -242,7 +242,7 @@ func (e *ZanzibarMemoryImpl) build(c context.Context) error {
 				return nil
 			}
 
-			return fmt.Errorf("read message error: %w", err)
+			return erx.W(err, "read message error")
 		}
 
 		if err := e.applyMessage(m); err != nil {

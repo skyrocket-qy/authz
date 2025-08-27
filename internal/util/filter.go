@@ -1,7 +1,6 @@
 package util
 
 import (
-	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -47,18 +46,18 @@ func ApplyFilter(filters []*pkgpbv1.Filter, validFields []string, filterExprs ma
 			pkgpbv1.Operator_LT,
 			pkgpbv1.Operator_LTE:
 			if len(ft.GetValues()) != 1 {
-				return nil, fmt.Errorf("%v filter requires one value", ft.GetOp())
+				return nil, erx.Newf(ErrBadRequest, "%v filter requires one value", ft.GetOp())
 			}
 		case pkgpbv1.Operator_BETWEEN:
 			if len(ft.GetValues()) != 2 {
-				return nil, errors.New("between filter requires two values")
+				return nil, erx.New(ErrBadRequest, "between filter requires two values")
 			}
 			// Optional: check range
 			if ft.GetValues()[1] <= ft.GetValues()[0] {
-				return nil, errors.New("between: second value must be >= first")
+				return nil, erx.New(ErrBadRequest, "between: second value must be >= first")
 			}
 		default:
-			return nil, fmt.Errorf("unsupported operator: %v", ft.GetOp())
+			return nil, erx.Newf(ErrBadRequest, "unsupported operator: %v", ft.GetOp())
 		}
 	}
 

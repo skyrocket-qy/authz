@@ -2,13 +2,13 @@ package rbac
 
 import (
 	"context"
-	"errors"
 
 	"authz/internal/entity"
 	"authz/internal/schema"
 	"authz/internal/util"
 
 	"github.com/redis/go-redis/v9"
+	"github.com/skyrocket-qy/erx"
 	"github.com/skyrocket-qy/protos/gen/authzpb/rbacpb"
 	authzpbv1 "github.com/skyrocket-qy/protos/gen/authzpb/v1"
 	pkgpbv1 "github.com/skyrocket-qy/protos/gen/pkgpb/v1"
@@ -65,7 +65,7 @@ func (r *ZanzibarLogicImpl) List(c context.Context, in *authzpbv1.ListTuplesIn) 
 	validFilterFields := []string{"sbj_ns", "sbj_id", "relation", "obj_ns", "obj_id"}
 
 	if in.GetCursor() == nil {
-		return nil, errors.New("cursor is nil")
+		return nil, erx.New(util.ErrBadRequest, "cursor is nil")
 	}
 
 	pager := in.GetCursor()
@@ -209,7 +209,7 @@ func (r *ZanzibarLogicImpl) Delete(c context.Context, in *authzpbv1.DeleteTuples
 			return err
 		}
 	default:
-		return errors.New("mode type error")
+		return erx.New(util.ErrBadRequest, "mode type error")
 	}
 
 	return nil

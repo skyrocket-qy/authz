@@ -1,13 +1,14 @@
 package schema
 
 import (
-	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"authz/internal/util"
+
 	"github.com/rs/zerolog/log"
+	"github.com/skyrocket-qy/erx"
 	"gopkg.in/yaml.v3"
 )
 
@@ -48,11 +49,11 @@ func NewSchema() (*Schema, error) {
 func getYamlFilesFromEnv() ([]string, error) {
 	pathStr := os.Getenv("SCHEMA_PATH")
 	if strings.HasPrefix(pathStr, "/") {
-		return nil, fmt.Errorf("schema path %s is not allowed", pathStr)
+		return nil, erx.Newf(util.ErrBadRequest, "schema path %s is not allowed", pathStr)
 	}
 
 	if pathStr == "" {
-		return nil, errors.New("CONFIG_PATHS not set")
+		return nil, erx.New(util.ErrBadRequest, "CONFIG_PATHS not set")
 	}
 
 	paths := strings.Split(pathStr, ",")
@@ -171,7 +172,7 @@ func (r *UsersetRewrite) Validate() error {
 		count++
 
 		if r.Exclusion.Base == nil || r.Exclusion.Subtract == nil {
-			return errors.New("exclusion must have both base and subtract")
+			return erx.New(util.ErrBadRequest, "exclusion must have both base and subtract")
 		}
 
 		if err := r.Exclusion.Base.Validate(); err != nil {
@@ -187,7 +188,7 @@ func (r *UsersetRewrite) Validate() error {
 		count++
 
 		if r.ComputedUserSet.Relation == "" {
-			return errors.New("computed_userset must have relation")
+			return erx.New(util.ErrBadRequest, "computed_userset must have relation")
 		}
 	}
 
@@ -195,21 +196,21 @@ func (r *UsersetRewrite) Validate() error {
 		count++
 
 		if r.TupleToUserset.Tupleset == nil || r.TupleToUserset.ComputedUserset == nil {
-			return errors.New("tuple_to_userset must have both tupleset and computed_userset")
+			return erx.New(util.ErrBadRequest, "tuple_to_userset must have both tupleset and computed_userset")
 		}
 
 		if r.TupleToUserset.Tupleset.Relation == nil ||
 			r.TupleToUserset.ComputedUserset.Relation == "" {
-			return errors.New("tuple_to_userset fields must have non-empty relation")
+			return erx.New(util.ErrBadRequest, "tuple_to_userset fields must have non-empty relation")
 		}
 	}
 
 	if count > 1 {
-		return errors.New("only one rewrite type can be set in UsersetRewrite")
+		return erx.New(util.ErrBadRequest, "only one rewrite type can be set in UsersetRewrite")
 	}
 
 	if count == 0 {
-		return errors.New("at least one rewrite type must be set in UsersetRewrite")
+		return erx.New(util.ErrBadRequest, "at least one rewrite type must be set in UsersetRewrite")
 	}
 
 	return nil
@@ -241,7 +242,7 @@ func (s *Schema) Build() {
 func (s *Schema) Union(schema2 *Schema) error {
 	for ns, nsEntry := range schema2.Namespaces {
 		if _, exists := s.Namespaces[ns]; exists {
-			return fmt.Errorf("namespace %s already exists", ns)
+			return erx.Newf(util.ErrDuplicate, "namespace %s already exists", ns)
 		}
 
 		s.Namespaces[ns] = nsEntry

@@ -2,9 +2,10 @@ package util
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"sync/atomic"
+
+	"github.com/skyrocket-qy/erx"
 )
 
 type Closer func(context.Context) error
@@ -129,7 +130,7 @@ func (l *LifecycleParallel) Shutdown(c context.Context) error {
 			return err
 		}
 
-		return fmt.Errorf("failed to shutdown: %v", err)
+		return erx.Newf(ErrUnknown, "failed to shutdown: %v", err)
 	}
 
 	return nil
