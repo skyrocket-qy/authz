@@ -1,9 +1,10 @@
-package rbac
+package zanzibar
 
 import (
 	"context"
 
 	"authz/internal/entity"
+	"authz/internal/entity/model"
 	"authz/internal/schema"
 	"authz/internal/util"
 
@@ -76,7 +77,7 @@ func (r *ZanzibarLogicImpl) List(c context.Context, in *authzpbv1.ListTuplesIn) 
 		return nil, erx.W(err)
 	}
 
-	tupleModels := []*Tuple{}
+	tupleModels := []*model.Tuple{}
 	tx := r.db(c).
 		Limit(int(pager.GetSize())).
 		Scopes(
@@ -154,7 +155,7 @@ func (r *ZanzibarLogicImpl) List(c context.Context, in *authzpbv1.ListTuplesIn) 
 func (r *ZanzibarLogicImpl) Find(c context.Context, filter *authzpbv1.TupleFilter) (
 	[]*authzpbv1.Tuple, error,
 ) {
-	tuples := []*Tuple{}
+	tuples := []*model.Tuple{}
 	if err := r.db(c).Scopes(ApplyTupleFilter(filter)).Find(&tuples).Error; err != nil {
 		return nil, erx.W(err)
 	}
@@ -174,7 +175,7 @@ func (r *ZanzibarLogicImpl) Find(c context.Context, filter *authzpbv1.TupleFilte
 }
 
 func (r *ZanzibarLogicImpl) Create(c context.Context, tuple *authzpbv1.Tuple) error {
-	return r.db(c).Create(&Tuple{
+	return r.db(c).Create(&model.Tuple{
 		SbjNs:    tuple.GetSbjNs(),
 		SbjId:    tuple.GetSbjId(),
 		Relation: tuple.GetRel(),
@@ -188,7 +189,7 @@ func (r *ZanzibarLogicImpl) Delete(c context.Context, in *authzpbv1.DeleteTuples
 	case *authzpbv1.DeleteTuplesIn_Filter:
 		filter := req.Filter
 
-		return r.db(c).Scopes(ApplyTupleFilter(filter)).Delete(&Tuple{}).Error
+		return r.db(c).Scopes(ApplyTupleFilter(filter)).Delete(&model.Tuple{}).Error
 
 	case *authzpbv1.DeleteTuplesIn_DeleteTuples:
 		tuples := req.DeleteTuples.GetTuples()
@@ -200,12 +201,12 @@ func (r *ZanzibarLogicImpl) Delete(c context.Context, in *authzpbv1.DeleteTuples
 
 		return r.db(c).
 			Where("(sbj_ns, sbj_id, rel, obj_ns, obj_id) IN ?", values).
-			Delete(&Tuple{}).Error
+			Delete(&model.Tuple{}).Error
 
 	case *authzpbv1.DeleteTuplesIn_DeleteTupleIds:
 		if err := r.db(c).
 			Where("id IN ?", req.DeleteTupleIds.GetIds()).
-			Delete(&Tuple{}).Error; err != nil {
+			Delete(&model.Tuple{}).Error; err != nil {
 			return erx.W(err)
 		}
 	default:
@@ -263,7 +264,7 @@ func (r *ZanzibarLogicImpl) GetPermissions(
 	perms []*rbacpb.Permission, err error,
 ) {
 	// Step 1: Load direct tuples for subject
-	var tuples []*Tuple
+	var tuples []*model.Tuple
 	if err := r.db(c).Where("sbj_ns = ? AND sbj_id = ?", sbj.GetNs(), sbj.GetId()).Find(&tuples).
 		Error; err != nil {
 		return nil, erx.W(err)

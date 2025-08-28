@@ -2,6 +2,7 @@ package rbac
 
 import (
 	"authz/internal/util"
+	"authz/internal/zanzibar"
 	"context"
 
 	"connectrpc.com/connect"
@@ -14,11 +15,11 @@ import (
 var _ rbacpbconnect.RbacServiceHandler = (*Handler)(nil)
 
 type Handler struct {
-	zLogic    ZanzibarLogic
+	zLogic    zanzibar.ZanzibarLogic
 	rbacLogic RbacLogic
 }
 
-func NewHandler(zLogic ZanzibarLogic, rbacLogic RbacLogic) *Handler {
+func NewHandler(zLogic zanzibar.ZanzibarLogic, rbacLogic RbacLogic) *Handler {
 	return &Handler{
 		zLogic:    zLogic,
 		rbacLogic: rbacLogic,

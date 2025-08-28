@@ -1,4 +1,4 @@
-package rbac_test
+package zanzibar_test
 
 import (
 	"fmt"

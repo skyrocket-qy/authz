@@ -9,6 +9,7 @@ import (
 	"authz/internal/service"
 	"authz/internal/service/redis"
 	"authz/internal/util"
+	"authz/internal/zanzibar"
 	"context"
 
 	"github.com/google/wire"
@@ -22,10 +23,10 @@ func NewRbacHandler(context.Context, *util.LifecycleParallel, *gorm.DB) (*rbac.H
 
 		service.NewKafkaReader,
 
-		rbac.NewZanzibarMemory,
-		wire.Bind(new(rbac.ZanzibarMemory), new(*rbac.ZanzibarMemoryImpl)),
-		rbac.NewZanzibarLogic,
-		wire.Bind(new(rbac.ZanzibarLogic), new(*rbac.ZanzibarLogicImpl)),
+		zanzibar.NewZanzibarMemory,
+		wire.Bind(new(zanzibar.ZanzibarMemory), new(*zanzibar.ZanzibarMemoryImpl)),
+		zanzibar.NewZanzibarLogic,
+		wire.Bind(new(zanzibar.ZanzibarLogic), new(*zanzibar.ZanzibarLogicImpl)),
 		rbac.NewRbacLogic,
 		wire.Bind(new(rbac.RbacLogic), new(*rbac.RbacLogicImpl)),
 		rbac.NewHandler,

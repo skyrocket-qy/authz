@@ -1,4 +1,4 @@
-package rbac
+package zanzibar
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 
 	"authz/internal/config"
 	"authz/internal/entity"
+	"authz/internal/entity/model"
 	"authz/internal/schema"
 	"authz/internal/util"
 
@@ -202,7 +203,7 @@ func (e *ZanzibarMemoryImpl) build(c context.Context) error {
 
 	r := e.kafkaR
 
-	cp := GraphCheckpoint{}
+	cp := model.GraphCheckpoint{}
 
 	tx := e.db.WithContext(c).Take(&cp)
 	if err := tx.Error; err != nil {
@@ -253,7 +254,7 @@ func (e *ZanzibarMemoryImpl) build(c context.Context) error {
 
 func (e *ZanzibarMemoryImpl) applyMessage(m kafka.Message) error {
 	type Val struct {
-		Tuple
+		model.Tuple
 
 		Op string `json:"__op"`
 	}
@@ -317,7 +318,7 @@ func (e *ZanzibarMemoryImpl) SyncGraphCheckpoint(c context.Context) {
 		case <-c.Done():
 			return
 		case <-ticker.C:
-			cp := GraphCheckpoint{}
+			cp := model.GraphCheckpoint{}
 
 			tx := e.db.WithContext(c).Take(&cp)
 			if err := tx.Error; err != nil {

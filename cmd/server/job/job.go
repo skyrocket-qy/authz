@@ -3,11 +3,11 @@ package job
 import (
 	"context"
 
-	"authz/internal/engine/rbac"
 	"authz/internal/service"
 	"authz/internal/service/database"
 	"authz/internal/service/logx"
 	"authz/internal/util"
+	"authz/internal/zanzibar"
 
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -44,7 +44,7 @@ func start(cmd *cobra.Command, args []string) {
 
 	kafkaR := service.NewKafkaReader(lc)
 
-	zm, err := rbac.NewZanzibarMemory(context.TODO(), lc, db, nil, kafkaR)
+	zm, err := zanzibar.NewZanzibarMemory(context.TODO(), lc, db, nil, kafkaR)
 	if err != nil {
 		log.Err(err).Msg("Failed to init rbac engine")
 

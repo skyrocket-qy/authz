@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"authz/internal/config"
-	"authz/internal/engine/rbac"
+	"authz/internal/entity/model"
 	"authz/internal/util"
 
 	"github.com/rs/zerolog/log"
@@ -72,7 +72,7 @@ func New(lc *util.LifecycleParallel) (db *gorm.DB, err error) {
 		return sqlDB.Close()
 	})
 
-	if err := db.AutoMigrate(&rbac.Tuple{}, &rbac.GraphCheckpoint{}); err != nil {
+	if err := db.AutoMigrate(&model.Tuple{}, &model.GraphCheckpoint{}); err != nil {
 		return nil, erx.W(err)
 	}
 

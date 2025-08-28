@@ -4,8 +4,10 @@ import (
 	"context"
 	"strconv"
 
+	"authz/internal/entity/model"
 	"authz/internal/schema"
 	"authz/internal/util"
+	"authz/internal/zanzibar"
 
 	"github.com/skyrocket-qy/erx"
 	rbacpb "github.com/skyrocket-qy/protos/gen/authzpb/rbacpb"
@@ -49,11 +51,11 @@ var _ RbacLogic = (*RbacLogicImpl)(nil)
 
 type RbacLogicImpl struct {
 	pgdb    *gorm.DB
-	zbLogic ZanzibarLogic
+	zbLogic zanzibar.ZanzibarLogic
 	schema  *schema.Schema
 }
 
-func NewRbacLogic(zbLogic ZanzibarLogic, pgdb *gorm.DB, schema *schema.Schema) *RbacLogicImpl {
+func NewRbacLogic(zbLogic zanzibar.ZanzibarLogic, pgdb *gorm.DB, schema *schema.Schema) *RbacLogicImpl {
 	return &RbacLogicImpl{
 		zbLogic: zbLogic,
 		pgdb:    pgdb,
@@ -468,7 +470,7 @@ func (r *RbacLogicImpl) ListPermissionByResource(
 ) (
 	*rbacpb.ListPermissionByResourceOut, error,
 ) {
-	tuples := []*Tuple{}
+	tuples := []*model.Tuple{}
 	if err := r.db(c).Where(
 		"sbj_ns = role AND sbj_id = ? AND obj_ns = ? AND obj_id = ?",
 		in.GetRoleId(), in.GetResourceNs(), in.GetResourceId()).
