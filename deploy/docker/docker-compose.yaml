@@ -61,22 +61,19 @@ services:
       - "max_wal_senders=10"
       - "-c"
       - "listen_addresses=*"
-  # authz:
-  #   build:
-  #     context: .
-  #     dockerfile: authz.Dockerfile
-  #   image: authz:latest
-  #   container_name: authz
-  #   ports:
-  #     - "8080:8080"
-  #   env_file:
-  #     - .env.docker
-  #   mem_limit: 8g       # max memory
-  #   cpus: 4 
-  #   depends_on:
-  #     - kafka
-  #     - postgres
-  #     - connect
+  authz:
+    image: authz:latest
+    container_name: authz
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env.docker
+    mem_limit: 12g       # max memory
+    cpus: 8 
+    depends_on:
+      - kafka
+      - postgres
+      - connect
   # job:
   #   build:
   #     context: .

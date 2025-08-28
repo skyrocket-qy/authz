@@ -8,4 +8,4 @@ WORKDIR /app
 COPY schema.yaml .
 COPY --from=0 /builder/server .
 # COPY .env .
-CMD ["./server", "-e", "dev"]
+CMD ["./server", "-e", "prod"]

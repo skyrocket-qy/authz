@@ -76,15 +76,37 @@ Here is a simplified diagram of the architecture:
 
 ## 🚀 Performance
 
-The following benchmarks were run on a MacBook Pro with an i7-9750H CPU @ 2.60GHz but limit in docker container with 4 cpus and 8g memory. The tests were run for 10 seconds with a total of 110,000 tuples.
+The following benchmarks were run on a MacBook Pro with an i7-9750H CPU @ 2.60GHz but limit in docker container with 8 cpus and 12g memory. The tests were run for 30 seconds with a total of 110,000 tuples.
 
-| Virtual Users (VUs) | Requests per Second (RPS) | Average Latency | p95 Latency |
+```yaml
+roles     = 10000
+resources = 1000
+users     = 100000
+permission = "read"
+total tuples = 110000
+```
+
+### Check once
+latency: 792us
+
+### Soak test
+
+| Virtual Users (VUs) | Requests per Second (RPS) | Med Latency     | p95 Latency |
 | ------------------- | ------------------------- | --------------- | ----------- |
-| 1                   | 1,001                     | 927µs           | 1.48ms      |
-| 50                  | 4,100                     | 12.08ms         | 31.29ms     |
-| 100                 | 4,198                     | 23.67ms         | 49.2ms      |
-| 200                 | 4,086                     | 48.68ms         | 86.54ms     |
-| 500                 | 4,116                     | 119.86ms        | 204.34ms    |
+| 10                  | 4,277                     | 2ms             | 3.99ms      |
+| 50                  | 5,834                     | 6.37ms          | 21.91ms     |
+| 200                 | 5,606                     | 29.45ms         | 86.46ms     |
+| 500                 | 5,148                     | 73.24ms         | 257.07ms    |
+
+### Load test
+
+| Requests per Second (RPS) | Med Latency     | p95 Latency |
+| ------------------------- | ------------    | ----------- |
+| 50                        | 1.35ms          | 2.3ms       |
+| 200                       | 1.07ms          | 1.88ms      |
+| 500                       | 948us           | 2.52ms      |
+| 2000                      | 940us           | 3.37ms      |
+| 4000                      | 1.9ms           | 52.78ms     |
 
 ## 🏁 Getting Started
 

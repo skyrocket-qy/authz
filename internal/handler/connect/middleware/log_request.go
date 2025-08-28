@@ -30,8 +30,6 @@ func NewLogRequest() connect.UnaryInterceptorFunc {
 						log.Printf("Request %s failed: err=%v\n",
 							req.Spec().Procedure, err)
 					}
-				} else {
-					log.Printf("Request %s succeeded\n", req.Spec().Procedure)
 				}
 
 				return res, err

@@ -90,7 +90,8 @@ func RunServer(cmd *cobra.Command, args []string) {
 	}
 
 	if err := startConnectServer(ctx, lc); err != nil {
-		log.Err(err).Msg("Failed to start connect server")
+		util.LogE(err)
+		log.Error().Err(err).Msg("Failed to start connect server")
 		return
 	}
 
@@ -150,7 +151,7 @@ func startConnectServer(ctx context.Context, lc *util.LifecycleParallel) error {
 		connect.WithInterceptors(middleware.NewLogRequest()),
 	}
 
-	if config.Env == config.EnvProd {
+	if config.Env != config.EnvProd {
 		otelInterceptor, err := otelconnect.NewInterceptor()
 		if err != nil {
 			return erx.W(err, "failed to init otel interceptor")

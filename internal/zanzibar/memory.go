@@ -298,8 +298,6 @@ func (e *ZanzibarMemoryImpl) sync(c context.Context) {
 				continue
 			}
 
-			log.Debug().Msg("read kafk amessage")
-
 			if err := e.applyMessage(m); err != nil {
 				log.Error().Err(err).Msg("Failed to apply message")
 
