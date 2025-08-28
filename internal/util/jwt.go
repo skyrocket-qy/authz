@@ -2,6 +2,7 @@ package util
 
 import (
 	"authz/internal/config"
+	"errors"
 	"strconv"
 	"time"
 
@@ -11,6 +12,10 @@ import (
 )
 
 func GenerateJWT(userID uint) (string, error) {
+	if config.Conf.Jwt.Secret == "" {
+		return "", errors.New("JWT secret is not configured")
+	}
+
 	claims := jwt.RegisteredClaims{
 		Subject:   strconv.FormatUint(uint64(userID), 10),
 		ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
