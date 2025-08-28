@@ -16,7 +16,7 @@ require (
 	github.com/rs/cors v1.11.1
 	github.com/rs/zerolog v1.34.0
 	github.com/segmentio/kafka-go v0.4.49
-	github.com/skyrocket-qy/erx v0.3.22
+	github.com/skyrocket-qy/erx v0.3.25
 	github.com/skyrocket-qy/gox v1.2.29
 	github.com/skyrocket-qy/protos v0.1.52
 	github.com/skyrocket-qy/srand v0.1.0

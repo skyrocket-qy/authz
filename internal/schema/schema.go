@@ -15,7 +15,7 @@ import (
 func NewSchema() (*Schema, error) {
 	filePaths, err := getYamlFilesFromEnv()
 	if err != nil {
-		return nil, err
+		return nil, erx.W(err)
 	}
 
 	log.Info().Msgf("schema files: %v", filePaths)
@@ -28,18 +28,18 @@ func NewSchema() (*Schema, error) {
 
 		f, err := os.ReadFile(clean)
 		if err != nil {
-			return nil, err
+			return nil, erx.W(err)
 		}
 
 		err = yaml.Unmarshal(f, &tmpSchema)
 		if err != nil {
-			return nil, err
+			return nil, erx.W(err)
 		}
 
 		tmpSchema.Build()
 
 		if err := schema.Union(&tmpSchema); err != nil {
-			return nil, err
+			return nil, erx.W(err)
 		}
 	}
 
@@ -65,14 +65,14 @@ func getYamlFilesFromEnv() ([]string, error) {
 
 		fi, err := os.Stat(p)
 		if err != nil {
-			return nil, err
+			return nil, erx.W(err)
 		}
 
 		if fi.IsDir() {
 			// only scan files directly in directory (non-recursive)
 			entries, err := os.ReadDir(p)
 			if err != nil {
-				return nil, err
+				return nil, erx.W(err)
 			}
 
 			for _, entry := range entries {
@@ -153,7 +153,7 @@ func (r *UsersetRewrite) Validate() error {
 
 		for _, child := range r.Union {
 			if err := child.Validate(); err != nil {
-				return err
+				return erx.W(err)
 			}
 		}
 	}
@@ -163,7 +163,7 @@ func (r *UsersetRewrite) Validate() error {
 
 		for _, child := range r.Intersection {
 			if err := child.Validate(); err != nil {
-				return err
+				return erx.W(err)
 			}
 		}
 	}
@@ -176,11 +176,11 @@ func (r *UsersetRewrite) Validate() error {
 		}
 
 		if err := r.Exclusion.Base.Validate(); err != nil {
-			return err
+			return erx.W(err)
 		}
 
 		if err := r.Exclusion.Subtract.Validate(); err != nil {
-			return err
+			return erx.W(err)
 		}
 	}
 

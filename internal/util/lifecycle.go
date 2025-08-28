@@ -25,7 +25,7 @@ func (l *SimpleLifecycle) Add(fn Closer) {
 func (l *SimpleLifecycle) Shutdown(c context.Context) error {
 	for i := len(l.closers) - 1; i >= 0; i-- {
 		if err := l.closers[i](c); err != nil {
-			return err
+			return erx.W(err)
 		}
 	}
 
@@ -127,7 +127,7 @@ func (l *LifecycleParallel) Shutdown(c context.Context) error {
 
 	if err := firstErr.Load(); err != nil {
 		if err, ok := err.(error); ok {
-			return err
+			return erx.W(err)
 		}
 
 		return erx.Newf(ErrUnknown, "failed to shutdown: %v", err)

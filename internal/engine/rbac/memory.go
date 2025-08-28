@@ -50,7 +50,7 @@ func NewZanzibarMemory(c context.Context, lc *util.LifecycleParallel, db *gorm.D
 	st := time.Now()
 
 	if err := engine.build(c); err != nil {
-		return nil, err
+		return nil, erx.W(err)
 	}
 
 	log.Info().
@@ -246,7 +246,7 @@ func (e *ZanzibarMemoryImpl) build(c context.Context) error {
 		}
 
 		if err := e.applyMessage(m); err != nil {
-			return err
+			return erx.W(err)
 		}
 	}
 }
@@ -260,7 +260,7 @@ func (e *ZanzibarMemoryImpl) applyMessage(m kafka.Message) error {
 
 	var val Val
 	if err := json.Unmarshal(m.Value, &val); err != nil {
-		return err
+		return erx.W(err)
 	}
 
 	sbj := entity.Instance{Ns: val.SbjNs, Id: val.SbjId}

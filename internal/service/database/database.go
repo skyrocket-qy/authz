@@ -56,9 +56,7 @@ func New(lc *util.LifecycleParallel) (db *gorm.DB, err error) {
 	log.Print(connStr)
 	db, err = gorm.Open(postgres.Open(connStr), &gormConf)
 	if err != nil {
-		err = erx.W(err).SetCode(util.ErrDBUnavailable)
-
-		return db, err
+		return db, erx.W(err).SetCode(util.ErrDBUnavailable)
 	}
 
 	lc.Add(db, func(c context.Context) error {
@@ -68,15 +66,15 @@ func New(lc *util.LifecycleParallel) (db *gorm.DB, err error) {
 
 		sqlDB, err := db.DB()
 		if err != nil {
-			return err
+			return erx.W(err)
 		}
 
 		return sqlDB.Close()
 	})
 
 	if err := db.AutoMigrate(&rbac.Tuple{}, &rbac.GraphCheckpoint{}); err != nil {
-		return nil, err
+		return nil, erx.W(err)
 	}
 
-	return db, err
+	return db, nil
 }

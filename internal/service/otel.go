@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/skyrocket-qy/erx"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
@@ -46,7 +47,7 @@ func SetupOTelSDK(ctx context.Context) (shutdown func(context.Context) error, er
 	if err != nil {
 		handleErr(err)
 
-		return shutdown, err
+		return shutdown, erx.W(err)
 	}
 
 	shutdownFuncs = append(shutdownFuncs, tracerProvider.Shutdown)
@@ -57,7 +58,7 @@ func SetupOTelSDK(ctx context.Context) (shutdown func(context.Context) error, er
 	if err != nil {
 		handleErr(err)
 
-		return shutdown, err
+		return shutdown, erx.W(err)
 	}
 
 	shutdownFuncs = append(shutdownFuncs, meterProvider.Shutdown)
@@ -77,7 +78,7 @@ func newTracerProvider() (*trace.TracerProvider, error) {
 	traceExporter, err := stdouttrace.New(
 		stdouttrace.WithPrettyPrint())
 	if err != nil {
-		return nil, err
+		return nil, erx.W(err)
 	}
 
 	tracerProvider := trace.NewTracerProvider(
@@ -93,7 +94,7 @@ func newTracerProvider() (*trace.TracerProvider, error) {
 func newMeterProvider() (*metric.MeterProvider, error) {
 	metricExporter, err := stdoutmetric.New()
 	if err != nil {
-		return nil, err
+		return nil, erx.W(err)
 	}
 
 	meterProvider := metric.NewMeterProvider(

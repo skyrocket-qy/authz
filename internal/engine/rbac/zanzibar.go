@@ -73,7 +73,7 @@ func (r *ZanzibarLogicImpl) List(c context.Context, in *authzpbv1.ListTuplesIn) 
 
 	filterScope, err := util.ApplyFilter(in.GetFilters(), validFilterFields, nil)
 	if err != nil {
-		return nil, err
+		return nil, erx.W(err)
 	}
 
 	tupleModels := []*Tuple{}
@@ -87,7 +87,7 @@ func (r *ZanzibarLogicImpl) List(c context.Context, in *authzpbv1.ListTuplesIn) 
 	if cursorVal != nil {
 		nextCursorData := &pkgpbv1.CursorData{}
 		if err := proto.Unmarshal(cursorVal, nextCursorData); err != nil {
-			return nil, err
+			return nil, erx.W(err)
 		}
 
 		tx = tx.Scopes(util.ApplyCursor(nextCursorData))
@@ -95,7 +95,7 @@ func (r *ZanzibarLogicImpl) List(c context.Context, in *authzpbv1.ListTuplesIn) 
 
 	if err := tx.
 		Find(&tupleModels).Error; err != nil {
-		return nil, err
+		return nil, erx.W(err)
 	}
 
 	tuples := make([]*authzpbv1.Tuple, len(tupleModels))
@@ -145,7 +145,7 @@ func (r *ZanzibarLogicImpl) List(c context.Context, in *authzpbv1.ListTuplesIn) 
 
 	out.NextCursor, err = proto.Marshal(cursorData)
 	if err != nil {
-		return nil, err
+		return nil, erx.W(err)
 	}
 
 	return out, nil
@@ -156,7 +156,7 @@ func (r *ZanzibarLogicImpl) Find(c context.Context, filter *authzpbv1.TupleFilte
 ) {
 	tuples := []*Tuple{}
 	if err := r.db(c).Scopes(ApplyTupleFilter(filter)).Find(&tuples).Error; err != nil {
-		return nil, err
+		return nil, erx.W(err)
 	}
 
 	tuplesProto := make([]*authzpbv1.Tuple, 0, len(tuples))
@@ -206,7 +206,7 @@ func (r *ZanzibarLogicImpl) Delete(c context.Context, in *authzpbv1.DeleteTuples
 		if err := r.db(c).
 			Where("id IN ?", req.DeleteTupleIds.GetIds()).
 			Delete(&Tuple{}).Error; err != nil {
-			return err
+			return erx.W(err)
 		}
 	default:
 		return erx.New(util.ErrBadRequest, "mode type error")
@@ -230,7 +230,7 @@ func (r *ZanzibarLogicImpl) Check(c context.Context, in *authzpbv1.CheckIn) (
 
 	ok, err := r.zm.Check(c, user, in.GetRel(), obj)
 	if err != nil {
-		return nil, err
+		return nil, erx.W(err)
 	}
 
 	return &authzpbv1.CheckOut{IsAllowed: ok}, nil
@@ -264,8 +264,9 @@ func (r *ZanzibarLogicImpl) GetPermissions(
 ) {
 	// Step 1: Load direct tuples for subject
 	var tuples []*Tuple
-	if err := r.db(c).Where("sbj_ns = ? AND sbj_id = ?", sbj.GetNs(), sbj.GetId()).Find(&tuples).Error; err != nil {
-		return nil, err
+	if err := r.db(c).Where("sbj_ns = ? AND sbj_id = ?", sbj.GetNs(), sbj.GetId()).Find(&tuples).
+		Error; err != nil {
+		return nil, erx.W(err)
 	}
 
 	// Step 2: Group by namespace/object

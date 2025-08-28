@@ -3,6 +3,8 @@ package util
 import (
 	"bytes"
 	"encoding/gob"
+
+	"github.com/skyrocket-qy/erx"
 )
 
 func EncodeGob(in any) ([]byte, error) {
@@ -10,7 +12,7 @@ func EncodeGob(in any) ([]byte, error) {
 
 	enc := gob.NewEncoder(&buf)
 	if err := enc.Encode(in); err != nil {
-		return nil, err
+		return nil, erx.W(err)
 	}
 
 	return buf.Bytes(), nil
@@ -19,7 +21,7 @@ func EncodeGob(in any) ([]byte, error) {
 func DecodeGob(src []byte, target any) error {
 	dec := gob.NewDecoder(bytes.NewReader(src))
 	if err := dec.Decode(target); err != nil {
-		return err
+		return erx.W(err)
 	}
 
 	return nil

@@ -24,6 +24,7 @@ import (
 	"connectrpc.com/otelconnect"
 	"github.com/rs/cors"
 	"github.com/rs/zerolog/log"
+	"github.com/skyrocket-qy/erx"
 	"github.com/skyrocket-qy/protos/gen/authzpb/rbacpb/rbacpbconnect"
 	"github.com/skyrocket-qy/protos/gen/authzpb/v1/authzpbv1connect"
 	"github.com/spf13/cobra"
@@ -100,18 +101,18 @@ func RunServer(cmd *cobra.Command, args []string) {
 
 func setupBase(ctx context.Context, lc *util.LifecycleParallel) error {
 	if err := util.NewConfig(); err != nil {
-		return err
+		return erx.W(err)
 	}
 
 	if err := logx.InitLogger(); err != nil {
-		return err
+		return erx.W(err)
 	}
 
 	// Use the application context here instead of context.TODO()
 	if config.Env != config.EnvProd {
 		shutdown, err := service.SetupOTelSDK(ctx)
 		if err != nil {
-			return err
+			return erx.W(err)
 		}
 		lc.Add("otel", shutdown)
 	}
@@ -122,15 +123,13 @@ func setupBase(ctx context.Context, lc *util.LifecycleParallel) error {
 func startConnectServer(ctx context.Context, lc *util.LifecycleParallel) error {
 	db, err := database.New(lc)
 	if err != nil {
-		log.Err(err).Msg("Failed to init db")
-		return err
+		return erx.W(err, "failed to init db")
 	}
 
 	// Use the application context here instead of context.TODO()
 	connectH, err := wire.NewRbacHandler(ctx, lc, db)
 	if err != nil {
-		log.Err(err).Msg("Failed to init connect handler")
-		return err
+		return erx.W(err, "failed to init connect handler")
 	}
 
 	restH := rest.NewHandler(db)
@@ -154,8 +153,7 @@ func startConnectServer(ctx context.Context, lc *util.LifecycleParallel) error {
 	if config.Env == config.EnvProd {
 		otelInterceptor, err := otelconnect.NewInterceptor()
 		if err != nil {
-			log.Err(err).Msg("Failed to init otel interceptor")
-			return err
+			return erx.W(err, "failed to init otel interceptor")
 		}
 		handlerOpts = append(handlerOpts, connect.WithInterceptors(otelInterceptor))
 	}
