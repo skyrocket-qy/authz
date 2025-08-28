@@ -215,6 +215,7 @@ func (h *Handler) DeleteTuples(
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
+// TODO: directly use code to decide has persmission or not can faster
 func (h *Handler) Check(
 	ctx context.Context, req *connect.Request[authzpbv1.CheckIn]) (
 	*connect.Response[authzpbv1.CheckOut], error,

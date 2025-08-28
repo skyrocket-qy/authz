@@ -88,6 +88,7 @@ total tuples = 110000
 
 ### Check once
 latency: 792us
+handler time: 28us
 
 ### Soak test
 
