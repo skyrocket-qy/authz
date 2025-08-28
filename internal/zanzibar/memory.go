@@ -154,7 +154,7 @@ func (e *ZanzibarMemoryImpl) evalTupleToUserset(tupleToUserset *schema.TupleToUs
 ) bool {
 	reWriteObjs := e.getSbjs(
 		[]entity.Instance{obj, {Ns: obj.Ns, Id: "*"}},
-		tupleToUserset.ComputedUserset.Relation,
+		*tupleToUserset.Tupleset.Relation,
 	)
 
 	for nextObj := range reWriteObjs {
