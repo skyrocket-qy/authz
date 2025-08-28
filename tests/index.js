@@ -18,31 +18,31 @@ export function setup() {
     let resources = 1000
     let users     = 100000
 
-    // for (let i = 0; i < users; i++){
-    //     let roleId = i % roles
-    //     assignRole(i,roleId)
-    // }
+    for (let i = 0; i < users; i++){
+        let roleId = i % roles
+        assignRole(i,roleId)
+    }
 
-    // for (let i = 0; i < roles; i++){
-    //     let resId = i % resources
-    //     grantPerm(i, resId, "read")
-    // }
+    for (let i = 0; i < roles; i++){
+        let resId = i % resources
+        grantPerm(i, resId, "read")
+    }
 
-    // for (let i = 0; i < 17; i++) {
-    //     const userNum = Math.floor(users / 17) * i;
-    //     const roleNum = userNum % roles;
-    //     let resourceNum = roleNum % resources;
+    for (let i = 0; i < 17; i++) {
+        const userNum = Math.floor(users / 17) * i;
+        const roleNum = userNum % roles;
+        let resourceNum = roleNum % resources;
 
-    //     if (i % 2 === 0) {
-    //         resourceNum = (resourceNum + 1) % resources;
-    //     }
+        if (i % 2 === 0) {
+            resourceNum = (resourceNum + 1) % resources;
+        }
 
-    //     enforcements.push({
-    //         userId: userNum,
-    //         resourceId: resourceNum,
-    //         perm: "read",
-    //     });
-    // }
+        enforcements.push({
+            userId: userNum,
+            resourceId: resourceNum,
+            perm: "read",
+        });
+    }
 
     return { enforcements };
 }

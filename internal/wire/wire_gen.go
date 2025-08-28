@@ -12,6 +12,7 @@ import (
 	"authz/internal/service"
 	"authz/internal/service/redis"
 	"authz/internal/util"
+	"authz/internal/zanzibar"
 	"context"
 	"gorm.io/gorm"
 )
@@ -25,11 +26,11 @@ func NewRbacHandler(contextContext context.Context, lifecycleParallel *util.Life
 		return nil, err
 	}
 	reader := service.NewKafkaReader(lifecycleParallel)
-	zanzibarMemoryImpl, err := rbac.NewZanzibarMemory(contextContext, lifecycleParallel, db, schemaSchema, reader)
+	zanzibarMemoryImpl, err := zanzibar.NewZanzibarMemory(contextContext, lifecycleParallel, db, schemaSchema, reader)
 	if err != nil {
 		return nil, err
 	}
-	zanzibarLogicImpl := rbac.NewZanzibarLogic(db, client, zanzibarMemoryImpl, schemaSchema)
+	zanzibarLogicImpl := zanzibar.NewZanzibarLogic(db, client, zanzibarMemoryImpl, schemaSchema)
 	rbacLogicImpl := rbac.NewRbacLogic(zanzibarLogicImpl, db, schemaSchema)
 	handler := rbac.NewHandler(zanzibarLogicImpl, rbacLogicImpl)
 	return handler, nil

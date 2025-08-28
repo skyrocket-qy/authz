@@ -49,7 +49,7 @@ The update model works as follows:
 
 Here is a simplified diagram of the architecture:
 
-```
+```text
 +----------+      +-----------+      +-----------------+
 |          |----->|           |----->|                 |
 |  Client  |      |   AuthZ   |      |  In-Memory      |
@@ -76,7 +76,7 @@ Here is a simplified diagram of the architecture:
 
 ## 🚀 Performance
 
-The following benchmarks were run on a MacBook Pro with an i7-9750H CPU @ 2.60GHz and 32 GB of RAM. The tests were run for 10 seconds with a total of 110,000 tuples.
+The following benchmarks were run on a MacBook Pro with an i7-9750H CPU @ 2.60GHz but limit in docker container with 4 cpus and 8g memory. The tests were run for 10 seconds with a total of 110,000 tuples.
 
 | Virtual Users (VUs) | Requests per Second (RPS) | Average Latency | p95 Latency |
 | ------------------- | ------------------------- | --------------- | ----------- |
@@ -90,7 +90,7 @@ The following benchmarks were run on a MacBook Pro with an i7-9750H CPU @ 2.60GH
 
 To get started with MemZ, you'll need to have the following prerequisites installed:
 
-- **Go:** Version 1.22 or higher.
+- **Go:** Version 1.25 or higher.
 - **Docker:** To run the required services.
 
 ### 1. Clone the Repository

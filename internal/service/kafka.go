@@ -12,7 +12,7 @@ import (
 )
 
 func NewKafkaReader(lc *util.LifecycleParallel) *kafka.Reader {
-	log.Info().Msgf("start kafka reader")
+	log.Info().Msgf("start kafka reader on %s:%s", config.Conf.Kafka.Host, config.Conf.Kafka.Port)
 
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers: []string{fmt.Sprintf("%s:%s", config.Conf.Kafka.Host, config.Conf.Kafka.Port)},

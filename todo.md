@@ -11,3 +11,4 @@
 - add error hanling
 - use ai do abnormal analyze
 - metric with grafana/mimir
+- Directly export zanzibar package to use on other authz project
