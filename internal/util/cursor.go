@@ -10,7 +10,7 @@ import (
 
 func ApplyCursor(c *pkgpbv1.CursorData) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-		if len(c.GetFields()) == 0 {
+		if c == nil || len(c.GetFields()) == 0 {
 			return db
 		}
 

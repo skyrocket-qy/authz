@@ -13,7 +13,8 @@ func ApplySorter(
 ) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if len(seqSorters) == 0 {
-			if len(dfSort) == 0 {
+			// Use default sorter only if it exists and is not nil
+			if len(dfSort) == 0 || dfSort[0] == nil {
 				return db
 			}
 
