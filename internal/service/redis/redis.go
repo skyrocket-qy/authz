@@ -43,9 +43,11 @@ func NewDistributedLock(client *redis.Client, key string, ttl time.Duration) *Di
 	}
 }
 
+var newUUID = uuid.NewString
+
 // TryLock attempts to acquire the lock. Returns true if successful.
 func (l *DistributedLock) TryLock(ctx context.Context) (bool, error) {
-	l.value = uuid.NewString() // unique per holder
+	l.value = newUUID() // unique per holder
 	ok, err := l.client.SetNX(ctx, l.key, l.value, l.ttl).Result()
 
 	return ok, err

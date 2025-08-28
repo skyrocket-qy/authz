@@ -12,6 +12,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/skyrocket-qy/erx"
 	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
@@ -43,18 +44,27 @@ func New(lc *util.LifecycleParallel) (db *gorm.DB, err error) {
 	}
 
 	dbCfg := config.Conf.Db
-	connStr := fmt.Sprintf(
-		"host=%s port=%d user=%s password=%s dbname=%s TimeZone=%s",
-		dbCfg.Host,
-		dbCfg.Port,
-		dbCfg.User,
-		dbCfg.Password,
-		dbCfg.Db,
-		"UTC",
-	)
+	var dialector gorm.Dialector
+	switch dbCfg.Driver {
+	case "postgres":
+		connStr := fmt.Sprintf(
+			"host=%s port=%d user=%s password=%s dbname=%s TimeZone=%s",
+			dbCfg.Host,
+			dbCfg.Port,
+			dbCfg.User,
+			dbCfg.Password,
+			dbCfg.Db,
+			"UTC",
+		)
+		log.Print(connStr)
+		dialector = postgres.Open(connStr)
+	case "sqlite":
+		dialector = sqlite.Open(dbCfg.Host)
+	default:
+		return nil, erx.Newf(util.ErrBadRequest, "unsupported db driver: %s", dbCfg.Driver)
+	}
 
-	log.Print(connStr)
-	db, err = gorm.Open(postgres.Open(connStr), &gormConf)
+	db, err = gorm.Open(dialector, &gormConf)
 	if err != nil {
 		return db, erx.W(err).SetCode(util.ErrDBUnavailable)
 	}
