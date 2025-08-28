@@ -13,6 +13,8 @@ import (
 
 // setupDryRunDB creates a new GORM DB instance in DryRun mode for testing SQL generation.
 func setupDryRunDB(t *testing.T) *gorm.DB {
+	t.Helper()
+
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
 		DryRun: true,
 		Logger: logger.Default.LogMode(logger.Silent),

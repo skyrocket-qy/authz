@@ -71,6 +71,8 @@ func (m *mockZanzibarLogic) List(
 }
 
 func setupTestDB(t *testing.T, s *schema.Schema) (*gorm.DB, *mockZanzibarLogic, RbacLogic) {
+	t.Helper()
+
 	db, err := gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("failed to open sqlite: %v", err)

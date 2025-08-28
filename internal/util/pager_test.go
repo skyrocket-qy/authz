@@ -11,6 +11,8 @@ import (
 )
 
 func setupPagerDryRunDB(t *testing.T) *gorm.DB {
+	t.Helper()
+
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
 		DryRun: true,
 		Logger: logger.Default.LogMode(logger.Silent),
