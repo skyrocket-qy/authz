@@ -1,11 +1,5 @@
 package util
 
-import (
-	"net/http"
-
-	"github.com/skyrocket-qy/erx"
-)
-
 // Use string as err to support more flexibility than float.
 type err string
 
@@ -36,22 +30,3 @@ const (
 
 	ErrNotImplemented err = "501.0000"
 )
-
-var errToHTTP = map[erx.Code]int{
-	ErrBadRequest:      http.StatusBadRequest,
-	ErrEmptyRequest:    http.StatusBadRequest,
-	ErrParsePayload:    http.StatusBadRequest,
-	ErrValidateInput:   http.StatusBadRequest,
-	ErrAlreadyResetOTP: http.StatusBadRequest,
-
-	ErrUnauthorized:               http.StatusUnauthorized,
-	ErrNewPasswordRequired:        http.StatusUnauthorized,
-	ErrMissingAuthorizationHeader: http.StatusUnauthorized,
-
-	ErrNotFound: http.StatusNotFound,
-
-	ErrUnknown:       http.StatusInternalServerError,
-	ErrDBUnavailable: http.StatusInternalServerError,
-
-	ErrNotImplemented: http.StatusNotImplemented,
-}

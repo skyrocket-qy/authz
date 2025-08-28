@@ -90,7 +90,7 @@ func RunServer(cmd *cobra.Command, args []string) {
 	}
 
 	if err := startConnectServer(ctx, lc); err != nil {
-		util.LogE(err)
+		util.LogE(err) // TODO: need to log call trace
 		log.Error().Err(err).Msg("Failed to start connect server")
 		return
 	}
