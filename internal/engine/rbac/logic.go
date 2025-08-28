@@ -101,7 +101,6 @@ func (r *RbacLogicImpl) ListUsers(c context.Context, in *rbacpb.ListUsersIn) (
 			util.ApplyPager(in.GetPager()),
 			util.ApplySorter(in.GetSorters()),
 		).
-		Preload("Orgs").
 		Preload("UserAuths").
 		Find(&userMds).Error; err != nil {
 		return nil, erx.W(err)
