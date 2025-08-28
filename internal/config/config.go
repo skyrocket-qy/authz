@@ -9,6 +9,7 @@ type Config struct {
 	SchemaPath string `env:"SCHEMA_PATH"`
 	Port       int    `env:"PORT"`
 	Db         struct {
+		Driver   string `env:"DB_DRIVER"`
 		User     string `env:"DB_USER"`
 		Password string `env:"DB_PASSWORD"`
 		Host     string `env:"DB_HOST"`

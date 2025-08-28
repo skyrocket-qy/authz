@@ -59,6 +59,7 @@ func NewRbacLogic(zbLogic zanzibar.ZanzibarLogic, pgdb *gorm.DB, schema *schema.
 	return &RbacLogicImpl{
 		zbLogic: zbLogic,
 		pgdb:    pgdb,
+		schema:  schema,
 	}
 }
 
@@ -471,7 +472,7 @@ func (r *RbacLogicImpl) ListPermissionByResource(
 ) {
 	tuples := []*model.Tuple{}
 	if err := r.db(c).Where(
-		"sbj_ns = role AND sbj_id = ? AND obj_ns = ? AND obj_id = ?",
+		"sbj_ns = 'role' AND sbj_id = ? AND obj_ns = ? AND obj_id = ?",
 		in.GetRoleId(), in.GetResourceNs(), in.GetResourceId()).
 		Find(&tuples).Error; err != nil {
 		return nil, erx.W(err)
