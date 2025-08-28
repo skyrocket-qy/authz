@@ -16,6 +16,7 @@ func setupPagerDryRunDB(t *testing.T) *gorm.DB {
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	assert.NoError(t, err)
+
 	return db
 }
 
@@ -28,13 +29,13 @@ func TestApplyPager(t *testing.T) {
 		name         string
 		pager        *pkgpbv1.Pager
 		expectedSQL  string
-		expectedVars []interface{}
+		expectedVars []any
 	}{
 		{
 			name:         "should do nothing for nil pager",
 			pager:        nil,
 			expectedSQL:  "SELECT * FROM `dummy_pager_models`",
-			expectedVars: []interface{}{},
+			expectedVars: []any{},
 		},
 		{
 			name: "should apply limit and offset for first page",
@@ -43,7 +44,7 @@ func TestApplyPager(t *testing.T) {
 				Number: 1,
 			},
 			expectedSQL:  "SELECT * FROM `dummy_pager_models` LIMIT 10",
-			expectedVars: []interface{}{}, // Offset 0 is omitted by gorm
+			expectedVars: []any{},
 		},
 		{
 			name: "should apply limit and offset for second page",
@@ -52,7 +53,7 @@ func TestApplyPager(t *testing.T) {
 				Number: 2,
 			},
 			expectedSQL:  "SELECT * FROM `dummy_pager_models` LIMIT 25 OFFSET 25",
-			expectedVars: []interface{}{},
+			expectedVars: []any{},
 		},
 		{
 			name: "should handle zero size",
@@ -62,7 +63,7 @@ func TestApplyPager(t *testing.T) {
 			},
 			// GORM correctly generates LIMIT 0
 			expectedSQL:  "SELECT * FROM `dummy_pager_models` LIMIT 0",
-			expectedVars: []interface{}{},
+			expectedVars: []any{},
 		},
 		{
 			name: "should handle zero page number",
@@ -72,13 +73,14 @@ func TestApplyPager(t *testing.T) {
 			},
 			// number-1 becomes -1. Offset(-1) is ignored by GORM.
 			expectedSQL:  "SELECT * FROM `dummy_pager_models` LIMIT 10",
-			expectedVars: []interface{}{},
+			expectedVars: []any{},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			db := setupPagerDryRunDB(t)
+
 			var results []DummyPagerModel
 
 			tx := db.Model(&DummyPagerModel{}).Scopes(ApplyPager(tc.pager)).Find(&results)

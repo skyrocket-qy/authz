@@ -14,8 +14,10 @@ func TestLogE(t *testing.T) {
 	// --- Setup ---
 	// Redirect zerolog output to a buffer for inspection
 	var logBuf bytes.Buffer
+
 	originalLogger := log.Logger
 	log.Logger = zerolog.New(&logBuf)
+
 	defer func() {
 		// Restore original logger
 		log.Logger = originalLogger

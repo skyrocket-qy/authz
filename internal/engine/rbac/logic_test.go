@@ -7,7 +7,6 @@ import (
 	"authz/internal/entity/model"
 	"authz/internal/schema"
 	"authz/internal/zanzibar"
-
 	"github.com/skyrocket-qy/protos/gen/authzpb/rbacpb"
 	authzpbv1 "github.com/skyrocket-qy/protos/gen/authzpb/v1"
 	"github.com/stretchr/testify/assert"
@@ -22,37 +21,52 @@ type mockZanzibarLogic struct {
 	zanzibar.ZanzibarLogic
 }
 
-func (m *mockZanzibarLogic) Check(ctx context.Context, in *authzpbv1.CheckIn) (*authzpbv1.CheckOut, error) {
+func (m *mockZanzibarLogic) Check(
+	ctx context.Context,
+	in *authzpbv1.CheckIn,
+) (*authzpbv1.CheckOut, error) {
 	args := m.Called(ctx, in)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
+
 	return args.Get(0).(*authzpbv1.CheckOut), args.Error(1)
 }
 
 func (m *mockZanzibarLogic) Create(ctx context.Context, in *authzpbv1.Tuple) error {
 	args := m.Called(ctx, in)
+
 	return args.Error(0)
 }
 
 func (m *mockZanzibarLogic) Delete(ctx context.Context, in *authzpbv1.DeleteTuplesIn) error {
 	args := m.Called(ctx, in)
+
 	return args.Error(0)
 }
 
-func (m *mockZanzibarLogic) GetPermissions(ctx context.Context, in *authzpbv1.Instance, s string) ([]*rbacpb.Permission, error) {
+func (m *mockZanzibarLogic) GetPermissions(
+	ctx context.Context,
+	in *authzpbv1.Instance,
+	s string,
+) ([]*rbacpb.Permission, error) {
 	args := m.Called(ctx, in, s)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
+
 	return args.Get(0).([]*rbacpb.Permission), args.Error(1)
 }
 
-func (m *mockZanzibarLogic) List(ctx context.Context, in *authzpbv1.ListTuplesIn) (*authzpbv1.ListTuplesOut, error) {
+func (m *mockZanzibarLogic) List(
+	ctx context.Context,
+	in *authzpbv1.ListTuplesIn,
+) (*authzpbv1.ListTuplesOut, error) {
 	args := m.Called(ctx, in)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
+
 	return args.Get(0).(*authzpbv1.ListTuplesOut), args.Error(1)
 }
 
@@ -98,13 +112,13 @@ func TestRbacLogicImpl_ListUsers(t *testing.T) {
 	// Assert the results
 	assert.NoError(t, err)
 	assert.NotNil(t, out)
-	assert.Equal(t, int64(2), out.Count)
-	assert.Len(t, out.Users, 2)
+	assert.Equal(t, int64(2), out.GetCount())
+	assert.Len(t, out.GetUsers(), 2)
 
 	// Check user data
-	for i, u := range out.Users {
-		assert.Equal(t, users[i].Email, u.Email)
-		assert.Equal(t, users[i].Name, u.Name)
+	for i, u := range out.GetUsers() {
+		assert.Equal(t, users[i].Email, u.GetEmail())
+		assert.Equal(t, users[i].Name, u.GetName())
 	}
 }
 
@@ -132,6 +146,7 @@ func TestRbacLogicImpl_UpdateUser(t *testing.T) {
 	if err := db.First(&updatedUser, user.Id).Error; err != nil {
 		t.Fatalf("failed to find user: %v", err)
 	}
+
 	assert.Equal(t, newName, updatedUser.Name)
 	assert.Equal(t, isActive, updatedUser.IsActive)
 }
@@ -154,6 +169,7 @@ func TestRbacLogicImpl_DeleteUser(t *testing.T) {
 
 	// Verify the user is deleted
 	var deletedUser User
+
 	err = db.First(&deletedUser, user.Id).Error
 	assert.Error(t, err)
 	assert.Equal(t, gorm.ErrRecordNotFound, err)
@@ -172,6 +188,7 @@ func TestRbacLogicImpl_CreateRole(t *testing.T) {
 	if err := db.Where("name = ?", roleName).First(&role).Error; err != nil {
 		t.Fatalf("failed to find role: %v", err)
 	}
+
 	assert.Equal(t, roleName, role.Name)
 }
 
@@ -195,12 +212,12 @@ func TestRbacLogicImpl_ListRoles(t *testing.T) {
 	// Assert the results
 	assert.NoError(t, err)
 	assert.NotNil(t, out)
-	assert.Equal(t, int64(2), out.Total)
-	assert.Len(t, out.Roles, 2)
+	assert.Equal(t, int64(2), out.GetTotal())
+	assert.Len(t, out.GetRoles(), 2)
 
 	// Check role data
-	for i, r := range out.Roles {
-		assert.Equal(t, roles[i].Name, r.Name)
+	for i, r := range out.GetRoles() {
+		assert.Equal(t, roles[i].Name, r.GetName())
 	}
 }
 
@@ -226,6 +243,7 @@ func TestRbacLogicImpl_UpdateRole(t *testing.T) {
 	if err := db.First(&updatedRole, role.Id).Error; err != nil {
 		t.Fatalf("failed to find role: %v", err)
 	}
+
 	assert.Equal(t, newName, updatedRole.Name)
 }
 
@@ -247,6 +265,7 @@ func TestRbacLogicImpl_DeleteRole(t *testing.T) {
 
 	// Verify the role is deleted
 	var deletedRole Role
+
 	err = db.First(&deletedRole, role.Id).Error
 	assert.Error(t, err)
 	assert.Equal(t, gorm.ErrRecordNotFound, err)
@@ -269,6 +288,7 @@ func TestRbacLogicImpl_CreateResource(t *testing.T) {
 	if err := db.Where("ns = ? AND name = ?", resourceNs, resourceName).First(&resource).Error; err != nil {
 		t.Fatalf("failed to find resource: %v", err)
 	}
+
 	assert.Equal(t, resourceNs, resource.Ns)
 	assert.Equal(t, resourceName, resource.Name)
 }
@@ -293,13 +313,13 @@ func TestRbacLogicImpl_ListResources(t *testing.T) {
 	// Assert the results
 	assert.NoError(t, err)
 	assert.NotNil(t, out)
-	assert.Equal(t, int64(2), out.Total)
-	assert.Len(t, out.Resources, 2)
+	assert.Equal(t, int64(2), out.GetTotal())
+	assert.Len(t, out.GetResources(), 2)
 
 	// Check resource data
-	for i, r := range out.Resources {
-		assert.Equal(t, resources[i].Ns, r.Ns)
-		assert.Equal(t, resources[i].Name, r.Name)
+	for i, r := range out.GetResources() {
+		assert.Equal(t, resources[i].Ns, r.GetNs())
+		assert.Equal(t, resources[i].Name, r.GetName())
 	}
 }
 
@@ -321,6 +341,7 @@ func TestRbacLogicImpl_DeleteResource(t *testing.T) {
 
 	// Verify the resource is deleted
 	var deletedResource Resource
+
 	err = db.First(&deletedResource, resource.Id).Error
 	assert.Error(t, err)
 	assert.Equal(t, gorm.ErrRecordNotFound, err)
@@ -351,15 +372,16 @@ func TestRbacLogicImpl_GetRole(t *testing.T) {
 
 	// Mock Zanzibar GetPermissions
 	expectedPerms := []*rbacpb.Permission{{Permission: "read"}, {Permission: "write"}}
-	mockZanzibar.On("GetPermissions", mock.Anything, mock.Anything, "resource").Return(expectedPerms, nil)
+	mockZanzibar.On("GetPermissions", mock.Anything, mock.Anything, "resource").
+		Return(expectedPerms, nil)
 
 	// Get the role
 	out, err := logic.GetRole(context.Background(), &rbacpb.GetRoleIn{Id: role.Id})
 	assert.NoError(t, err)
 	assert.NotNil(t, out)
-	assert.Equal(t, role.Name, out.Name)
-	assert.Equal(t, "role", out.Ns)
-	assert.Equal(t, expectedPerms, out.Permissions)
+	assert.Equal(t, role.Name, out.GetName())
+	assert.Equal(t, "role", out.GetNs())
+	assert.Equal(t, expectedPerms, out.GetPermissions())
 }
 
 func TestRbacLogicImpl_ListResourcesByType(t *testing.T) {
@@ -378,14 +400,17 @@ func TestRbacLogicImpl_ListResourcesByType(t *testing.T) {
 	}
 
 	// Call ListResourcesByType
-	out, err := logic.ListResourcesByType(context.Background(), &rbacpb.ListResourcesByTypeIn{Type: "document"})
+	out, err := logic.ListResourcesByType(
+		context.Background(),
+		&rbacpb.ListResourcesByTypeIn{Type: "document"},
+	)
 
 	// Assert the results
 	assert.NoError(t, err)
 	assert.NotNil(t, out)
-	assert.Len(t, out.Resources, 2)
-	assert.Equal(t, "doc1", out.Resources[0].Name)
-	assert.Equal(t, "doc2", out.Resources[1].Name)
+	assert.Len(t, out.GetResources(), 2)
+	assert.Equal(t, "doc1", out.GetResources()[0].GetName())
+	assert.Equal(t, "doc2", out.GetResources()[1].GetName())
 }
 
 func TestRbacLogicImpl_ListResourceTypes(t *testing.T) {
@@ -405,7 +430,7 @@ func TestRbacLogicImpl_ListResourceTypes(t *testing.T) {
 	// Assert the results
 	assert.NoError(t, err)
 	assert.NotNil(t, out)
-	assert.ElementsMatch(t, []string{"document", "image"}, out.Types)
+	assert.ElementsMatch(t, []string{"document", "image"}, out.GetTypes())
 }
 
 func TestRbacLogicImpl_ListPermissionByResource(t *testing.T) {
@@ -438,16 +463,19 @@ func TestRbacLogicImpl_ListPermissionByResource(t *testing.T) {
 	}
 
 	// Call ListPermissionByResource
-	out, err := logic.ListPermissionByResource(context.Background(), &rbacpb.ListPermissionByResourceIn{
-		RoleId:      "1",
-		ResourceNs:  "document",
-		ResourceId:  "1",
-	})
+	out, err := logic.ListPermissionByResource(
+		context.Background(),
+		&rbacpb.ListPermissionByResourceIn{
+			RoleId:     "1",
+			ResourceNs: "document",
+			ResourceId: "1",
+		},
+	)
 
 	// Assert the results
 	assert.NoError(t, err)
 	assert.NotNil(t, out)
-	assert.ElementsMatch(t, []string{"write", "owner"}, out.Permissions)
+	assert.ElementsMatch(t, []string{"write", "owner"}, out.GetPermissions())
 }
 
 func TestRbacLogicImpl_RevokeRole(t *testing.T) {

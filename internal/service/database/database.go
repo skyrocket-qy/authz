@@ -8,7 +8,6 @@ import (
 	"authz/internal/config"
 	"authz/internal/entity/model"
 	"authz/internal/util"
-
 	"github.com/rs/zerolog/log"
 	"github.com/skyrocket-qy/erx"
 	"gorm.io/driver/postgres"
@@ -44,7 +43,9 @@ func New(lc *util.LifecycleParallel) (db *gorm.DB, err error) {
 	}
 
 	dbCfg := config.Conf.Db
+
 	var dialector gorm.Dialector
+
 	switch dbCfg.Driver {
 	case "postgres":
 		connStr := fmt.Sprintf(

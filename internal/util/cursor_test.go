@@ -18,6 +18,7 @@ func setupDryRunDB(t *testing.T) *gorm.DB {
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	assert.NoError(t, err)
+
 	return db
 }
 
@@ -26,6 +27,7 @@ func setupDryRunDB(t *testing.T) *gorm.DB {
 func normalizeSQL(sql string) string {
 	sql = regexp.MustCompile(`\s+`).ReplaceAllString(sql, " ")
 	sql = regexp.MustCompile("`|\"").ReplaceAllString(sql, "")
+
 	return sql
 }
 
@@ -40,13 +42,13 @@ func TestApplyCursor(t *testing.T) {
 		name         string
 		cursorData   *pkgpbv1.CursorData
 		expectedSQL  string
-		expectedVars []interface{}
+		expectedVars []any
 	}{
 		{
 			name:         "should not apply where clause for empty fields",
 			cursorData:   &pkgpbv1.CursorData{},
 			expectedSQL:  "SELECT * FROM dummy_models",
-			expectedVars: []interface{}{},
+			expectedVars: []any{},
 		},
 		{
 			name: "should apply single ascending field",
@@ -56,7 +58,7 @@ func TestApplyCursor(t *testing.T) {
 				},
 			},
 			expectedSQL:  "SELECT * FROM dummy_models WHERE (id > ?)",
-			expectedVars: []interface{}{"10"},
+			expectedVars: []any{"10"},
 		},
 		{
 			name: "should apply single descending field",
@@ -66,7 +68,7 @@ func TestApplyCursor(t *testing.T) {
 				},
 			},
 			expectedSQL:  "SELECT * FROM dummy_models WHERE (created_at < ?)",
-			expectedVars: []interface{}{"12345"},
+			expectedVars: []any{"12345"},
 		},
 		{
 			name: "should apply two ascending fields",
@@ -77,7 +79,7 @@ func TestApplyCursor(t *testing.T) {
 				},
 			},
 			expectedSQL:  "SELECT * FROM dummy_models WHERE (created_at > ?) OR (created_at = ? AND id > ?)",
-			expectedVars: []interface{}{"12345", "12345", "100"},
+			expectedVars: []any{"12345", "12345", "100"},
 		},
 		{
 			name: "should apply two fields with mixed order",
@@ -88,7 +90,7 @@ func TestApplyCursor(t *testing.T) {
 				},
 			},
 			expectedSQL:  "SELECT * FROM dummy_models WHERE (score < ?) OR (score = ? AND id > ?)",
-			expectedVars: []interface{}{"95", "95", "50"},
+			expectedVars: []any{"95", "95", "50"},
 		},
 		{
 			name: "should handle three fields",
@@ -99,8 +101,8 @@ func TestApplyCursor(t *testing.T) {
 					{Col: "id", Val: "200", Asc: true},
 				},
 			},
-			expectedSQL: "SELECT * FROM dummy_models WHERE (score < ?) OR (score = ? AND created_at > ?) OR (score = ? AND created_at = ? AND id > ?)",
-			expectedVars: []interface{}{"100", "100", "12345", "100", "12345", "200"},
+			expectedSQL:  "SELECT * FROM dummy_models WHERE (score < ?) OR (score = ? AND created_at > ?) OR (score = ? AND created_at = ? AND id > ?)",
+			expectedVars: []any{"100", "100", "12345", "100", "12345", "200"},
 		},
 	}
 
@@ -109,6 +111,7 @@ func TestApplyCursor(t *testing.T) {
 			db := setupDryRunDB(t)
 
 			var results []DummyModel
+
 			tx := db.Scopes(ApplyCursor(tc.cursorData))
 			tx.Find(&results)
 
@@ -125,7 +128,8 @@ func TestApplyCursor_WithNilCursor(t *testing.T) {
 
 		var results []DummyModel
 
-		// The scope is applied, but the query isn't run until a finalizer method like Find() is called.
+		// The scope is applied, but the query isn't run until a finalizer method like Find() is
+		// called.
 		tx := db.Scopes(ApplyCursor(nil)).Model(&DummyModel{})
 
 		// Now run the finalizer

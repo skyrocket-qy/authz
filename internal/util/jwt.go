@@ -1,11 +1,11 @@
 package util
 
 import (
-	"authz/internal/config"
 	"errors"
 	"strconv"
 	"time"
 
+	"authz/internal/config"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/skyrocket-qy/erx"

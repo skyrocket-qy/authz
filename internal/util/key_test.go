@@ -29,12 +29,18 @@ func TestWithDB(t *testing.T) {
 		// Type assert and check for equality
 		retrievedDB, ok := retrievedValue.(*gorm.DB)
 		assert.True(t, ok, "value should be of type *gorm.DB")
-		assert.Equal(t, dummyDB, retrievedDB, "retrieved DB should be the same as the one passed in")
+		assert.Equal(
+			t,
+			dummyDB,
+			retrievedDB,
+			"retrieved DB should be the same as the one passed in",
+		)
 	})
 
 	t.Run("should not affect the parent context", func(t *testing.T) {
 		// Arrange
 		parentCtx := context.Background()
+
 		var dummyDB *gorm.DB
 
 		// Act

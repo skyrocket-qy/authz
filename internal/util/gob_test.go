@@ -20,6 +20,7 @@ func TestGobEncoding(t *testing.T) {
 			Value:   12345,
 			private: true,
 		}
+
 		var decoded GobTestStruct
 
 		// Act
@@ -35,7 +36,8 @@ func TestGobEncoding(t *testing.T) {
 		// Assert Decode
 		assert.NoError(t, err)
 
-		// We expect the decoded struct to match the original, but the private field won't be encoded.
+		// We expect the decoded struct to match the original, but the private field won't be
+		// encoded.
 		// So we create an expected struct without the private field set.
 		expected := GobTestStruct{
 			Name:  "test-struct",
@@ -47,6 +49,7 @@ func TestGobEncoding(t *testing.T) {
 	t.Run("should return an error when decoding invalid data", func(t *testing.T) {
 		// Arrange
 		invalidBytes := []byte("this is not gob data")
+
 		var decoded GobTestStruct
 
 		// Act
@@ -72,6 +75,7 @@ func TestGobEncoding(t *testing.T) {
 		// Arrange
 		original := GobTestStruct{Name: "test"}
 		encodedBytes, _ := EncodeGob(original)
+
 		var decoded GobTestStruct
 
 		// Act

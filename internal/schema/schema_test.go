@@ -10,8 +10,9 @@ import (
 
 func TestGetYamlFilesFromEnv(t *testing.T) {
 	tempDir := "test_schemas_get"
-	err := os.Mkdir(tempDir, 0755)
+	err := os.Mkdir(tempDir, 0o755)
 	assert.NoError(t, err)
+
 	defer os.RemoveAll(tempDir)
 
 	// Create test yaml files
@@ -33,8 +34,9 @@ func TestGetYamlFilesFromEnv(t *testing.T) {
 
 func TestNewSchema(t *testing.T) {
 	tempDir := "test_schemas_new"
-	err := os.Mkdir(tempDir, 0755)
+	err := os.Mkdir(tempDir, 0o755)
 	assert.NoError(t, err)
+
 	defer os.RemoveAll(tempDir)
 
 	// Create test yaml files
@@ -47,7 +49,7 @@ namespaces:
     relations:
       member: {}
 `
-	err = os.WriteFile(filepath.Join(tempDir, "schema1.yaml"), []byte(schema1), 0644)
+	err = os.WriteFile(filepath.Join(tempDir, "schema1.yaml"), []byte(schema1), 0o644)
 	assert.NoError(t, err)
 
 	schema2 := `
@@ -61,7 +63,7 @@ namespaces:
           - computed_userset:
               relation: owner
 `
-	err = os.WriteFile(filepath.Join(tempDir, "schema2.yaml"), []byte(schema2), 0644)
+	err = os.WriteFile(filepath.Join(tempDir, "schema2.yaml"), []byte(schema2), 0o644)
 	assert.NoError(t, err)
 
 	// Set environment variable
@@ -78,8 +80,9 @@ namespaces:
 
 func TestNewSchema_DuplicateNamespace(t *testing.T) {
 	tempDir := "test_schemas_dup"
-	err := os.Mkdir(tempDir, 0755)
+	err := os.Mkdir(tempDir, 0o755)
 	assert.NoError(t, err)
+
 	defer os.RemoveAll(tempDir)
 
 	schema1 := `
@@ -87,7 +90,7 @@ namespaces:
   user:
     type: subject
 `
-	err = os.WriteFile(filepath.Join(tempDir, "schema1.yaml"), []byte(schema1), 0644)
+	err = os.WriteFile(filepath.Join(tempDir, "schema1.yaml"), []byte(schema1), 0o644)
 	assert.NoError(t, err)
 
 	schema2 := `
@@ -95,7 +98,7 @@ namespaces:
   user:
     type: subject
 `
-	err = os.WriteFile(filepath.Join(tempDir, "schema2.yaml"), []byte(schema2), 0644)
+	err = os.WriteFile(filepath.Join(tempDir, "schema2.yaml"), []byte(schema2), 0o644)
 	assert.NoError(t, err)
 
 	t.Setenv("SCHEMA_PATH", tempDir)
@@ -106,16 +109,18 @@ namespaces:
 
 func TestNewSchema_InvalidYaml(t *testing.T) {
 	tempDir := "test_schemas_invalid"
-	err := os.Mkdir(tempDir, 0755)
+	err := os.Mkdir(tempDir, 0o755)
 	assert.NoError(t, err)
+
 	defer os.RemoveAll(tempDir)
+
 	invalidSchema := `
 namespaces:
   user:
     type: subject
   group
 `
-	err = os.WriteFile(filepath.Join(tempDir, "invalid.yaml"), []byte(invalidSchema), 0644)
+	err = os.WriteFile(filepath.Join(tempDir, "invalid.yaml"), []byte(invalidSchema), 0o644)
 	assert.NoError(t, err)
 
 	t.Setenv("SCHEMA_PATH", tempDir)

@@ -40,6 +40,7 @@ func setupFilterDryRunDB(t *testing.T) *gorm.DB {
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	assert.NoError(t, err)
+
 	return db
 }
 
@@ -66,11 +67,12 @@ func TestApplyFilter_SQLGeneration(t *testing.T) {
 		assert.NoError(t, err)
 
 		var results []DummyFilterModel
+
 		tx := db.Model(&DummyFilterModel{}).Scopes(scope).Find(&results)
 
 		expectedSQL := "SELECT * FROM `dummy_filter_models` WHERE `name` = ?"
 		assert.Equal(t, expectedSQL, tx.Statement.SQL.String())
-		assert.Equal(t, []interface{}{"jules"}, tx.Statement.Vars)
+		assert.Equal(t, []any{"jules"}, tx.Statement.Vars)
 	})
 
 	t.Run("should apply multiple filters", func(t *testing.T) {
@@ -83,11 +85,12 @@ func TestApplyFilter_SQLGeneration(t *testing.T) {
 		assert.NoError(t, err)
 
 		var results []DummyFilterModel
+
 		tx := db.Model(&DummyFilterModel{}).Scopes(scope).Find(&results)
 
 		expectedSQL := "SELECT * FROM `dummy_filter_models` WHERE `name` = ? AND `id` >= ?"
 		assert.Equal(t, expectedSQL, tx.Statement.SQL.String())
-		assert.Equal(t, []interface{}{"jules", "100"}, tx.Statement.Vars)
+		assert.Equal(t, []any{"jules", "100"}, tx.Statement.Vars)
 	})
 
 	t.Run("should apply BETWEEN filter", func(t *testing.T) {
@@ -99,10 +102,11 @@ func TestApplyFilter_SQLGeneration(t *testing.T) {
 		assert.NoError(t, err)
 
 		var results []DummyFilterModel
+
 		tx := db.Model(&DummyFilterModel{}).Scopes(scope).Find(&results)
 
 		expectedSQL := "SELECT * FROM `dummy_filter_models` WHERE `id` BETWEEN ? AND ?"
 		assert.Equal(t, expectedSQL, tx.Statement.SQL.String())
-		assert.Equal(t, []interface{}{"100", "200"}, tx.Statement.Vars)
+		assert.Equal(t, []any{"100", "200"}, tx.Statement.Vars)
 	})
 }

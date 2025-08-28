@@ -15,18 +15,22 @@ import (
 func TestSimpleLifecycle(t *testing.T) {
 	t.Run("should run closers in LIFO order", func(t *testing.T) {
 		lc := NewSimpleLifecycle()
+
 		var order []string
 
 		lc.Add(func(ctx context.Context) error {
 			order = append(order, "first")
+
 			return nil
 		})
 		lc.Add(func(ctx context.Context) error {
 			order = append(order, "second")
+
 			return nil
 		})
 		lc.Add(func(ctx context.Context) error {
 			order = append(order, "third")
+
 			return nil
 		})
 
@@ -37,15 +41,19 @@ func TestSimpleLifecycle(t *testing.T) {
 
 	t.Run("should stop and return error on first failure", func(t *testing.T) {
 		lc := NewSimpleLifecycle()
+
 		var order []string
+
 		testErr := errors.New("shutdown failed")
 
 		lc.Add(func(ctx context.Context) error {
 			order = append(order, "first")
+
 			return nil
 		})
 		lc.Add(func(ctx context.Context) error {
 			order = append(order, "second")
+
 			return testErr
 		})
 
@@ -72,22 +80,28 @@ func TestLifecycleParallel(t *testing.T) {
 
 		lc.Add(appA, func(ctx context.Context) error {
 			time.Sleep(20 * time.Millisecond)
+
 			orderCh <- appA
+
 			return nil
 		}, appB) // A depends on B
 
 		lc.Add(appB, func(ctx context.Context) error {
 			time.Sleep(10 * time.Millisecond)
+
 			orderCh <- appB
+
 			return nil
 		}, appC) // B depends on C
 
 		lc.Add(appC, func(ctx context.Context) error {
 			orderCh <- appC
+
 			return nil
 		}) // C has no dependencies
 
 		err := lc.Shutdown(context.Background())
+
 		close(orderCh)
 
 		assert.NoError(t, err)
@@ -109,23 +123,30 @@ func TestLifecycleParallel(t *testing.T) {
 		lc := NewLifecycleParallel()
 
 		closerDuration := 50 * time.Millisecond
+
 		var wg sync.WaitGroup
 		wg.Add(2)
 
 		lc.Add("A", func(ctx context.Context) error {
 			defer wg.Done()
+
 			time.Sleep(closerDuration)
+
 			return nil
 		})
 		lc.Add("B", func(ctx context.Context) error {
 			defer wg.Done()
+
 			time.Sleep(closerDuration)
+
 			return nil
 		})
 
 		start := time.Now()
 		err := lc.Shutdown(context.Background())
+
 		wg.Wait() // Wait for closers to finish
+
 		duration := time.Since(start)
 
 		assert.NoError(t, err)
@@ -144,16 +165,20 @@ func TestLifecycleParallel(t *testing.T) {
 		// A -> B. A will fail. B should not run.
 		lc.Add("A", func(ctx context.Context) error {
 			defer wg.Done()
+
 			return testErr
 		}, "B")
 
 		var bExecuted bool
+
 		lc.Add("B", func(ctx context.Context) error {
 			bExecuted = true
+
 			return nil
 		})
 
 		err := lc.Shutdown(context.Background())
+
 		wg.Wait()
 
 		assert.Error(t, err)

@@ -25,7 +25,7 @@ func TestTrimToProject(t *testing.T) {
 	})
 
 	t.Run("should handle path equal to project root", func(t *testing.T) {
-		assert.Equal(t, "", trimToProject(projectRoot))
+		assert.Empty(t, trimToProject(projectRoot))
 	})
 }
 

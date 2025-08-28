@@ -19,7 +19,6 @@ import (
 	"authz/internal/service/logx"
 	"authz/internal/util"
 	"authz/internal/wire"
-
 	"connectrpc.com/connect"
 	"connectrpc.com/otelconnect"
 	"github.com/rs/cors"
@@ -64,7 +63,6 @@ func init() {
 		// 		util.Env,
 		// 	)
 		// }
-
 		return nil
 	}
 }
@@ -74,9 +72,11 @@ func RunServer(cmd *cobra.Command, args []string) {
 	defer stop() // Release resources when the function returns
 
 	lc := util.NewLifecycleParallel()
+
 	defer func() {
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
+
 		if err := lc.Shutdown(shutdownCtx); err != nil {
 			log.Err(err).Msg("Failed to shutdown gracefully")
 		}
@@ -86,12 +86,14 @@ func RunServer(cmd *cobra.Command, args []string) {
 
 	if err := setupBase(ctx, lc); err != nil {
 		log.Err(err).Msg("Failed to setup base")
+
 		return
 	}
 
 	if err := startConnectServer(ctx, lc); err != nil {
 		util.LogE(err) // TODO: need to log call trace
 		log.Error().Err(err).Msg("Failed to start connect server")
+
 		return
 	}
 
@@ -115,6 +117,7 @@ func setupBase(ctx context.Context, lc *util.LifecycleParallel) error {
 		if err != nil {
 			return erx.W(err)
 		}
+
 		lc.Add("otel", shutdown)
 	}
 
@@ -141,6 +144,7 @@ func startConnectServer(ctx context.Context, lc *util.LifecycleParallel) error {
 		return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
 			inflight.Add(1)
 			defer inflight.Done()
+
 			return next(ctx, req)
 		}
 	})
@@ -156,6 +160,7 @@ func startConnectServer(ctx context.Context, lc *util.LifecycleParallel) error {
 		if err != nil {
 			return erx.W(err, "failed to init otel interceptor")
 		}
+
 		handlerOpts = append(handlerOpts, connect.WithInterceptors(otelInterceptor))
 	}
 
@@ -179,6 +184,7 @@ func startConnectServer(ctx context.Context, lc *util.LifecycleParallel) error {
 	// 2. Run the server in a goroutine so it doesn't block.
 	go func() {
 		log.Info().Msgf("Starting server on %s", server.Addr)
+
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Err(err).Msg("Failed to start server")
 		}

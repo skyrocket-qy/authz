@@ -14,7 +14,7 @@ func TestToPascalCase(t *testing.T) {
 	assert.Equal(t, "Id", ToPascalCase("id"))
 	assert.Equal(t, "Name", ToPascalCase("name"))
 	assert.Equal(t, "UserID", ToPascalCase("userID"))
-	assert.Equal(t, "", ToPascalCase(""))
+	assert.Empty(t, ToPascalCase(""))
 	assert.Equal(t, "A", ToPascalCase("a"))
 }
 
@@ -24,6 +24,7 @@ func setupSorterDryRunDB(t *testing.T) *gorm.DB {
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	assert.NoError(t, err)
+
 	return db
 }
 

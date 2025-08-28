@@ -12,7 +12,6 @@ import (
 	"authz/internal/entity/model"
 	"authz/internal/schema"
 	"authz/internal/util"
-
 	"github.com/rs/zerolog/log"
 	"github.com/segmentio/kafka-go"
 	"github.com/skyrocket-qy/erx"

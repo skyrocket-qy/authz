@@ -7,7 +7,6 @@ import (
 	"authz/internal/entity/model"
 	"authz/internal/schema"
 	"authz/internal/util"
-
 	"github.com/redis/go-redis/v9"
 	"github.com/skyrocket-qy/erx"
 	"github.com/skyrocket-qy/protos/gen/authzpb/rbacpb"

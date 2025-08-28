@@ -1,11 +1,11 @@
 package util
 
 import (
-	"authz/internal/config"
 	"os"
 	"sync"
 	"testing"
 
+	"authz/internal/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -51,8 +51,9 @@ func TestNewConfig(t *testing.T) {
 		defer os.Unsetenv("PORT")
 		defer os.Unsetenv("DB_USER")
 
-		err := os.WriteFile(".env", content, 0644)
+		err := os.WriteFile(".env", content, 0o644)
 		assert.NoError(t, err)
+
 		defer os.Remove(".env")
 
 		// Act
@@ -65,47 +66,55 @@ func TestNewConfig(t *testing.T) {
 		assert.Equal(t, "testuser", config.Conf.Db.User)
 	})
 
-	t.Run("should not return error if .env file is missing in local environment", func(t *testing.T) {
-		configTestMutex.Lock()
-		defer configTestMutex.Unlock()
+	t.Run(
+		"should not return error if .env file is missing in local environment",
+		func(t *testing.T) {
+			configTestMutex.Lock()
+			defer configTestMutex.Unlock()
 
-		teardown := setupAndTeardown(t)
-		defer teardown()
+			teardown := setupAndTeardown(t)
+			defer teardown()
 
-		// Arrange
-		config.Env = config.EnvLocal
-		os.Remove(".env") // Make sure it's gone
+			// Arrange
+			config.Env = config.EnvLocal
 
-		// Act
-		err := NewConfig()
+			os.Remove(".env") // Make sure it's gone
 
-		// Assert
-		assert.NoError(t, err)
-		assert.Equal(t, config.Config{}, config.Conf)
-	})
+			// Act
+			err := NewConfig()
 
-	t.Run("should load config from environment variables in non-local environment", func(t *testing.T) {
-		configTestMutex.Lock()
-		defer configTestMutex.Unlock()
+			// Assert
+			assert.NoError(t, err)
+			assert.Equal(t, config.Config{}, config.Conf)
+		},
+	)
 
-		teardown := setupAndTeardown(t)
-		defer teardown()
+	t.Run(
+		"should load config from environment variables in non-local environment",
+		func(t *testing.T) {
+			configTestMutex.Lock()
+			defer configTestMutex.Unlock()
 
-		// Arrange
-		config.Env = config.EnvDev
-		t.Setenv("MAX_CHECK_NODES", "200")
-		t.Setenv("PORT", "9090")
-		t.Setenv("JWT_SECRET", "supersecret")
+			teardown := setupAndTeardown(t)
+			defer teardown()
 
-		// Act
-		err := NewConfig()
+			// Arrange
+			config.Env = config.EnvDev
 
-		// Assert
-		assert.NoError(t, err)
-		assert.Equal(t, 200, config.Conf.MaxCheckNodes)
-		assert.Equal(t, 9090, config.Conf.Port)
-		assert.Equal(t, "supersecret", config.Conf.Jwt.Secret)
-	})
+			t.Setenv("MAX_CHECK_NODES", "200")
+			t.Setenv("PORT", "9090")
+			t.Setenv("JWT_SECRET", "supersecret")
+
+			// Act
+			err := NewConfig()
+
+			// Assert
+			assert.NoError(t, err)
+			assert.Equal(t, 200, config.Conf.MaxCheckNodes)
+			assert.Equal(t, 9090, config.Conf.Port)
+			assert.Equal(t, "supersecret", config.Conf.Jwt.Secret)
+		},
+	)
 
 	t.Run("should return error on parse error", func(t *testing.T) {
 		configTestMutex.Lock()
@@ -116,6 +125,7 @@ func TestNewConfig(t *testing.T) {
 
 		// Arrange
 		config.Env = config.EnvDev
+
 		t.Setenv("PORT", "not-an-int") // Invalid value
 
 		// Act

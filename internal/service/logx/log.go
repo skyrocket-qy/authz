@@ -1,11 +1,11 @@
 package logx
 
 import (
-	"authz/internal/config"
 	"os"
 	"path/filepath"
 	"time"
 
+	"authz/internal/config"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )

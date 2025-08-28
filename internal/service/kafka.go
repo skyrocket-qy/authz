@@ -6,7 +6,6 @@ import (
 
 	"authz/internal/config"
 	"authz/internal/util"
-
 	"github.com/rs/zerolog/log"
 	"github.com/segmentio/kafka-go"
 )

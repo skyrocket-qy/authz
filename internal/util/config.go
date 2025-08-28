@@ -1,9 +1,9 @@
 package util
 
 import (
-	"authz/internal/config"
 	"os"
 
+	"authz/internal/config"
 	"github.com/caarlos0/env/v11"
 	"github.com/joho/godotenv"
 	"github.com/skyrocket-qy/erx"

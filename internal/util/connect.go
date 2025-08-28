@@ -45,6 +45,7 @@ func logError(traceId string, err *erx.CtxErr) {
 
 	// Convert callerInfos to pretty strings
 	filtered := filterCallerInfos(err.CallerInfos)
+
 	trace := make([]string, 0, len(filtered))
 	for _, ci := range filtered {
 		trace = append(trace, fmt.Sprintf("%s %d %s",
@@ -53,6 +54,7 @@ func logError(traceId string, err *erx.CtxErr) {
 			extractFuncName(ci.Function),
 		))
 	}
+
 	e.Strs("callerTrace", trace)
 	e.Msg("error")
 }
@@ -66,6 +68,7 @@ func appToApiCode(code erx.Code) connect.Code {
 	intCode, err := strconv.Atoi(parts[0])
 	if err != nil {
 		log.Err(err).Msg("appToApiCode error")
+
 		return connect.CodeInternal
 	}
 

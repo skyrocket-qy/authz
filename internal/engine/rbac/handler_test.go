@@ -12,133 +12,190 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-// MockRbacLogic is a mock of RbacLogic interface
+// MockRbacLogic is a mock of RbacLogic interface.
 type MockRbacLogic struct {
 	mock.Mock
 }
 
-func (m *MockRbacLogic) ListUsers(c context.Context, in *rbacpb.ListUsersIn) (*rbacpb.ListUsersOut, error) {
+func (m *MockRbacLogic) ListUsers(
+	c context.Context,
+	in *rbacpb.ListUsersIn,
+) (*rbacpb.ListUsersOut, error) {
 	args := m.Called(c, in)
+
 	return args.Get(0).(*rbacpb.ListUsersOut), args.Error(1)
 }
 
 func (m *MockRbacLogic) UpdateUser(c context.Context, in *rbacpb.UpdateUserIn) error {
 	args := m.Called(c, in)
+
 	return args.Error(0)
 }
 
 func (m *MockRbacLogic) DeleteUser(c context.Context, in *rbacpb.DeleteUserIn) error {
 	args := m.Called(c, in)
+
 	return args.Error(0)
 }
 
-func (m *MockRbacLogic) GetRole(ctx context.Context, in *rbacpb.GetRoleIn) (*rbacpb.GetRoleOut, error) {
+func (m *MockRbacLogic) GetRole(
+	ctx context.Context,
+	in *rbacpb.GetRoleIn,
+) (*rbacpb.GetRoleOut, error) {
 	args := m.Called(ctx, in)
+
 	return args.Get(0).(*rbacpb.GetRoleOut), args.Error(1)
 }
 
 func (m *MockRbacLogic) CreateRole(c context.Context, in *rbacpb.CreateRoleIn) error {
 	args := m.Called(c, in)
+
 	return args.Error(0)
 }
 
-func (m *MockRbacLogic) ListRoles(c context.Context, in *rbacpb.ListRolesIn) (*rbacpb.ListRolesOut, error) {
+func (m *MockRbacLogic) ListRoles(
+	c context.Context,
+	in *rbacpb.ListRolesIn,
+) (*rbacpb.ListRolesOut, error) {
 	args := m.Called(c, in)
+
 	return args.Get(0).(*rbacpb.ListRolesOut), args.Error(1)
 }
 
 func (m *MockRbacLogic) UpdateRole(c context.Context, in *rbacpb.UpdateRoleIn) error {
 	args := m.Called(c, in)
+
 	return args.Error(0)
 }
 
 func (m *MockRbacLogic) DeleteRole(c context.Context, in *rbacpb.DeleteRoleIn) error {
 	args := m.Called(c, in)
+
 	return args.Error(0)
 }
 
-func (m *MockRbacLogic) ListResourceTypes(ctx context.Context) (*rbacpb.ListResourceTypeOut, error) {
+func (m *MockRbacLogic) ListResourceTypes(
+	ctx context.Context,
+) (*rbacpb.ListResourceTypeOut, error) {
 	args := m.Called(ctx)
+
 	return args.Get(0).(*rbacpb.ListResourceTypeOut), args.Error(1)
 }
 
-func (m *MockRbacLogic) ListResourcesByType(ctx context.Context, in *rbacpb.ListResourcesByTypeIn) (*rbacpb.ListResourcesByTypeOut, error) {
+func (m *MockRbacLogic) ListResourcesByType(
+	ctx context.Context,
+	in *rbacpb.ListResourcesByTypeIn,
+) (*rbacpb.ListResourcesByTypeOut, error) {
 	args := m.Called(ctx, in)
+
 	return args.Get(0).(*rbacpb.ListResourcesByTypeOut), args.Error(1)
 }
 
-func (m *MockRbacLogic) ListPermissionByResource(ctx context.Context, in *rbacpb.ListPermissionByResourceIn) (*rbacpb.ListPermissionByResourceOut, error) {
+func (m *MockRbacLogic) ListPermissionByResource(
+	ctx context.Context,
+	in *rbacpb.ListPermissionByResourceIn,
+) (*rbacpb.ListPermissionByResourceOut, error) {
 	args := m.Called(ctx, in)
+
 	return args.Get(0).(*rbacpb.ListPermissionByResourceOut), args.Error(1)
 }
 
 func (m *MockRbacLogic) CreateResource(c context.Context, in *rbacpb.CreateResourceIn) error {
 	args := m.Called(c, in)
+
 	return args.Error(0)
 }
 
-func (m *MockRbacLogic) ListResources(c context.Context, in *rbacpb.ListResourcesIn) (*rbacpb.ListResourcesOut, error) {
+func (m *MockRbacLogic) ListResources(
+	c context.Context,
+	in *rbacpb.ListResourcesIn,
+) (*rbacpb.ListResourcesOut, error) {
 	args := m.Called(c, in)
+
 	return args.Get(0).(*rbacpb.ListResourcesOut), args.Error(1)
 }
 
 func (m *MockRbacLogic) DeleteResource(c context.Context, in *rbacpb.DeleteResourceIn) error {
 	args := m.Called(c, in)
+
 	return args.Error(0)
 }
 
 func (m *MockRbacLogic) AssignRole(c context.Context, in *rbacpb.AssignRoleIn) error {
 	args := m.Called(c, in)
+
 	return args.Error(0)
 }
 
 func (m *MockRbacLogic) RevokeRole(c context.Context, in *rbacpb.RevokeRoleIn) error {
 	args := m.Called(c, in)
+
 	return args.Error(0)
 }
 
 func (m *MockRbacLogic) GrantPerm(c context.Context, in *rbacpb.GrantPermIn) error {
 	args := m.Called(c, in)
+
 	return args.Error(0)
 }
 
 func (m *MockRbacLogic) RevokePerm(c context.Context, in *rbacpb.RevokePermIn) error {
 	args := m.Called(c, in)
+
 	return args.Error(0)
 }
 
-// MockZanzibarLogic is a mock of ZanzibarLogic interface
+// MockZanzibarLogic is a mock of ZanzibarLogic interface.
 type MockZanzibarLogic struct {
 	mock.Mock
 }
 
 func (m *MockZanzibarLogic) Create(c context.Context, tuple *authzpbv1.Tuple) error {
 	args := m.Called(c, tuple)
+
 	return args.Error(0)
 }
 
-func (m *MockZanzibarLogic) List(c context.Context, in *authzpbv1.ListTuplesIn) (*authzpbv1.ListTuplesOut, error) {
+func (m *MockZanzibarLogic) List(
+	c context.Context,
+	in *authzpbv1.ListTuplesIn,
+) (*authzpbv1.ListTuplesOut, error) {
 	args := m.Called(c, in)
+
 	return args.Get(0).(*authzpbv1.ListTuplesOut), args.Error(1)
 }
 
-func (m *MockZanzibarLogic) Find(c context.Context, filter *authzpbv1.TupleFilter) ([]*authzpbv1.Tuple, error) {
+func (m *MockZanzibarLogic) Find(
+	c context.Context,
+	filter *authzpbv1.TupleFilter,
+) ([]*authzpbv1.Tuple, error) {
 	args := m.Called(c, filter)
+
 	return args.Get(0).([]*authzpbv1.Tuple), args.Error(1)
 }
 
 func (m *MockZanzibarLogic) Delete(c context.Context, in *authzpbv1.DeleteTuplesIn) error {
 	args := m.Called(c, in)
+
 	return args.Error(0)
 }
 
-func (m *MockZanzibarLogic) GetPermissions(c context.Context, sbj *authzpbv1.Instance, nsType string) ([]*rbacpb.Permission, error) {
+func (m *MockZanzibarLogic) GetPermissions(
+	c context.Context,
+	sbj *authzpbv1.Instance,
+	nsType string,
+) ([]*rbacpb.Permission, error) {
 	args := m.Called(c, sbj, nsType)
+
 	return args.Get(0).([]*rbacpb.Permission), args.Error(1)
 }
 
-func (m *MockZanzibarLogic) Check(c context.Context, in *authzpbv1.CheckIn) (*authzpbv1.CheckOut, error) {
+func (m *MockZanzibarLogic) Check(
+	c context.Context,
+	in *authzpbv1.CheckIn,
+) (*authzpbv1.CheckOut, error) {
 	args := m.Called(c, in)
+
 	return args.Get(0).(*authzpbv1.CheckOut), args.Error(1)
 }
 
@@ -461,7 +518,13 @@ func TestHandler_Check(t *testing.T) {
 	handler := NewHandler(mockZanzibar, mockRbac)
 
 	req := &connect.Request[authzpbv1.CheckIn]{
-		Msg: &authzpbv1.CheckIn{SbjNs: "user", SbjId: "1", Rel: "member", ObjNs: "group", ObjId: "1"},
+		Msg: &authzpbv1.CheckIn{
+			SbjNs: "user",
+			SbjId: "1",
+			Rel:   "member",
+			ObjNs: "group",
+			ObjId: "1",
+		},
 	}
 	expectedRes := &authzpbv1.CheckOut{IsAllowed: true}
 

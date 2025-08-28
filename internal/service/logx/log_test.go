@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"authz/internal/config"
-
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
@@ -27,8 +26,10 @@ func TestInitLogger(t *testing.T) {
 
 	// Test the output format
 	var buf bytes.Buffer
+
 	log.Logger = log.Output(&buf)
 	log.Info().Msg("test message")
+
 	output := buf.String()
 	assert.Contains(t, output, "test message")
 }
@@ -57,5 +58,6 @@ func TestMain(m *testing.M) {
 	exitCode := m.Run()
 	// Restore original logger
 	log.Logger = originalLogger
+
 	os.Exit(exitCode)
 }

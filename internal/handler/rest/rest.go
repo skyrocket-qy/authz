@@ -1,12 +1,12 @@
 package rest
 
 import (
-	"authz/internal/config"
 	"context"
 	"fmt"
 	"net/http"
 	"time"
 
+	"authz/internal/config"
 	"github.com/segmentio/kafka-go"
 	"gorm.io/gorm"
 )

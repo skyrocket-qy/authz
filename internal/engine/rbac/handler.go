@@ -1,10 +1,10 @@
 package rbac
 
 import (
-	"authz/internal/util"
-	"authz/internal/zanzibar"
 	"context"
 
+	"authz/internal/util"
+	"authz/internal/zanzibar"
 	"connectrpc.com/connect"
 	"github.com/skyrocket-qy/protos/gen/authzpb/rbacpb"
 	"github.com/skyrocket-qy/protos/gen/authzpb/rbacpb/rbacpbconnect"
@@ -215,7 +215,7 @@ func (h *Handler) DeleteTuples(
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
-// TODO: directly use code to decide has persmission or not can faster
+// TODO: directly use code to decide has persmission or not can faster.
 func (h *Handler) Check(
 	ctx context.Context, req *connect.Request[authzpbv1.CheckIn]) (
 	*connect.Response[authzpbv1.CheckOut], error,

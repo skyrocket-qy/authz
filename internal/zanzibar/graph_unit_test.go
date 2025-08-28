@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"authz/internal/entity"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -13,6 +12,7 @@ func TestNewGraph(t *testing.T) {
 	g := NewGraph()
 	assert.NotNil(t, g)
 	assert.Len(t, g.Shards, NumShards)
+
 	for _, shard := range g.Shards {
 		assert.NotNil(t, shard)
 		assert.NotNil(t, shard.Graph)

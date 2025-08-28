@@ -7,7 +7,6 @@ import (
 
 	"authz/internal/config"
 	"authz/internal/util"
-
 	"github.com/go-redis/redismock/v9"
 	"github.com/stretchr/testify/assert"
 )
@@ -30,7 +29,9 @@ func TestDistributedLock_TryLock(t *testing.T) {
 
 	// Mock the UUID generation
 	originalNewUUID := newUUID
+
 	defer func() { newUUID = originalNewUUID }()
+
 	newUUID = func() string { return "test-uuid" }
 
 	t.Run("TryLock success", func(t *testing.T) {

@@ -8,7 +8,6 @@ import (
 	"authz/internal/schema"
 	"authz/internal/util"
 	"authz/internal/zanzibar"
-
 	"github.com/skyrocket-qy/erx"
 	rbacpb "github.com/skyrocket-qy/protos/gen/authzpb/rbacpb"
 	authzpbv1 "github.com/skyrocket-qy/protos/gen/authzpb/v1"
@@ -55,7 +54,11 @@ type RbacLogicImpl struct {
 	schema  *schema.Schema
 }
 
-func NewRbacLogic(zbLogic zanzibar.ZanzibarLogic, pgdb *gorm.DB, schema *schema.Schema) *RbacLogicImpl {
+func NewRbacLogic(
+	zbLogic zanzibar.ZanzibarLogic,
+	pgdb *gorm.DB,
+	schema *schema.Schema,
+) *RbacLogicImpl {
 	return &RbacLogicImpl{
 		zbLogic: zbLogic,
 		pgdb:    pgdb,

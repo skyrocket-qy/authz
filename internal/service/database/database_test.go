@@ -6,7 +6,6 @@ import (
 
 	"authz/internal/config"
 	"authz/internal/util"
-
 	"github.com/stretchr/testify/assert"
 )
 

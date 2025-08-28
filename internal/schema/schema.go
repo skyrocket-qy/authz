@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"authz/internal/util"
-
 	"github.com/rs/zerolog/log"
 	"github.com/skyrocket-qy/erx"
 	"gopkg.in/yaml.v3"
@@ -196,12 +195,18 @@ func (r *UsersetRewrite) Validate() error {
 		count++
 
 		if r.TupleToUserset.Tupleset == nil || r.TupleToUserset.ComputedUserset == nil {
-			return erx.New(util.ErrBadRequest, "tuple_to_userset must have both tupleset and computed_userset")
+			return erx.New(
+				util.ErrBadRequest,
+				"tuple_to_userset must have both tupleset and computed_userset",
+			)
 		}
 
 		if r.TupleToUserset.Tupleset.Relation == nil ||
 			r.TupleToUserset.ComputedUserset.Relation == "" {
-			return erx.New(util.ErrBadRequest, "tuple_to_userset fields must have non-empty relation")
+			return erx.New(
+				util.ErrBadRequest,
+				"tuple_to_userset fields must have non-empty relation",
+			)
 		}
 	}
 
@@ -210,7 +215,10 @@ func (r *UsersetRewrite) Validate() error {
 	}
 
 	if count == 0 {
-		return erx.New(util.ErrBadRequest, "at least one rewrite type must be set in UsersetRewrite")
+		return erx.New(
+			util.ErrBadRequest,
+			"at least one rewrite type must be set in UsersetRewrite",
+		)
 	}
 
 	return nil
