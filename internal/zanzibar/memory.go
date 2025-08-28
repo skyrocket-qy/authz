@@ -83,11 +83,11 @@ func (e *ZanzibarMemoryImpl) Close(c context.Context) error {
 func (e *ZanzibarMemoryImpl) Check(c context.Context, user entity.Instance, perm string,
 	obj entity.Instance) (bool, error,
 ) {
-	return e.check(user, perm, obj, map[entity.Instance]struct{}{})
+	return e.check(user, perm, obj, make(map[string]struct{}))
 }
 
 func (e *ZanzibarMemoryImpl) check(user entity.Instance, perm string,
-	obj entity.Instance, visited map[entity.Instance]struct{}) (bool, error,
+	obj entity.Instance, visited map[string]struct{}) (bool, error,
 ) {
 	ns, ok := e.schema.Namespaces[obj.Ns]
 	if !ok {
@@ -103,18 +103,18 @@ func (e *ZanzibarMemoryImpl) check(user entity.Instance, perm string,
 		return false, nil
 	}
 
-	return e.evalUsersetRewrite(&relation.UsersetRewrite, user, obj, visited), nil
+	return e.evalUsersetRewrite(&relation.UsersetRewrite, user, obj, perm, visited), nil
 }
 
 func (e *ZanzibarMemoryImpl) evalUsersetRewrite(rewrite *schema.UsersetRewrite,
-	user, obj entity.Instance, visited map[entity.Instance]struct{},
+	user, obj entity.Instance, perm string, visited map[string]struct{},
 ) bool {
-	if _, ok := visited[obj]; ok || (len(visited) >= config.Conf.MaxCheckNodes) {
+	visitedKey := obj.Ns + ":" + obj.Id + "#" + perm
+	if _, ok := visited[visitedKey]; ok || (len(visited) >= config.Conf.MaxCheckNodes) {
 		// the return boolean will not tell caller to stop checking, but it will stop recursion
 		return false
 	}
-
-	visited[obj] = struct{}{}
+	visited[visitedKey] = struct{}{}
 
 	switch {
 	case rewrite.ComputedUserSet != nil:
@@ -125,7 +125,7 @@ func (e *ZanzibarMemoryImpl) evalUsersetRewrite(rewrite *schema.UsersetRewrite,
 
 	case rewrite.Union != nil:
 		for _, r := range rewrite.Union {
-			if e.evalUsersetRewrite(r, user, obj, visited) {
+			if e.evalUsersetRewrite(r, user, obj, perm, visited) {
 				return true
 			}
 		}
@@ -134,7 +134,7 @@ func (e *ZanzibarMemoryImpl) evalUsersetRewrite(rewrite *schema.UsersetRewrite,
 
 	case rewrite.Intersection != nil:
 		for _, r := range rewrite.Intersection {
-			if !e.evalUsersetRewrite(r, user, obj, visited) {
+			if !e.evalUsersetRewrite(r, user, obj, perm, visited) {
 				return false
 			}
 		}
@@ -142,19 +142,19 @@ func (e *ZanzibarMemoryImpl) evalUsersetRewrite(rewrite *schema.UsersetRewrite,
 		return true
 
 	case rewrite.Exclusion != nil:
-		return e.evalUsersetRewrite(rewrite.Exclusion.Base, user, obj, visited) &&
-			!e.evalUsersetRewrite(rewrite.Exclusion.Subtract, user, obj, visited)
+		return e.evalUsersetRewrite(rewrite.Exclusion.Base, user, obj, perm, visited) &&
+			!e.evalUsersetRewrite(rewrite.Exclusion.Subtract, user, obj, perm, visited)
 	}
 
 	return false
 }
 
 func (e *ZanzibarMemoryImpl) evalTupleToUserset(tupleToUserset *schema.TupleToUserset,
-	sbj, obj entity.Instance, visited map[entity.Instance]struct{},
+	sbj, obj entity.Instance, visited map[string]struct{},
 ) bool {
 	reWriteObjs := e.getSbjs(
 		[]entity.Instance{obj, {Ns: obj.Ns, Id: "*"}},
-		tupleToUserset.ComputedUserset.Relation,
+		*tupleToUserset.Tupleset.Relation,
 	)
 
 	for nextObj := range reWriteObjs {
