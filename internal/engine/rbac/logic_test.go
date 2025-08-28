@@ -14,13 +14,13 @@ import (
 	"gorm.io/gorm"
 )
 
-// MockZanzibarLogic is a mock implementation of the ZanzibarLogic interface.
-type MockZanzibarLogic struct {
+// mockZanzibarLogic is a mock implementation of the ZanzibarLogic interface.
+type mockZanzibarLogic struct {
 	mock.Mock
 	zanzibar.ZanzibarLogic
 }
 
-func (m *MockZanzibarLogic) Check(ctx context.Context, in *authzpbv1.CheckIn) (*authzpbv1.CheckOut, error) {
+func (m *mockZanzibarLogic) Check(ctx context.Context, in *authzpbv1.CheckIn) (*authzpbv1.CheckOut, error) {
 	args := m.Called(ctx, in)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -28,17 +28,17 @@ func (m *MockZanzibarLogic) Check(ctx context.Context, in *authzpbv1.CheckIn) (*
 	return args.Get(0).(*authzpbv1.CheckOut), args.Error(1)
 }
 
-func (m *MockZanzibarLogic) Create(ctx context.Context, in *authzpbv1.Tuple) error {
+func (m *mockZanzibarLogic) Create(ctx context.Context, in *authzpbv1.Tuple) error {
 	args := m.Called(ctx, in)
 	return args.Error(0)
 }
 
-func (m *MockZanzibarLogic) Delete(ctx context.Context, in *authzpbv1.DeleteTuplesIn) error {
+func (m *mockZanzibarLogic) Delete(ctx context.Context, in *authzpbv1.DeleteTuplesIn) error {
 	args := m.Called(ctx, in)
 	return args.Error(0)
 }
 
-func (m *MockZanzibarLogic) GetPermissions(ctx context.Context, in *authzpbv1.Instance, s string) ([]*rbacpb.Permission, error) {
+func (m *mockZanzibarLogic) GetPermissions(ctx context.Context, in *authzpbv1.Instance, s string) ([]*rbacpb.Permission, error) {
 	args := m.Called(ctx, in, s)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -46,7 +46,7 @@ func (m *MockZanzibarLogic) GetPermissions(ctx context.Context, in *authzpbv1.In
 	return args.Get(0).([]*rbacpb.Permission), args.Error(1)
 }
 
-func (m *MockZanzibarLogic) List(ctx context.Context, in *authzpbv1.ListTuplesIn) (*authzpbv1.ListTuplesOut, error) {
+func (m *mockZanzibarLogic) List(ctx context.Context, in *authzpbv1.ListTuplesIn) (*authzpbv1.ListTuplesOut, error) {
 	args := m.Called(ctx, in)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -54,7 +54,7 @@ func (m *MockZanzibarLogic) List(ctx context.Context, in *authzpbv1.ListTuplesIn
 	return args.Get(0).(*authzpbv1.ListTuplesOut), args.Error(1)
 }
 
-func setupTestDB(t *testing.T) (*gorm.DB, *MockZanzibarLogic, RbacLogic) {
+func setupTestDB(t *testing.T) (*gorm.DB, *mockZanzibarLogic, RbacLogic) {
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("failed to open sqlite: %v", err)
@@ -66,7 +66,7 @@ func setupTestDB(t *testing.T) (*gorm.DB, *MockZanzibarLogic, RbacLogic) {
 		t.Fatalf("failed to migrate schema: %v", err)
 	}
 
-	mockZanzibar := new(MockZanzibarLogic)
+	mockZanzibar := new(mockZanzibarLogic)
 	logic := NewRbacLogic(mockZanzibar, db, nil)
 
 	return db, mockZanzibar, logic
