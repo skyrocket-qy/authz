@@ -6,8 +6,8 @@ import (
 	"gorm.io/gorm"
 )
 
-type DbCtxKey struct{}
+type DBCtxKey struct{}
 
 func WithDB(ctx context.Context, db *gorm.DB) context.Context {
-	return context.WithValue(ctx, DbCtxKey{}, db)
+	return context.WithValue(ctx, DBCtxKey{}, db)
 }

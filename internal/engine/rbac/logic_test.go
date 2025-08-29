@@ -1,9 +1,10 @@
-package rbac
+package rbac_test
 
 import (
 	"context"
 	"testing"
 
+	"authz/internal/engine/rbac"
 	"authz/internal/entity/model"
 	"authz/internal/schema"
 	"authz/internal/zanzibar"
@@ -70,7 +71,7 @@ func (m *mockZanzibarLogic) List(
 	return args.Get(0).(*authzpbv1.ListTuplesOut), args.Error(1)
 }
 
-func setupTestDB(t *testing.T, s *schema.Schema) (*gorm.DB, *mockZanzibarLogic, RbacLogic) {
+func setupTestDB(t *testing.T, s *schema.Schema) (*gorm.DB, *mockZanzibarLogic, rbac.RbacLogic) {
 	t.Helper()
 
 	db, err := gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{})
@@ -79,7 +80,7 @@ func setupTestDB(t *testing.T, s *schema.Schema) (*gorm.DB, *mockZanzibarLogic, 
 	}
 
 	// Auto-migrate the schema
-	err = db.AutoMigrate(&User{}, &Role{}, &Resource{}, &UserAuth{}, &model.Tuple{})
+	err = db.AutoMigrate(&rbac.User{}, &rbac.Role{}, &rbac.Resource{}, &rbac.UserAuth{}, &model.Tuple{})
 	if err != nil {
 		t.Fatalf("failed to migrate schema: %v", err)
 	}
@@ -89,7 +90,7 @@ func setupTestDB(t *testing.T, s *schema.Schema) (*gorm.DB, *mockZanzibarLogic, 
 	}
 
 	mockZanzibar := new(mockZanzibarLogic)
-	logic := NewRbacLogic(mockZanzibar, db, s)
+	logic := rbac.NewRbacLogic(mockZanzibar, db, s)
 
 	return db, mockZanzibar, logic
 }
@@ -98,7 +99,7 @@ func TestRbacLogicImpl_ListUsers(t *testing.T) {
 	db, _, logic := setupTestDB(t, nil)
 
 	// Create test users
-	users := []*User{
+	users := []*rbac.User{
 		{Email: "user1@example.com", Name: "user1"},
 		{Email: "user2@example.com", Name: "user2"},
 	}
@@ -128,7 +129,7 @@ func TestRbacLogicImpl_UpdateUser(t *testing.T) {
 	db, _, logic := setupTestDB(t, nil)
 
 	// Create a test user
-	user := &User{Email: "user@example.com", Name: "testuser"}
+	user := &rbac.User{Email: "user@example.com", Name: "testuser"}
 	if err := db.Create(user).Error; err != nil {
 		t.Fatalf("failed to create user: %v", err)
 	}
@@ -144,7 +145,7 @@ func TestRbacLogicImpl_UpdateUser(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Verify the update
-	var updatedUser User
+	var updatedUser rbac.User
 	if err := db.First(&updatedUser, user.Id).Error; err != nil {
 		t.Fatalf("failed to find user: %v", err)
 	}
@@ -157,7 +158,7 @@ func TestRbacLogicImpl_DeleteUser(t *testing.T) {
 	db, mockZanzibar, logic := setupTestDB(t, nil)
 
 	// Create a test user
-	user := &User{Email: "user@example.com", Name: "testuser"}
+	user := &rbac.User{Email: "user@example.com", Name: "testuser"}
 	if err := db.Create(user).Error; err != nil {
 		t.Fatalf("failed to create user: %v", err)
 	}
@@ -170,7 +171,7 @@ func TestRbacLogicImpl_DeleteUser(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Verify the user is deleted
-	var deletedUser User
+	var deletedUser rbac.User
 
 	err = db.First(&deletedUser, user.Id).Error
 	assert.Error(t, err)
@@ -186,7 +187,7 @@ func TestRbacLogicImpl_CreateRole(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Verify the role is created
-	var role Role
+	var role rbac.Role
 	if err := db.Where("name = ?", roleName).First(&role).Error; err != nil {
 		t.Fatalf("failed to find role: %v", err)
 	}
@@ -198,7 +199,7 @@ func TestRbacLogicImpl_ListRoles(t *testing.T) {
 	db, _, logic := setupTestDB(t, nil)
 
 	// Create test roles
-	roles := []*Role{
+	roles := []*rbac.Role{
 		{Name: "admin"},
 		{Name: "editor"},
 	}
@@ -227,7 +228,7 @@ func TestRbacLogicImpl_UpdateRole(t *testing.T) {
 	db, _, logic := setupTestDB(t, nil)
 
 	// Create a test role
-	role := &Role{Name: "admin"}
+	role := &rbac.Role{Name: "admin"}
 	if err := db.Create(role).Error; err != nil {
 		t.Fatalf("failed to create role: %v", err)
 	}
@@ -241,7 +242,7 @@ func TestRbacLogicImpl_UpdateRole(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Verify the update
-	var updatedRole Role
+	var updatedRole rbac.Role
 	if err := db.First(&updatedRole, role.Id).Error; err != nil {
 		t.Fatalf("failed to find role: %v", err)
 	}
@@ -253,7 +254,7 @@ func TestRbacLogicImpl_DeleteRole(t *testing.T) {
 	db, mockZanzibar, logic := setupTestDB(t, nil)
 
 	// Create a test role
-	role := &Role{Name: "admin"}
+	role := &rbac.Role{Name: "admin"}
 	if err := db.Create(role).Error; err != nil {
 		t.Fatalf("failed to create role: %v", err)
 	}
@@ -266,7 +267,7 @@ func TestRbacLogicImpl_DeleteRole(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Verify the role is deleted
-	var deletedRole Role
+	var deletedRole rbac.Role
 
 	err = db.First(&deletedRole, role.Id).Error
 	assert.Error(t, err)
@@ -286,7 +287,7 @@ func TestRbacLogicImpl_CreateResource(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Verify the resource is created
-	var resource Resource
+	var resource rbac.Resource
 	if err := db.Where("ns = ? AND name = ?", resourceNs, resourceName).First(&resource).Error; err != nil {
 		t.Fatalf("failed to find resource: %v", err)
 	}
@@ -299,7 +300,7 @@ func TestRbacLogicImpl_ListResources(t *testing.T) {
 	db, _, logic := setupTestDB(t, nil)
 
 	// Create test resources
-	resources := []*Resource{
+	resources := []*rbac.Resource{
 		{Ns: "document", Name: "doc1"},
 		{Ns: "image", Name: "img1"},
 	}
@@ -329,7 +330,7 @@ func TestRbacLogicImpl_DeleteResource(t *testing.T) {
 	db, mockZanzibar, logic := setupTestDB(t, nil)
 
 	// Create a test resource
-	resource := &Resource{Ns: "document", Name: "doc1"}
+	resource := &rbac.Resource{Ns: "document", Name: "doc1"}
 	if err := db.Create(resource).Error; err != nil {
 		t.Fatalf("failed to create resource: %v", err)
 	}
@@ -342,7 +343,7 @@ func TestRbacLogicImpl_DeleteResource(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Verify the resource is deleted
-	var deletedResource Resource
+	var deletedResource rbac.Resource
 
 	err = db.First(&deletedResource, resource.Id).Error
 	assert.Error(t, err)
@@ -367,7 +368,7 @@ func TestRbacLogicImpl_GetRole(t *testing.T) {
 	db, mockZanzibar, logic := setupTestDB(t, nil)
 
 	// Create a test role
-	role := &Role{Id: 1, Name: "admin"}
+	role := &rbac.Role{Id: 1, Name: "admin"}
 	if err := db.Create(role).Error; err != nil {
 		t.Fatalf("failed to create role: %v", err)
 	}
@@ -390,7 +391,7 @@ func TestRbacLogicImpl_ListResourcesByType(t *testing.T) {
 	db, _, logic := setupTestDB(t, nil)
 
 	// Create test resources
-	resources := []*Resource{
+	resources := []*rbac.Resource{
 		{Ns: "document", Name: "doc1"},
 		{Ns: "document", Name: "doc2"},
 		{Ns: "image", Name: "img1"},
@@ -513,7 +514,7 @@ func TestRbacLogicImpl_RevokePerm(t *testing.T) {
 	db, mockZanzibar, logic := setupTestDB(t, nil)
 
 	// Create a test resource
-	resource := &Resource{Id: 1, Ns: "document", Name: "doc1"}
+	resource := &rbac.Resource{Id: 1, Ns: "document", Name: "doc1"}
 	if err := db.Create(resource).Error; err != nil {
 		t.Fatalf("failed to create resource: %v", err)
 	}

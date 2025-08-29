@@ -1,8 +1,9 @@
-package validate
+package validate_test
 
 import (
 	"testing"
 
+	"authz/internal/service/validate"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -13,14 +14,14 @@ type TestStruct struct {
 
 func TestValidator(t *testing.T) {
 	// Initialize the validator
-	New()
+	validate.New()
 
 	t.Run("Valid struct", func(t *testing.T) {
 		s := TestStruct{
 			Name:  "Test User",
 			Email: "test@example.com",
 		}
-		err := Struct(s)
+		err := validate.Struct(s)
 		assert.NoError(t, err)
 	})
 
@@ -28,7 +29,7 @@ func TestValidator(t *testing.T) {
 		s := TestStruct{
 			Email: "test@example.com",
 		}
-		err := Struct(s)
+		err := validate.Struct(s)
 		assert.Error(t, err)
 	})
 
@@ -37,7 +38,7 @@ func TestValidator(t *testing.T) {
 			Name:  "Test User",
 			Email: "not-an-email",
 		}
-		err := Struct(s)
+		err := validate.Struct(s)
 		assert.Error(t, err)
 	})
 }

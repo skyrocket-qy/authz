@@ -1,8 +1,9 @@
-package util
+package util_test
 
 import (
 	"testing"
 
+	"authz/internal/util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -24,14 +25,14 @@ func TestGobEncoding(t *testing.T) {
 		var decoded GobTestStruct
 
 		// Act
-		encodedBytes, err := EncodeGob(original)
+		encodedBytes, err := util.GobEncode(original)
 
 		// Assert Encode
 		assert.NoError(t, err)
 		assert.NotEmpty(t, encodedBytes)
 
 		// Act Decode
-		err = DecodeGob(encodedBytes, &decoded)
+		err = util.GobDecode(encodedBytes, &decoded)
 
 		// Assert Decode
 		assert.NoError(t, err)
@@ -53,7 +54,7 @@ func TestGobEncoding(t *testing.T) {
 		var decoded GobTestStruct
 
 		// Act
-		err := DecodeGob(invalidBytes, &decoded)
+		err := util.GobDecode(invalidBytes, &decoded)
 
 		// Assert
 		assert.Error(t, err)
@@ -65,7 +66,7 @@ func TestGobEncoding(t *testing.T) {
 		ch := make(chan int)
 
 		// Act
-		_, err := EncodeGob(ch)
+		_, err := util.GobEncode(ch)
 
 		// Assert
 		assert.Error(t, err)
@@ -74,13 +75,13 @@ func TestGobEncoding(t *testing.T) {
 	t.Run("should return an error when decoding into a non-pointer", func(t *testing.T) {
 		// Arrange
 		original := GobTestStruct{Name: "test"}
-		encodedBytes, _ := EncodeGob(original)
+		encodedBytes, _ := util.GobEncode(original)
 
 		var decoded GobTestStruct
 
 		// Act
 		// Pass the struct by value, not by pointer.
-		err := DecodeGob(encodedBytes, decoded)
+		err := util.GobDecode(encodedBytes, decoded)
 
 		// Assert
 		assert.Error(t, err)

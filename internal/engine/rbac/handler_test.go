@@ -1,9 +1,10 @@
-package rbac
+package rbac_test
 
 import (
 	"context"
 	"testing"
 
+	"authz/internal/engine/rbac"
 	"connectrpc.com/connect"
 	"github.com/skyrocket-qy/protos/gen/authzpb/rbacpb"
 	authzpbv1 "github.com/skyrocket-qy/protos/gen/authzpb/v1"
@@ -202,7 +203,7 @@ func (m *MockZanzibarLogic) Check(
 func TestHandler_ListUsers(t *testing.T) {
 	mockRbac := new(MockRbacLogic)
 	mockZanzibar := new(MockZanzibarLogic)
-	handler := NewHandler(mockZanzibar, mockRbac)
+	handler := rbac.NewHandler(mockZanzibar, mockRbac)
 
 	req := &connect.Request[rbacpb.ListUsersIn]{
 		Msg: &rbacpb.ListUsersIn{},
@@ -225,7 +226,7 @@ func TestHandler_ListUsers(t *testing.T) {
 func TestHandler_UpdateUser(t *testing.T) {
 	mockRbac := new(MockRbacLogic)
 	mockZanzibar := new(MockZanzibarLogic)
-	handler := NewHandler(mockZanzibar, mockRbac)
+	handler := rbac.NewHandler(mockZanzibar, mockRbac)
 
 	req := &connect.Request[rbacpb.UpdateUserIn]{
 		Msg: &rbacpb.UpdateUserIn{Id: 1, Name: stringPtr("new name")},
@@ -242,7 +243,7 @@ func TestHandler_UpdateUser(t *testing.T) {
 func TestHandler_DeleteUser(t *testing.T) {
 	mockRbac := new(MockRbacLogic)
 	mockZanzibar := new(MockZanzibarLogic)
-	handler := NewHandler(mockZanzibar, mockRbac)
+	handler := rbac.NewHandler(mockZanzibar, mockRbac)
 
 	req := &connect.Request[rbacpb.DeleteUserIn]{
 		Msg: &rbacpb.DeleteUserIn{Id: 1},
@@ -259,7 +260,7 @@ func TestHandler_DeleteUser(t *testing.T) {
 func TestHandler_CreateRole(t *testing.T) {
 	mockRbac := new(MockRbacLogic)
 	mockZanzibar := new(MockZanzibarLogic)
-	handler := NewHandler(mockZanzibar, mockRbac)
+	handler := rbac.NewHandler(mockZanzibar, mockRbac)
 
 	req := &connect.Request[rbacpb.CreateRoleIn]{
 		Msg: &rbacpb.CreateRoleIn{Name: "new role"},
@@ -276,7 +277,7 @@ func TestHandler_CreateRole(t *testing.T) {
 func TestHandler_ListRoles(t *testing.T) {
 	mockRbac := new(MockRbacLogic)
 	mockZanzibar := new(MockZanzibarLogic)
-	handler := NewHandler(mockZanzibar, mockRbac)
+	handler := rbac.NewHandler(mockZanzibar, mockRbac)
 
 	req := &connect.Request[rbacpb.ListRolesIn]{
 		Msg: &rbacpb.ListRolesIn{},
@@ -299,7 +300,7 @@ func TestHandler_ListRoles(t *testing.T) {
 func TestHandler_UpdateRole(t *testing.T) {
 	mockRbac := new(MockRbacLogic)
 	mockZanzibar := new(MockZanzibarLogic)
-	handler := NewHandler(mockZanzibar, mockRbac)
+	handler := rbac.NewHandler(mockZanzibar, mockRbac)
 
 	req := &connect.Request[rbacpb.UpdateRoleIn]{
 		Msg: &rbacpb.UpdateRoleIn{Id: 1, Name: "new name"},
@@ -316,7 +317,7 @@ func TestHandler_UpdateRole(t *testing.T) {
 func TestHandler_DeleteRole(t *testing.T) {
 	mockRbac := new(MockRbacLogic)
 	mockZanzibar := new(MockZanzibarLogic)
-	handler := NewHandler(mockZanzibar, mockRbac)
+	handler := rbac.NewHandler(mockZanzibar, mockRbac)
 
 	req := &connect.Request[rbacpb.DeleteRoleIn]{
 		Msg: &rbacpb.DeleteRoleIn{Id: 1},
@@ -333,7 +334,7 @@ func TestHandler_DeleteRole(t *testing.T) {
 func TestHandler_CreateResource(t *testing.T) {
 	mockRbac := new(MockRbacLogic)
 	mockZanzibar := new(MockZanzibarLogic)
-	handler := NewHandler(mockZanzibar, mockRbac)
+	handler := rbac.NewHandler(mockZanzibar, mockRbac)
 
 	req := &connect.Request[rbacpb.CreateResourceIn]{
 		Msg: &rbacpb.CreateResourceIn{Ns: "test", Name: "test_resource"},
@@ -350,7 +351,7 @@ func TestHandler_CreateResource(t *testing.T) {
 func TestHandler_ListResources(t *testing.T) {
 	mockRbac := new(MockRbacLogic)
 	mockZanzibar := new(MockZanzibarLogic)
-	handler := NewHandler(mockZanzibar, mockRbac)
+	handler := rbac.NewHandler(mockZanzibar, mockRbac)
 
 	req := &connect.Request[rbacpb.ListResourcesIn]{
 		Msg: &rbacpb.ListResourcesIn{},
@@ -373,7 +374,7 @@ func TestHandler_ListResources(t *testing.T) {
 func TestHandler_DeleteResource(t *testing.T) {
 	mockRbac := new(MockRbacLogic)
 	mockZanzibar := new(MockZanzibarLogic)
-	handler := NewHandler(mockZanzibar, mockRbac)
+	handler := rbac.NewHandler(mockZanzibar, mockRbac)
 
 	req := &connect.Request[rbacpb.DeleteResourceIn]{
 		Msg: &rbacpb.DeleteResourceIn{Id: 1},
@@ -390,7 +391,7 @@ func TestHandler_DeleteResource(t *testing.T) {
 func TestHandler_AssignRole(t *testing.T) {
 	mockRbac := new(MockRbacLogic)
 	mockZanzibar := new(MockZanzibarLogic)
-	handler := NewHandler(mockZanzibar, mockRbac)
+	handler := rbac.NewHandler(mockZanzibar, mockRbac)
 
 	req := &connect.Request[rbacpb.AssignRoleIn]{
 		Msg: &rbacpb.AssignRoleIn{UserId: 1, RoleId: 1},
@@ -407,7 +408,7 @@ func TestHandler_AssignRole(t *testing.T) {
 func TestHandler_RevokeRole(t *testing.T) {
 	mockRbac := new(MockRbacLogic)
 	mockZanzibar := new(MockZanzibarLogic)
-	handler := NewHandler(mockZanzibar, mockRbac)
+	handler := rbac.NewHandler(mockZanzibar, mockRbac)
 
 	req := &connect.Request[rbacpb.RevokeRoleIn]{
 		Msg: &rbacpb.RevokeRoleIn{UserId: 1, RoleId: 1},
@@ -424,7 +425,7 @@ func TestHandler_RevokeRole(t *testing.T) {
 func TestHandler_GrantPerm(t *testing.T) {
 	mockRbac := new(MockRbacLogic)
 	mockZanzibar := new(MockZanzibarLogic)
-	handler := NewHandler(mockZanzibar, mockRbac)
+	handler := rbac.NewHandler(mockZanzibar, mockRbac)
 
 	req := &connect.Request[rbacpb.GrantPermIn]{
 		Msg: &rbacpb.GrantPermIn{RoleId: 1, ResourceId: 1, Perm: "read"},
@@ -441,7 +442,7 @@ func TestHandler_GrantPerm(t *testing.T) {
 func TestHandler_RevokePerm(t *testing.T) {
 	mockRbac := new(MockRbacLogic)
 	mockZanzibar := new(MockZanzibarLogic)
-	handler := NewHandler(mockZanzibar, mockRbac)
+	handler := rbac.NewHandler(mockZanzibar, mockRbac)
 
 	req := &connect.Request[rbacpb.RevokePermIn]{
 		Msg: &rbacpb.RevokePermIn{RoleId: 1, ResourceId: 1, Perm: "read"},
@@ -458,7 +459,7 @@ func TestHandler_RevokePerm(t *testing.T) {
 func TestHandler_ListTuples(t *testing.T) {
 	mockRbac := new(MockRbacLogic)
 	mockZanzibar := new(MockZanzibarLogic)
-	handler := NewHandler(mockZanzibar, mockRbac)
+	handler := rbac.NewHandler(mockZanzibar, mockRbac)
 
 	req := &connect.Request[authzpbv1.ListTuplesIn]{
 		Msg: &authzpbv1.ListTuplesIn{},
@@ -481,7 +482,7 @@ func TestHandler_ListTuples(t *testing.T) {
 func TestHandler_CreateTuple(t *testing.T) {
 	mockRbac := new(MockRbacLogic)
 	mockZanzibar := new(MockZanzibarLogic)
-	handler := NewHandler(mockZanzibar, mockRbac)
+	handler := rbac.NewHandler(mockZanzibar, mockRbac)
 
 	req := &connect.Request[authzpbv1.Tuple]{
 		Msg: &authzpbv1.Tuple{SbjNs: "user", SbjId: "1", Rel: "member", ObjNs: "group", ObjId: "1"},
@@ -498,7 +499,7 @@ func TestHandler_CreateTuple(t *testing.T) {
 func TestHandler_DeleteTuples(t *testing.T) {
 	mockRbac := new(MockRbacLogic)
 	mockZanzibar := new(MockZanzibarLogic)
-	handler := NewHandler(mockZanzibar, mockRbac)
+	handler := rbac.NewHandler(mockZanzibar, mockRbac)
 
 	req := &connect.Request[authzpbv1.DeleteTuplesIn]{
 		Msg: &authzpbv1.DeleteTuplesIn{},
@@ -515,7 +516,7 @@ func TestHandler_DeleteTuples(t *testing.T) {
 func TestHandler_Check(t *testing.T) {
 	mockRbac := new(MockRbacLogic)
 	mockZanzibar := new(MockZanzibarLogic)
-	handler := NewHandler(mockZanzibar, mockRbac)
+	handler := rbac.NewHandler(mockZanzibar, mockRbac)
 
 	req := &connect.Request[authzpbv1.CheckIn]{
 		Msg: &authzpbv1.CheckIn{
@@ -540,7 +541,7 @@ func TestHandler_Check(t *testing.T) {
 func TestHandler_ListResourceType(t *testing.T) {
 	mockRbac := new(MockRbacLogic)
 	mockZanzibar := new(MockZanzibarLogic)
-	handler := NewHandler(mockZanzibar, mockRbac)
+	handler := rbac.NewHandler(mockZanzibar, mockRbac)
 
 	req := &connect.Request[emptypb.Empty]{
 		Msg: &emptypb.Empty{},
@@ -559,7 +560,7 @@ func TestHandler_ListResourceType(t *testing.T) {
 func TestHandler_ListResourcesByType(t *testing.T) {
 	mockRbac := new(MockRbacLogic)
 	mockZanzibar := new(MockZanzibarLogic)
-	handler := NewHandler(mockZanzibar, mockRbac)
+	handler := rbac.NewHandler(mockZanzibar, mockRbac)
 
 	req := &connect.Request[rbacpb.ListResourcesByTypeIn]{
 		Msg: &rbacpb.ListResourcesByTypeIn{Type: "type1"},
@@ -582,7 +583,7 @@ func TestHandler_ListResourcesByType(t *testing.T) {
 func TestHandler_ListPermissionByResource(t *testing.T) {
 	mockRbac := new(MockRbacLogic)
 	mockZanzibar := new(MockZanzibarLogic)
-	handler := NewHandler(mockZanzibar, mockRbac)
+	handler := rbac.NewHandler(mockZanzibar, mockRbac)
 
 	req := &connect.Request[rbacpb.ListPermissionByResourceIn]{
 		Msg: &rbacpb.ListPermissionByResourceIn{ResourceNs: "ns1", ResourceId: "1"},
@@ -601,7 +602,7 @@ func TestHandler_ListPermissionByResource(t *testing.T) {
 func TestHandler_GetRole(t *testing.T) {
 	mockRbac := new(MockRbacLogic)
 	mockZanzibar := new(MockZanzibarLogic)
-	handler := NewHandler(mockZanzibar, mockRbac)
+	handler := rbac.NewHandler(mockZanzibar, mockRbac)
 
 	req := &connect.Request[rbacpb.GetRoleIn]{
 		Msg: &rbacpb.GetRoleIn{Id: 1},

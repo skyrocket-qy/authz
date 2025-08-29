@@ -1,17 +1,18 @@
-package zanzibar
+package zanzibar_test
 
 import (
 	"strconv"
 	"testing"
 
 	"authz/internal/entity"
+	"authz/internal/zanzibar"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewGraph(t *testing.T) {
-	g := NewGraph()
+	g := zanzibar.NewGraph()
 	assert.NotNil(t, g)
-	assert.Len(t, g.Shards, NumShards)
+	assert.Len(t, g.Shards, zanzibar.NumShards)
 
 	for _, shard := range g.Shards {
 		assert.NotNil(t, shard)
@@ -20,18 +21,18 @@ func TestNewGraph(t *testing.T) {
 }
 
 func TestGetShard(t *testing.T) {
-	g := NewGraph()
+	g := zanzibar.NewGraph()
 	obj := entity.Instance{Id: "123"}
-	shard := g.getShard(obj)
+	shard := g.GetShard(obj)
 	assert.NotNil(t, shard)
 
 	sum, _ := strconv.Atoi(obj.Id)
-	expectedShard := g.Shards[sum%NumShards]
+	expectedShard := g.Shards[sum%zanzibar.NumShards]
 	assert.Equal(t, expectedShard, shard)
 }
 
 func TestGraph_Create(t *testing.T) {
-	g := NewGraph()
+	g := zanzibar.NewGraph()
 	obj := entity.Instance{Ns: "doc", Id: "1"}
 	sbj := entity.Instance{Ns: "user", Id: "1"}
 	rel := "owner"
@@ -51,7 +52,7 @@ func TestGraph_Create(t *testing.T) {
 }
 
 func TestGraph_Exist(t *testing.T) {
-	g := NewGraph()
+	g := zanzibar.NewGraph()
 	obj := entity.Instance{Ns: "doc", Id: "1"}
 	sbj := entity.Instance{Ns: "user", Id: "1"}
 	rel := "owner"
@@ -69,7 +70,7 @@ func TestGraph_Exist(t *testing.T) {
 }
 
 func TestGraph_Delete(t *testing.T) {
-	g := NewGraph()
+	g := zanzibar.NewGraph()
 	obj := entity.Instance{Ns: "doc", Id: "1"}
 	sbj1 := entity.Instance{Ns: "user", Id: "1"}
 	sbj2 := entity.Instance{Ns: "user", Id: "2"}
@@ -93,20 +94,20 @@ func TestGraph_Delete(t *testing.T) {
 	// Delete the last subject for a relation
 	g.Delete(obj, rel1, sbj2)
 	assert.False(t, g.Exist(obj, rel1, sbj2))
-	s := g.getShard(obj)
-	s.mu.RLock()
+	s := g.GetShard(obj)
+	s.Mu.RLock()
 	objEntry := s.Graph[obj]
-	s.mu.RUnlock()
-	objEntry.mu.RLock()
+	s.Mu.RUnlock()
+	objEntry.Mu.RLock()
 	_, ok := objEntry.Relations[rel1]
-	objEntry.mu.RUnlock()
+	objEntry.Mu.RUnlock()
 	assert.False(t, ok, "relation should be deleted when it has no subjects")
 
 	// Delete the last relation for an object
 	g.Delete(obj, rel2, sbj1)
 	assert.False(t, g.Exist(obj, rel2, sbj1))
-	s.mu.RLock()
+	s.Mu.RLock()
 	_, ok = s.Graph[obj]
-	s.mu.RUnlock()
+	s.Mu.RUnlock()
 	assert.False(t, ok, "object should be deleted when it has no relations")
 }

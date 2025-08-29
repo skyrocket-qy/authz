@@ -7,7 +7,7 @@ import (
 	"github.com/skyrocket-qy/erx"
 )
 
-func EncodeGob(in any) ([]byte, error) {
+func GobEncode(in any) ([]byte, error) {
 	var buf bytes.Buffer
 
 	enc := gob.NewEncoder(&buf)
@@ -18,7 +18,7 @@ func EncodeGob(in any) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func DecodeGob(src []byte, target any) error {
+func GobDecode(src []byte, target any) error {
 	dec := gob.NewDecoder(bytes.NewReader(src))
 	if err := dec.Decode(target); err != nil {
 		return erx.W(err)

@@ -11,7 +11,7 @@ import (
 	"github.com/skyrocket-qy/erx"
 )
 
-func GenerateJWT(userID uint) (string, error) {
+func NewJwtToken(userID uint) (string, error) {
 	if config.Conf.Jwt.Secret == "" {
 		return "", errors.New("JWT secret is not configured")
 	}

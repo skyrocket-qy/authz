@@ -28,23 +28,23 @@ type ZanzibarMemory interface {
 var _ ZanzibarMemory = (*ZanzibarMemoryImpl)(nil)
 
 type ZanzibarMemoryImpl struct {
-	schema *schema.Schema
-	kafkaR *kafka.Reader
-	db     *gorm.DB
+	Schema *schema.Schema
+	KafkaR *kafka.Reader
+	Db     *gorm.DB
 
-	graph  *Graph
+	Graph  *Graph
 	Offest int64
-	cancel context.CancelFunc
-	mutex  sync.RWMutex
+	Cancel context.CancelFunc
+	Mutex  sync.RWMutex
 }
 
 func NewZanzibarMemory(c context.Context, lc *util.LifecycleParallel, db *gorm.DB, s *schema.Schema,
 	kafkaR *kafka.Reader) (*ZanzibarMemoryImpl, error,
 ) {
 	engine := ZanzibarMemoryImpl{
-		kafkaR: kafkaR,
-		db:     db,
-		graph:  NewGraph(),
+		KafkaR: kafkaR,
+		Db:     db,
+		Graph:  NewGraph(),
 	}
 
 	st := time.Now()
@@ -58,15 +58,15 @@ func NewZanzibarMemory(c context.Context, lc *util.LifecycleParallel, db *gorm.D
 		Int64("took ms", time.Since(st).Milliseconds()).Msg("build rbac graph")
 
 	cc, cancel := context.WithCancel(c)
-	engine.cancel = cancel
+	engine.Cancel = cancel
 
-	if err := engine.kafkaR.SetOffset(engine.Offest + 1); err != nil {
+	if err := engine.KafkaR.SetOffset(engine.Offest + 1); err != nil {
 		return nil, erx.W(err, "failed to set offset to earliest")
 	}
 
 	go engine.sync(cc)
 
-	engine.schema = s
+	engine.Schema = s
 
 	lc.Add(&engine, engine.Close, db, kafkaR)
 
@@ -74,7 +74,7 @@ func NewZanzibarMemory(c context.Context, lc *util.LifecycleParallel, db *gorm.D
 }
 
 func (e *ZanzibarMemoryImpl) Close(c context.Context) error {
-	e.cancel()
+	e.Cancel()
 
 	return nil
 }
@@ -88,7 +88,7 @@ func (e *ZanzibarMemoryImpl) Check(c context.Context, user entity.Instance, perm
 func (e *ZanzibarMemoryImpl) check(user entity.Instance, perm string,
 	obj entity.Instance, visited map[entity.Instance]struct{}) (bool, error,
 ) {
-	ns, ok := e.schema.Namespaces[obj.Ns]
+	ns, ok := e.Schema.Namespaces[obj.Ns]
 	if !ok {
 		return false, erx.Newf(util.ErrBadRequest, "unknown namespace: %s", obj.Ns)
 	}
@@ -117,7 +117,7 @@ func (e *ZanzibarMemoryImpl) evalUsersetRewrite(rewrite *schema.UsersetRewrite,
 
 	switch {
 	case rewrite.ComputedUserSet != nil:
-		return e.graph.Exist(obj, rewrite.ComputedUserSet.Relation, user)
+		return e.Graph.Exist(obj, rewrite.ComputedUserSet.Relation, user)
 
 	case rewrite.TupleToUserset != nil:
 		return e.evalTupleToUserset(rewrite.TupleToUserset, user, obj, visited)
@@ -173,16 +173,16 @@ func (e *ZanzibarMemoryImpl) getSbjs(
 	sbjs := make(map[entity.Instance]struct{})
 
 	for _, obj := range objs {
-		s := e.graph.getShard(obj)
-		s.mu.RLock()
+		s := e.Graph.GetShard(obj)
+		s.Mu.RLock()
 		objEntry, ok := s.Graph[obj]
-		s.mu.RUnlock()
+		s.Mu.RUnlock()
 
 		if !ok {
 			continue
 		}
 
-		objEntry.mu.RLock()
+		objEntry.Mu.RLock()
 
 		sbjEntry, ok := objEntry.Relations[rel]
 		if ok {
@@ -191,7 +191,7 @@ func (e *ZanzibarMemoryImpl) getSbjs(
 			}
 		}
 
-		objEntry.mu.RUnlock()
+		objEntry.Mu.RUnlock()
 	}
 
 	return sbjs
@@ -200,11 +200,11 @@ func (e *ZanzibarMemoryImpl) getSbjs(
 func (e *ZanzibarMemoryImpl) build(c context.Context) error {
 	log.Info().Msg("build rbac graph")
 
-	r := e.kafkaR
+	r := e.KafkaR
 
 	cp := model.GraphCheckpoint{}
 
-	tx := e.db.WithContext(c).Take(&cp)
+	tx := e.Db.WithContext(c).Take(&cp)
 	if err := tx.Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return erx.W(err, "failed to get graph checkpoint")
@@ -212,7 +212,7 @@ func (e *ZanzibarMemoryImpl) build(c context.Context) error {
 	}
 
 	if tx.RowsAffected > 0 {
-		if err := util.DecodeGob(cp.Data, e.graph); err != nil {
+		if err := util.GobDecode(cp.Data, e.Graph); err != nil {
 			return erx.W(err, "failed to decode graph")
 		}
 
@@ -271,9 +271,9 @@ func (e *ZanzibarMemoryImpl) applyMessage(m kafka.Message) error {
 
 	switch val.Op {
 	case "c":
-		e.graph.Create(obj, rel, sbj)
+		e.Graph.Create(obj, rel, sbj)
 	case "d":
-		e.graph.Delete(obj, rel, sbj)
+		e.Graph.Delete(obj, rel, sbj)
 	default:
 	}
 
@@ -286,7 +286,7 @@ func (e *ZanzibarMemoryImpl) sync(c context.Context) {
 		case <-c.Done():
 			return
 		default:
-			m, err := e.kafkaR.ReadMessage(c)
+			m, err := e.KafkaR.ReadMessage(c)
 			if err != nil {
 				if errors.Is(err, context.Canceled) {
 					return
@@ -317,7 +317,7 @@ func (e *ZanzibarMemoryImpl) SyncGraphCheckpoint(c context.Context) {
 		case <-ticker.C:
 			cp := model.GraphCheckpoint{}
 
-			tx := e.db.WithContext(c).Take(&cp)
+			tx := e.Db.WithContext(c).Take(&cp)
 			if err := tx.Error; err != nil {
 				if !errors.Is(err, gorm.ErrRecordNotFound) {
 					log.Error().Err(err).Msg("Failed to get graph checkpoint")
@@ -327,43 +327,43 @@ func (e *ZanzibarMemoryImpl) SyncGraphCheckpoint(c context.Context) {
 			}
 
 			if tx.RowsAffected == 0 {
-				e.mutex.RLock()
+				e.Mutex.RLock()
 
-				bytes, err := util.EncodeGob(&e.graph)
+				bytes, err := util.GobEncode(&e.Graph)
 				if err != nil {
 					log.Warn().Err(err).Msg("Failed to encode graph")
-					e.mutex.RUnlock()
+					e.Mutex.RUnlock()
 
 					continue
 				}
 
 				cp.LastOffset = e.Offest
-				e.mutex.RUnlock()
+				e.Mutex.RUnlock()
 
 				cp.Data = bytes
 
-				if err := e.db.WithContext(c).Create(&cp).Error; err != nil {
+				if err := e.Db.WithContext(c).Create(&cp).Error; err != nil {
 					log.Error().Err(err).Msg("Failed to create graph checkpoint")
 
 					continue
 				}
 			} else if e.Offest-cp.LastOffset > 1000 {
-				e.mutex.RLock()
+				e.Mutex.RLock()
 
-				bytes, err := util.EncodeGob(&e.graph)
+				bytes, err := util.GobEncode(&e.Graph)
 				if err != nil {
 					log.Warn().Err(err).Msg("Failed to encode graph")
-					e.mutex.RUnlock()
+					e.Mutex.RUnlock()
 
 					continue
 				}
 
 				cp.LastOffset = e.Offest
-				e.mutex.RUnlock()
+				e.Mutex.RUnlock()
 
 				cp.Data = bytes
 
-				if err := e.db.WithContext(c).Save(&cp).Error; err != nil {
+				if err := e.Db.WithContext(c).Save(&cp).Error; err != nil {
 					log.Error().Err(err).Msg("Failed to update graph checkpoint")
 
 					continue

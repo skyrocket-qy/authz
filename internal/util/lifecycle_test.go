@@ -1,4 +1,4 @@
-package util
+package util_test
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"authz/internal/util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -14,7 +15,7 @@ import (
 
 func TestSimpleLifecycle(t *testing.T) {
 	t.Run("should run closers in LIFO order", func(t *testing.T) {
-		lc := NewSimpleLifecycle()
+		lc := util.NewSimpleLifecycle()
 
 		var order []string
 
@@ -40,7 +41,7 @@ func TestSimpleLifecycle(t *testing.T) {
 	})
 
 	t.Run("should stop and return error on first failure", func(t *testing.T) {
-		lc := NewSimpleLifecycle()
+		lc := util.NewSimpleLifecycle()
 
 		var order []string
 
@@ -69,7 +70,7 @@ func TestSimpleLifecycle(t *testing.T) {
 
 func TestLifecycleParallel(t *testing.T) {
 	t.Run("should run closers according to dependency order", func(t *testing.T) {
-		lc := NewLifecycleParallel()
+		lc := util.NewLifecycleParallel()
 		orderCh := make(chan string, 3)
 
 		// A -> B -> C
@@ -120,7 +121,7 @@ func TestLifecycleParallel(t *testing.T) {
 	})
 
 	t.Run("should run independent closers in parallel", func(t *testing.T) {
-		lc := NewLifecycleParallel()
+		lc := util.NewLifecycleParallel()
 
 		closerDuration := 50 * time.Millisecond
 
@@ -156,7 +157,7 @@ func TestLifecycleParallel(t *testing.T) {
 	})
 
 	t.Run("should stop on first error in parallel execution", func(t *testing.T) {
-		lc := NewLifecycleParallel()
+		lc := util.NewLifecycleParallel()
 		testErr := errors.New("shutdown failed")
 
 		var wg sync.WaitGroup

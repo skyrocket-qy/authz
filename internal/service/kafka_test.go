@@ -1,10 +1,11 @@
-package service
+package service_test
 
 import (
 	"context"
 	"testing"
 
 	"authz/internal/config"
+	"authz/internal/service"
 	"authz/internal/util"
 	"github.com/stretchr/testify/assert"
 )
@@ -22,7 +23,7 @@ func TestNewKafkaReader(t *testing.T) {
 	}
 
 	lc := util.NewLifecycleParallel()
-	reader := NewKafkaReader(lc)
+	reader := service.NewKafkaReader(lc)
 	assert.NotNil(t, reader)
 
 	// Close the reader

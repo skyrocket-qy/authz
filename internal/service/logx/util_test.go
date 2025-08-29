@@ -1,10 +1,11 @@
-package logx
+package logx_test
 
 import (
 	"bytes"
 	"context"
 	"testing"
 
+	"authz/internal/service/logx"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
@@ -34,10 +35,10 @@ func TestLoggingWithSpan(t *testing.T) {
 		logFunc func(ctx context.Context) *zerolog.Event
 		level   zerolog.Level
 	}{
-		{"Info", Info, zerolog.InfoLevel},
-		{"Debug", Debug, zerolog.DebugLevel},
-		{"Warn", Warn, zerolog.WarnLevel},
-		{"Error", Error, zerolog.ErrorLevel},
+		{"Info", logx.Info, zerolog.InfoLevel},
+		{"Debug", logx.Debug, zerolog.DebugLevel},
+		{"Warn", logx.Warn, zerolog.WarnLevel},
+		{"Error", logx.Error, zerolog.ErrorLevel},
 	}
 
 	for _, tc := range testCases {
@@ -61,7 +62,7 @@ func TestLoggingWithoutSpan(t *testing.T) {
 
 	log.Logger = zerolog.New(&buf)
 
-	Info(ctx).Msg("test message")
+	logx.Info(ctx).Msg("test message")
 
 	output := buf.String()
 	assert.NotContains(t, output, "trace_id")

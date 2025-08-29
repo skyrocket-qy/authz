@@ -44,14 +44,14 @@ func logError(traceId string, err *erx.CtxErr) {
 	e.Str("code", err.Code.Str())
 
 	// Convert callerInfos to pretty strings
-	filtered := filterCallerInfos(err.CallerInfos)
+	filtered := FilterCallerInfos(err.CallerInfos)
 
 	trace := make([]string, 0, len(filtered))
 	for _, ci := range filtered {
 		trace = append(trace, fmt.Sprintf("%s %d %s",
-			trimToProject(ci.File),
+			TrimToProject(ci.File),
 			ci.Line,
-			extractFuncName(ci.Function),
+			ExtractFuncName(ci.Function),
 		))
 	}
 
