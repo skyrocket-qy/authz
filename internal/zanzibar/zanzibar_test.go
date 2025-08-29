@@ -1,4 +1,4 @@
-package zanzibar
+package zanzibar_test
 
 import (
 	"context"
@@ -6,6 +6,8 @@ import (
 
 	"authz/internal/entity"
 	"authz/internal/schema"
+	"authz/internal/zanzibar"
+
 	"github.com/DATA-DOG/go-sqlmock"
 	authzpbv1 "github.com/skyrocket-qy/protos/gen/authzpb/v1"
 	pkgpbv1 "github.com/skyrocket-qy/protos/gen/pkgpb/v1"
@@ -32,9 +34,7 @@ func (m *mockZanzibarMemory) Check(
 
 func TestZanzibarLogicImpl_Check(t *testing.T) {
 	mockZm := new(mockZanzibarMemory)
-	logic := &ZanzibarLogicImpl{
-		zm: mockZm,
-	}
+	logic := zanzibar.NewZanzibarLogic(nil, mockZm, nil)
 
 	ctx := context.Background()
 	in := &authzpbv1.CheckIn{
@@ -72,9 +72,7 @@ func newMockDb(t *testing.T) (*gorm.DB, sqlmock.Sqlmock) {
 
 func TestZanzibarLogicImpl_Create(t *testing.T) {
 	db, mock := newMockDb(t)
-	logic := &ZanzibarLogicImpl{
-		pgdb: db,
-	}
+	logic := zanzibar.NewZanzibarLogic(db, nil, nil)
 
 	ctx := context.Background()
 	tuple := &authzpbv1.Tuple{
@@ -99,9 +97,7 @@ func TestZanzibarLogicImpl_Create(t *testing.T) {
 
 func TestZanzibarLogicImpl_Delete(t *testing.T) {
 	db, mock := newMockDb(t)
-	logic := &ZanzibarLogicImpl{
-		pgdb: db,
-	}
+	logic := zanzibar.NewZanzibarLogic(db, nil, nil)
 	ctx := context.Background()
 
 	// Test case 1: Delete by filter
@@ -187,9 +183,7 @@ func TestZanzibarLogicImpl_Delete(t *testing.T) {
 
 func TestZanzibarLogicImpl_Find(t *testing.T) {
 	db, mock := newMockDb(t)
-	logic := &ZanzibarLogicImpl{
-		pgdb: db,
-	}
+	logic := zanzibar.NewZanzibarLogic(db, nil, nil)
 	ctx := context.Background()
 	userNs := "user"
 	filter := &authzpbv1.TupleFilter{
@@ -212,9 +206,7 @@ func TestZanzibarLogicImpl_Find(t *testing.T) {
 
 func TestZanzibarLogicImpl_List(t *testing.T) {
 	db, mock := newMockDb(t)
-	logic := &ZanzibarLogicImpl{
-		pgdb: db,
-	}
+	logic := zanzibar.NewZanzibarLogic(db, nil, nil)
 	ctx := context.Background()
 	in := &authzpbv1.ListTuplesIn{
 		Cursor: &pkgpbv1.Cursor{
@@ -257,10 +249,7 @@ func TestZanzibarLogicImpl_GetPermissions(t *testing.T) {
 			},
 		},
 	}
-	logic := &ZanzibarLogicImpl{
-		pgdb:   db,
-		schema: s,
-	}
+	logic := zanzibar.NewZanzibarLogic(db, nil, s)
 	ctx := context.Background()
 	sbj := &authzpbv1.Instance{
 		Ns: "user",

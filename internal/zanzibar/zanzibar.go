@@ -7,7 +7,7 @@ import (
 	"authz/internal/entity/model"
 	"authz/internal/schema"
 	"authz/internal/util"
-	"github.com/redis/go-redis/v9"
+
 	"github.com/skyrocket-qy/erx"
 	"github.com/skyrocket-qy/protos/gen/authzpb/rbacpb"
 	authzpbv1 "github.com/skyrocket-qy/protos/gen/authzpb/v1"
@@ -35,17 +35,14 @@ var _ ZanzibarLogic = (*ZanzibarLogicImpl)(nil)
 
 type ZanzibarLogicImpl struct {
 	pgdb   *gorm.DB
-	rdb    *redis.Client
 	zm     ZanzibarMemory
 	schema *schema.Schema
 }
 
-func NewZanzibarLogic(db *gorm.DB, rdb *redis.Client, zm ZanzibarMemory,
-	s *schema.Schema,
+func NewZanzibarLogic(db *gorm.DB, zm ZanzibarMemory, s *schema.Schema,
 ) *ZanzibarLogicImpl {
 	return &ZanzibarLogicImpl{
 		pgdb:   db,
-		rdb:    rdb,
 		zm:     zm,
 		schema: s,
 	}

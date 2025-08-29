@@ -10,7 +10,6 @@ import (
 	"authz/internal/engine/rbac"
 	"authz/internal/schema"
 	"authz/internal/service"
-	"authz/internal/service/redis"
 	"authz/internal/util"
 	"authz/internal/zanzibar"
 	"context"
@@ -20,7 +19,6 @@ import (
 // Injectors from wire.go:
 
 func NewRbacHandler(contextContext context.Context, lifecycleParallel *util.LifecycleParallel, db *gorm.DB) (*rbac.Handler, error) {
-	client := redis.New(lifecycleParallel)
 	schemaSchema, err := schema.NewSchema()
 	if err != nil {
 		return nil, err
@@ -30,7 +28,7 @@ func NewRbacHandler(contextContext context.Context, lifecycleParallel *util.Life
 	if err != nil {
 		return nil, err
 	}
-	zanzibarLogicImpl := zanzibar.NewZanzibarLogic(db, client, zanzibarMemoryImpl, schemaSchema)
+	zanzibarLogicImpl := zanzibar.NewZanzibarLogic(db, zanzibarMemoryImpl, schemaSchema)
 	rbacLogicImpl := rbac.NewRbacLogic(zanzibarLogicImpl, db, schemaSchema)
 	handler := rbac.NewHandler(zanzibarLogicImpl, rbacLogicImpl)
 	return handler, nil

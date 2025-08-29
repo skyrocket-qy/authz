@@ -19,6 +19,7 @@ import (
 	"authz/internal/service/logx"
 	"authz/internal/util"
 	"authz/internal/wire"
+
 	"connectrpc.com/connect"
 	"connectrpc.com/otelconnect"
 	"github.com/rs/cors"
@@ -78,21 +79,20 @@ func RunServer(cmd *cobra.Command, args []string) {
 		defer cancel()
 
 		if err := lc.Shutdown(shutdownCtx); err != nil {
-			log.Err(err).Msg("Failed to shutdown gracefully")
+			log.Error().Msg(erx.FullMsg(err))
 		}
 
 		log.Info().Msg("Server gracefully shut down.")
 	}()
 
 	if err := setupBase(ctx, lc); err != nil {
-		log.Err(err).Msg("Failed to setup base")
+		log.Error().Msg(erx.FullMsg(err))
 
 		return
 	}
 
 	if err := startConnectServer(ctx, lc); err != nil {
-		util.LogE(err) // TODO: need to log call trace
-		log.Error().Err(err).Msg("Failed to start connect server")
+		log.Error().Msg(erx.FullMsg(err))
 
 		return
 	}
@@ -130,7 +130,6 @@ func startConnectServer(ctx context.Context, lc *util.LifecycleParallel) error {
 		return erx.W(err, "failed to init db")
 	}
 
-	// Use the application context here instead of context.TODO()
 	connectH, err := wire.NewRbacHandler(ctx, lc, db)
 	if err != nil {
 		return erx.W(err, "failed to init connect handler")
