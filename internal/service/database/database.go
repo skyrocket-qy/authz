@@ -8,7 +8,6 @@ import (
 	"authz/internal/config"
 	"authz/internal/entity/model"
 	"authz/internal/util"
-
 	"github.com/rs/zerolog/log"
 	"github.com/skyrocket-qy/erx"
 	"gorm.io/driver/postgres"
