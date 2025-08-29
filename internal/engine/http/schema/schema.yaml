@@ -1,0 +1,86 @@
+namespaces:
+  user:
+    type: user
+
+  http_route:
+    type: http_route
+    relations:
+      # --- Base Relations (Facts) ---
+      parent:
+        allow_subject_namespaces: [http_route]
+
+      # Generic rule: applies to ANY method
+      any_visitor:
+        allow_subject_namespaces: [user]
+      any_blocker:
+        allow_subject_namespaces: [user]
+
+      # GET-specific rules
+      get_visitor:
+        allow_subject_namespaces: [user]
+      get_blocker:
+        allow_subject_namespaces: [user]
+
+      # POST-specific rules
+      post_visitor:
+        allow_subject_namespaces: [user]
+      post_blocker:
+        allow_subject_namespaces: [user]
+
+      # --- Computed Helper Relations ---
+      
+      # Cascading permissions for ANY method
+      potential_any_visitor:
+        union:
+          - computed_userset: { relation: any_visitor }
+          - tuple_to_userset: { tupleset: { relation: parent }, computed_userset: { relation: potential_any_visitor } }
+      effective_any_blocker:
+        union:
+          - computed_userset: { relation: any_blocker }
+          - tuple_to_userset: { tupleset: { relation: parent }, computed_userset: { relation: effective_any_blocker } }
+
+      # Cascading permissions for GET method
+      potential_get_visitor:
+        union:
+          - computed_userset: { relation: get_visitor }
+          - tuple_to_userset: { tupleset: { relation: parent }, computed_userset: { relation: potential_get_visitor } }
+      effective_get_blocker:
+        union:
+          - computed_userset: { relation: get_blocker }
+          - tuple_to_userset: { tupleset: { relation: parent }, computed_userset: { relation: effective_get_blocker } }
+
+      # Cascading permissions for POST method
+      potential_post_visitor:
+        union:
+          - computed_userset: { relation: post_visitor }
+          - tuple_to_userset: { tupleset: { relation: parent }, computed_userset: { relation: potential_post_visitor } }
+      effective_post_blocker:
+        union:
+          - computed_userset: { relation: post_blocker }
+          - tuple_to_userset: { tupleset: { relation: parent }, computed_userset: { relation: effective_post_blocker } }
+
+      # --- Final Check Relations ---
+      
+      # Final check for GET requests
+      can_get:
+        exclusion:
+          base: # Users who can potentially GET
+            union:
+              - computed_userset: { relation: potential_get_visitor }
+              - computed_userset: { relation: potential_any_visitor }
+          subtract: # Users who are effectively blocked from GET
+            union:
+              - computed_userset: { relation: effective_get_blocker }
+              - computed_userset: { relation: effective_any_blocker }
+
+      # Final check for POST requests
+      can_post:
+        exclusion:
+          base: # Users who can potentially POST
+            union:
+              - computed_userset: { relation: potential_post_visitor }
+              - computed_userset: { relation: potential_any_visitor }
+          subtract: # Users who are effectively blocked from POST
+            union:
+              - computed_userset: { relation: effective_post_blocker }
+              - computed_userset: { relation: effective_any_blocker }
