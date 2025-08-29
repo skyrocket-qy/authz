@@ -1,10 +1,11 @@
-package schema
+package schema_test
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
 
+	"authz/internal/schema"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -27,7 +28,7 @@ func TestGetYamlFilesFromEnv(t *testing.T) {
 	// Set environment variable
 	t.Setenv("SCHEMA_PATH", tempDir)
 
-	files, err := getYamlFilesFromEnv()
+	files, err := schema.GetYamlFilesFromEnv()
 	assert.NoError(t, err)
 	assert.Len(t, files, 2)
 }
@@ -69,13 +70,13 @@ namespaces:
 	// Set environment variable
 	t.Setenv("SCHEMA_PATH", tempDir)
 
-	schema, err := NewSchema()
+	s, err := schema.NewSchema()
 	assert.NoError(t, err)
-	assert.NotNil(t, schema)
-	assert.Len(t, schema.Namespaces, 3)
-	assert.Contains(t, schema.Namespaces, "user")
-	assert.Contains(t, schema.Namespaces, "group")
-	assert.Contains(t, schema.Namespaces, "document")
+	assert.NotNil(t, s)
+	assert.Len(t, s.Namespaces, 3)
+	assert.Contains(t, s.Namespaces, "user")
+	assert.Contains(t, s.Namespaces, "group")
+	assert.Contains(t, s.Namespaces, "document")
 }
 
 func TestNewSchema_DuplicateNamespace(t *testing.T) {
@@ -103,7 +104,7 @@ namespaces:
 
 	t.Setenv("SCHEMA_PATH", tempDir)
 
-	_, err = NewSchema()
+	_, err = schema.NewSchema()
 	assert.Error(t, err)
 }
 
@@ -125,6 +126,6 @@ namespaces:
 
 	t.Setenv("SCHEMA_PATH", tempDir)
 
-	_, err = NewSchema()
+	_, err = schema.NewSchema()
 	assert.Error(t, err)
 }

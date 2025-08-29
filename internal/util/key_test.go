@@ -1,9 +1,10 @@
-package util
+package util_test
 
 import (
 	"context"
 	"testing"
 
+	"authz/internal/util"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
@@ -16,14 +17,14 @@ func TestWithDB(t *testing.T) {
 		dummyDB := &gorm.DB{}
 
 		// Act
-		childCtx := WithDB(parentCtx, dummyDB)
+		childCtx := util.WithDB(parentCtx, dummyDB)
 
 		// Assert
 		// Check that the child context is different from the parent
 		assert.NotEqual(t, parentCtx, childCtx)
 
 		// Retrieve the value from the child context
-		retrievedValue := childCtx.Value(DbCtxKey{})
+		retrievedValue := childCtx.Value(util.DBCtxKey{})
 		assert.NotNil(t, retrievedValue, "value should be present in child context")
 
 		// Type assert and check for equality
@@ -44,10 +45,10 @@ func TestWithDB(t *testing.T) {
 		var dummyDB *gorm.DB
 
 		// Act
-		_ = WithDB(parentCtx, dummyDB)
+		_ = util.WithDB(parentCtx, dummyDB)
 
 		// Assert
-		retrievedValue := parentCtx.Value(DbCtxKey{})
+		retrievedValue := parentCtx.Value(util.DBCtxKey{})
 		assert.Nil(t, retrievedValue, "parent context should not be modified")
 	})
 }

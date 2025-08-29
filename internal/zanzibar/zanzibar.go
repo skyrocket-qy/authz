@@ -48,7 +48,7 @@ func NewZanzibarLogic(db *gorm.DB, zm ZanzibarMemory, s *schema.Schema,
 }
 
 func (r *ZanzibarLogicImpl) db(c context.Context) *gorm.DB {
-	if db, ok := c.Value(util.DbCtxKey{}).(*gorm.DB); ok && db != nil {
+	if db, ok := c.Value(util.DBCtxKey{}).(*gorm.DB); ok && db != nil {
 		return db
 	}
 

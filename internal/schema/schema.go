@@ -12,7 +12,7 @@ import (
 )
 
 func NewSchema() (*Schema, error) {
-	filePaths, err := getYamlFilesFromEnv()
+	filePaths, err := GetYamlFilesFromEnv()
 	if err != nil {
 		return nil, erx.W(err)
 	}
@@ -45,7 +45,7 @@ func NewSchema() (*Schema, error) {
 	return &schema, nil
 }
 
-func getYamlFilesFromEnv() ([]string, error) {
+func GetYamlFilesFromEnv() ([]string, error) {
 	pathStr := os.Getenv("SCHEMA_PATH")
 	if strings.HasPrefix(pathStr, "/") {
 		return nil, erx.Newf(util.ErrBadRequest, "schema path %s is not allowed", pathStr)

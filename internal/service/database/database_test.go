@@ -1,10 +1,11 @@
-package database
+package database_test
 
 import (
 	"context"
 	"testing"
 
 	"authz/internal/config"
+	"authz/internal/service/database"
 	"authz/internal/util"
 	"github.com/stretchr/testify/assert"
 )
@@ -26,7 +27,7 @@ func TestNew(t *testing.T) {
 	}
 
 	lc := util.NewLifecycleParallel()
-	db, err := New(lc)
+	db, err := database.New(lc)
 	assert.NoError(t, err)
 	assert.NotNil(t, db)
 

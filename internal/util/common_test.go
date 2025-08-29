@@ -1,10 +1,11 @@
-package util
+package util_test
 
 import (
 	"context"
 	"regexp"
 	"testing"
 
+	"authz/internal/util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,7 +16,7 @@ func TestGetUserId(t *testing.T) {
 		ctx := context.WithValue(context.Background(), "userID", expectedUserID)
 
 		// Act
-		actualUserID := GetUserId(ctx)
+		actualUserID := util.GetUserId(ctx)
 
 		// Assert
 		assert.Equal(t, expectedUserID, actualUserID)
@@ -26,7 +27,7 @@ func TestGetUserId(t *testing.T) {
 		ctx := context.Background()
 
 		// Act
-		actualUserID := GetUserId(ctx)
+		actualUserID := util.GetUserId(ctx)
 
 		// Assert
 		assert.Equal(t, uint(0), actualUserID)
@@ -37,7 +38,7 @@ func TestGetUserId(t *testing.T) {
 		ctx := context.WithValue(context.Background(), "userID", "not-a-uint")
 
 		// Act
-		actualUserID := GetUserId(ctx)
+		actualUserID := util.GetUserId(ctx)
 
 		// Assert
 		assert.Equal(t, uint(0), actualUserID)
@@ -50,7 +51,7 @@ func TestGenNumCode(t *testing.T) {
 		length := 6
 
 		// Act
-		code, err := GenNumCode(length)
+		code, err := util.GenNumCode(length)
 
 		// Assert
 		assert.NoError(t, err)
@@ -64,7 +65,7 @@ func TestGenNumCode(t *testing.T) {
 		length := 0
 
 		// Act
-		code, err := GenNumCode(length)
+		code, err := util.GenNumCode(length)
 
 		// Assert
 		assert.NoError(t, err)
@@ -73,8 +74,8 @@ func TestGenNumCode(t *testing.T) {
 
 	t.Run("should generate different codes on subsequent calls", func(t *testing.T) {
 		// Act
-		code1, err1 := GenNumCode(8)
-		code2, err2 := GenNumCode(8)
+		code1, err1 := util.GenNumCode(8)
+		code2, err2 := util.GenNumCode(8)
 
 		// Assert
 		assert.NoError(t, err1)
@@ -89,7 +90,7 @@ func TestStr(t *testing.T) {
 		s := "hello"
 
 		// Act
-		sp := Str(s)
+		sp := util.Str(s)
 
 		// Assert
 		assert.NotNil(t, sp)
@@ -101,7 +102,7 @@ func TestStr(t *testing.T) {
 		s := ""
 
 		// Act
-		sp := Str(s)
+		sp := util.Str(s)
 
 		// Assert
 		assert.NotNil(t, sp)

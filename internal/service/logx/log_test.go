@@ -1,4 +1,4 @@
-package logx
+package logx_test
 
 import (
 	"bytes"
@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"authz/internal/config"
+	"authz/internal/service/logx"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
@@ -14,13 +15,13 @@ import (
 func TestInitLogger(t *testing.T) {
 	// Test with local environment
 	config.Env = config.EnvLocal
-	err := InitLogger()
+	err := logx.InitLogger()
 	assert.NoError(t, err)
 	assert.Equal(t, zerolog.DebugLevel, zerolog.GlobalLevel())
 
 	// Test with production environment
 	config.Env = config.EnvProd
-	err = InitLogger()
+	err = logx.InitLogger()
 	assert.NoError(t, err)
 	assert.Equal(t, zerolog.InfoLevel, zerolog.GlobalLevel())
 
@@ -46,7 +47,7 @@ func TestSimplifyCaller(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.input, func(t *testing.T) {
-			assert.Equal(t, tc.expected, simplifyCaller(tc.input))
+			assert.Equal(t, tc.expected, logx.SimplifyCaller(tc.input))
 		})
 	}
 }

@@ -1,4 +1,4 @@
-package util
+package util_test
 
 import (
 	"os"
@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"authz/internal/config"
+	"authz/internal/util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -57,7 +58,7 @@ func TestNewConfig(t *testing.T) {
 		defer os.Remove(".env")
 
 		// Act
-		err = NewConfig()
+		err = util.NewConfig()
 
 		// Assert
 		assert.NoError(t, err)
@@ -81,7 +82,7 @@ func TestNewConfig(t *testing.T) {
 			os.Remove(".env") // Make sure it's gone
 
 			// Act
-			err := NewConfig()
+			err := util.NewConfig()
 
 			// Assert
 			assert.NoError(t, err)
@@ -106,7 +107,7 @@ func TestNewConfig(t *testing.T) {
 			t.Setenv("JWT_SECRET", "supersecret")
 
 			// Act
-			err := NewConfig()
+			err := util.NewConfig()
 
 			// Assert
 			assert.NoError(t, err)
@@ -129,7 +130,7 @@ func TestNewConfig(t *testing.T) {
 		t.Setenv("PORT", "not-an-int") // Invalid value
 
 		// Act
-		err := NewConfig()
+		err := util.NewConfig()
 
 		// Assert
 		assert.Error(t, err)

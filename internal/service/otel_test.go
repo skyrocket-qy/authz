@@ -1,9 +1,10 @@
-package service
+package service_test
 
 import (
 	"context"
 	"testing"
 
+	"authz/internal/service"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric/noop"
@@ -17,7 +18,7 @@ func TestSetupOTelSDK(t *testing.T) {
 		otel.SetMeterProvider(noop.NewMeterProvider())
 	}()
 
-	shutdown, err := SetupOTelSDK(context.Background())
+	shutdown, err := service.SetupOTelSDK(context.Background())
 	assert.NoError(t, err)
 	assert.NotNil(t, shutdown)
 

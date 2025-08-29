@@ -47,7 +47,7 @@ func InitLogger() error {
 				return "unknown:0"
 			}
 			if s, ok := i.(string); ok {
-				return simplifyCaller(s)
+				return SimplifyCaller(s)
 			}
 
 			return "unknown:0"
@@ -68,7 +68,7 @@ func InitLogger() error {
 	return nil
 }
 
-func simplifyCaller(caller string) string {
+func SimplifyCaller(caller string) string {
 	file := filepath.Base(caller)
 	dir := filepath.Dir(caller)
 

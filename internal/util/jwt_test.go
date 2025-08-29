@@ -1,10 +1,11 @@
-package util
+package util_test
 
 import (
 	"strconv"
 	"testing"
 
 	"authz/internal/config"
+	"authz/internal/util"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -12,19 +13,19 @@ import (
 
 func TestGenRefreshToken(t *testing.T) {
 	t.Run("should generate a valid UUID", func(t *testing.T) {
-		token1 := GenRefreshToken()
+		token1 := util.GenRefreshToken()
 		_, err := uuid.Parse(token1)
 		assert.NoError(t, err)
 	})
 
 	t.Run("should generate different tokens on subsequent calls", func(t *testing.T) {
-		token1 := GenRefreshToken()
-		token2 := GenRefreshToken()
+		token1 := util.GenRefreshToken()
+		token2 := util.GenRefreshToken()
 		assert.NotEqual(t, token1, token2)
 	})
 }
 
-func TestGenerateJWT(t *testing.T) {
+func TestNewJwtToken(t *testing.T) {
 	// Stash and restore original config
 	originalSecret := config.Conf.Jwt.Secret
 
@@ -39,7 +40,7 @@ func TestGenerateJWT(t *testing.T) {
 		var userID uint = 123
 
 		// Act
-		tokenString, err := GenerateJWT(userID)
+		tokenString, err := util.NewJwtToken(userID)
 
 		// Assert
 		assert.NoError(t, err)
@@ -72,7 +73,7 @@ func TestGenerateJWT(t *testing.T) {
 		var userID uint = 456
 
 		// Act
-		_, err := GenerateJWT(userID)
+		_, err := util.NewJwtToken(userID)
 
 		// Assert
 		assert.Error(t, err)

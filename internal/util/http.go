@@ -12,7 +12,7 @@ type ErrResp struct {
 	Code  string `json:"code"`
 }
 
-func trimToProject(path string) string {
+func TrimToProject(path string) string {
 	projectRoot, _ := os.Getwd()
 	if rel, ok := strings.CutPrefix(path, projectRoot); ok {
 		return rel
@@ -21,7 +21,7 @@ func trimToProject(path string) string {
 	return path
 }
 
-func extractFuncName(fullFunc string) string {
+func ExtractFuncName(fullFunc string) string {
 	// e.g., input: srv/internal/logic/inter.(*Logic).Login
 	// output: (*Logic).Login
 	if idx := strings.LastIndex(fullFunc, "/"); idx >= 0 {
@@ -31,7 +31,7 @@ func extractFuncName(fullFunc string) string {
 	return fullFunc
 }
 
-func filterCallerInfos(infos []erx.CallerInfo) []erx.CallerInfo {
+func FilterCallerInfos(infos []erx.CallerInfo) []erx.CallerInfo {
 	projectPrefix, _ := os.Getwd()
 
 	var filtered []erx.CallerInfo

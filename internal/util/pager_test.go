@@ -1,8 +1,9 @@
-package util
+package util_test
 
 import (
 	"testing"
 
+	"authz/internal/util"
 	pkgpbv1 "github.com/skyrocket-qy/protos/gen/pkgpb/v1"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/driver/sqlite"
@@ -85,7 +86,7 @@ func TestApplyPager(t *testing.T) {
 
 			var results []DummyPagerModel
 
-			tx := db.Model(&DummyPagerModel{}).Scopes(ApplyPager(tc.pager)).Find(&results)
+			tx := db.Model(&DummyPagerModel{}).Scopes(util.ApplyPager(tc.pager)).Find(&results)
 
 			assert.Equal(t, tc.expectedSQL, tx.Statement.SQL.String())
 			// Note: GORM puts limit and offset directly into the SQL string for DryRun,

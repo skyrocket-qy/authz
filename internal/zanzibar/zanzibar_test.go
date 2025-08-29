@@ -18,6 +18,7 @@ import (
 
 type mockZanzibarMemory struct {
 	mock.Mock
+	zanzibar.ZanzibarMemory
 }
 
 func (m *mockZanzibarMemory) Check(

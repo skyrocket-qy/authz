@@ -1,4 +1,4 @@
-package redis
+package redis_test
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"authz/internal/config"
+	"authz/internal/service/redis"
 	"authz/internal/util"
 	"github.com/go-redis/redismock/v9"
 	"github.com/stretchr/testify/assert"
@@ -17,7 +18,7 @@ func TestNew(t *testing.T) {
 	config.Conf.Redis.Port = "6379"
 
 	lc := util.NewLifecycleParallel()
-	rdb := New(lc)
+	rdb := redis.New(lc)
 	assert.NotNil(t, rdb)
 }
 
@@ -25,14 +26,14 @@ func TestDistributedLock_TryLock(t *testing.T) {
 	db, mock := redismock.NewClientMock()
 	key := "test-lock"
 	ttl := 10 * time.Second
-	lock := NewDistributedLock(db, key, ttl)
+	lock := redis.NewDistributedLock(db, key, ttl)
 
 	// Mock the UUID generation
-	originalNewUUID := newUUID
+	originalNewUUID := redis.NewUUID
 
-	defer func() { newUUID = originalNewUUID }()
+	defer func() { redis.NewUUID = originalNewUUID }()
 
-	newUUID = func() string { return "test-uuid" }
+	redis.NewUUID = func() string { return "test-uuid" }
 
 	t.Run("TryLock success", func(t *testing.T) {
 		mock.ExpectSetNX(key, "test-uuid", ttl).SetVal(true)

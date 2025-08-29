@@ -1,10 +1,11 @@
-package util
+package util_test
 
 import (
 	"context"
 	"errors"
 	"testing"
 
+	"authz/internal/util"
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/assert"
 )
@@ -16,7 +17,7 @@ func TestNewApiErr(t *testing.T) {
 		stdErr := errors.New("a standard error")
 
 		// Act
-		apiErr := NewApiErr(ctx, stdErr)
+		apiErr := util.NewApiErr(ctx, stdErr)
 
 		// Assert
 		assert.Equal(t, connect.CodeUnknown, apiErr.Code())

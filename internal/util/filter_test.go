@@ -1,8 +1,9 @@
-package util
+package util_test
 
 import (
 	"testing"
 
+	"authz/internal/util"
 	pkgpbv1 "github.com/skyrocket-qy/protos/gen/pkgpb/v1"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/driver/sqlite"
@@ -10,19 +11,19 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-// --- Test quoteIfNeeded ---
+// --- Test QuoteIfNeeded ---
 
 func TestQuoteIfNeeded(t *testing.T) {
 	t.Run("should quote a simple field", func(t *testing.T) {
-		assert.Equal(t, "`id`", quoteIfNeeded("id"))
+		assert.Equal(t, "`id`", util.QuoteIfNeeded("id"))
 	})
 
 	t.Run("should quote a qualified field correctly", func(t *testing.T) {
-		assert.Equal(t, "`users`.`name`", quoteIfNeeded("users.name"))
+		assert.Equal(t, "`users`.`name`", util.QuoteIfNeeded("users.name"))
 	})
 
 	t.Run("should handle empty string", func(t *testing.T) {
-		assert.Equal(t, "``", quoteIfNeeded(""))
+		assert.Equal(t, "``", util.QuoteIfNeeded(""))
 	})
 }
 
@@ -65,7 +66,7 @@ func TestApplyFilter_SQLGeneration(t *testing.T) {
 		filters := []*pkgpbv1.Filter{
 			{Field: "name", Op: pkgpbv1.Operator_EQ, Values: []string{"jules"}},
 		}
-		scope, err := ApplyFilter(filters, validFields, filterExprs)
+		scope, err := util.ApplyFilter(filters, validFields, filterExprs)
 		assert.NoError(t, err)
 
 		var results []DummyFilterModel
@@ -83,7 +84,7 @@ func TestApplyFilter_SQLGeneration(t *testing.T) {
 			{Field: "name", Op: pkgpbv1.Operator_EQ, Values: []string{"jules"}},
 			{Field: "id", Op: pkgpbv1.Operator_GTE, Values: []string{"100"}},
 		}
-		scope, err := ApplyFilter(filters, validFields, filterExprs)
+		scope, err := util.ApplyFilter(filters, validFields, filterExprs)
 		assert.NoError(t, err)
 
 		var results []DummyFilterModel
@@ -100,7 +101,7 @@ func TestApplyFilter_SQLGeneration(t *testing.T) {
 		filters := []*pkgpbv1.Filter{
 			{Field: "id", Op: pkgpbv1.Operator_BETWEEN, Values: []string{"100", "200"}},
 		}
-		scope, err := ApplyFilter(filters, validFields, filterExprs)
+		scope, err := util.ApplyFilter(filters, validFields, filterExprs)
 		assert.NoError(t, err)
 
 		var results []DummyFilterModel

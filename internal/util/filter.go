@@ -74,7 +74,7 @@ func ApplyFilter(filters []*pkgpbv1.Filter, validFields []string, filterExprs ma
 				}
 			}
 
-			column := quoteIfNeeded(ft.GetField())
+			column := QuoteIfNeeded(ft.GetField())
 			tmpl := opTemplate[ft.GetOp()]
 
 			switch ft.GetOp() {
@@ -93,7 +93,7 @@ func ApplyFilter(filters []*pkgpbv1.Filter, validFields []string, filterExprs ma
 	}, nil
 }
 
-func quoteIfNeeded(field string) string {
+func QuoteIfNeeded(field string) string {
 	if strings.Contains(field, ".") {
 		parts := strings.Split(field, ".")
 		for i, p := range parts {

@@ -1,9 +1,10 @@
-package util
+package util_test
 
 import (
 	"regexp"
 	"testing"
 
+	"authz/internal/util"
 	pkgpbv1 "github.com/skyrocket-qy/protos/gen/pkgpb/v1"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/driver/sqlite"
@@ -114,7 +115,7 @@ func TestApplyCursor(t *testing.T) {
 
 			var results []DummyModel
 
-			tx := db.Scopes(ApplyCursor(tc.cursorData))
+			tx := db.Scopes(util.ApplyCursor(tc.cursorData))
 			tx.Find(&results)
 
 			stmt := tx.Statement
@@ -132,7 +133,7 @@ func TestApplyCursor_WithNilCursor(t *testing.T) {
 
 		// The scope is applied, but the query isn't run until a finalizer method like Find() is
 		// called.
-		tx := db.Scopes(ApplyCursor(nil)).Model(&DummyModel{})
+		tx := db.Scopes(util.ApplyCursor(nil)).Model(&DummyModel{})
 
 		// Now run the finalizer
 		tx.Find(&results)
