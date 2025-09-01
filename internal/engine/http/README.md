@@ -1,5 +1,9 @@
 # HTTP Engine
 
+## Implement
+1. Use Url pattern to match and get resources
+2. For resources, check on zanzibar
+
 ## Feature
 to check can visit /A/B, must check: 1. it can visit /A/B or /A/* 2. it will not block /A/B or /A/* 3. not block /A
 
