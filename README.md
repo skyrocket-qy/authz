@@ -49,30 +49,7 @@ The update model works as follows:
 
 Here is a simplified diagram of the architecture:
 
-```text
-+----------+      +-----------+      +-----------------+
-|          |----->|           |----->|                 |
-|  Client  |      |   AuthZ   |      |  In-Memory      |
-|          |<-----|  Replica  |<-----|  Data Store     |
-+----------+      +-----------+      +-----------------+
-                      |
-                      | Applies Delta
-                      |
-                  +-------+
-                  |       |
-                  | Kafka |
-                  |       |
-                  +-------+
-                      ^
-                      | Publishes Event
-                      |
-                +------------+
-                |            |
-                |  Database  |
-                | (Source of |
-                |   Truth)   |
-                +------------+
-```
+![MemZ Architecture](docs/architecture.png)
 
 ## 🚀 Performance
 

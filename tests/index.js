@@ -5,14 +5,14 @@ import http from 'k6/http';
 const baseUrl = 'http://localhost:8080'
 
 export const options = {
-    vus: 1,
-    setupTimeout: '6000s',
-    iterations: 1000,
+    // vus: 1,
+    // setupTimeout: '6000s',
+    // iterations: 1000,
     // duration: '30s',
     // scenarios: {
     //     constant_request_rate: {
     //         executor: 'constant-arrival-rate',
-    //         rate: 5000, // 100 requests per second
+    //         rate: 10000, // 100 requests per second
     //         timeUnit: '1s',
     //         duration: '30s',
     //         preAllocatedVUs: 5000,
