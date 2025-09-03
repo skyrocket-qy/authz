@@ -482,7 +482,11 @@ func (r *RbacLogicImpl) ListPermissionByResource(
 	}
 
 	out := &rbacpb.ListPermissionByResourceOut{}
-	relDatas := r.schema.Namespaces[in.GetResourceNs()].Relations
+	ns, ok := r.schema.Namespaces[in.GetResourceNs()]
+	if !ok || ns.Relations == nil {
+		return out, nil
+	}
+	relDatas := ns.Relations
 
 	existedRels := map[string]struct{}{}
 	for _, tuple := range tuples {
