@@ -124,61 +124,56 @@ func TestZanzibarLogicImpl_Delete(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	// TODO: Fix the tests for DeleteByTuples and DeleteByIds. The proto message types are not
-	// correct.
-	// // Test case 2: Delete by list of tuples
-	// t.Run("DeleteByTuples", func(t *testing.T) {
-	// 	db, mock := newMockDb(t)
-	// 	logic := &ZanzibarLogicImpl{
-	// 		pgdb: db,
-	// 	}
-	// 	tuples := []*authzpbv1.Tuple{
-	// 		{SbjNs: "user", SbjId: "1", Rel: "owner", ObjNs: "doc", ObjId: "1"},
-	// 		{SbjNs: "user", SbjId: "2", Rel: "editor", ObjNs: "doc", ObjId: "2"},
-	// 	}
-	// 	in := &authzpbv1.DeleteTuplesIn{
-	// 		Mode: &authzpbv1.DeleteTuplesIn_DeleteTuples{
-	// 			DeleteTuples: &authzpbv1.DeleteTuplesIn_DeleteTupleList{
-	// 				Tuples: tuples,
-	// 			},
-	// 		},
-	// 	}
+	// Test case 2: Delete by list of tuples
+	t.Run("DeleteByTuples", func(t *testing.T) {
+		db, mock := newMockDb(t)
+		logic := zanzibar.NewZanzibarLogic(db, nil, nil)
+		tuples := []*authzpbv1.Tuple{
+			{SbjNs: "user", SbjId: "1", Rel: "owner", ObjNs: "doc", ObjId: "1"},
+			{SbjNs: "user", SbjId: "2", Rel: "editor", ObjNs: "doc", ObjId: "2"},
+		}
+		in := &authzpbv1.DeleteTuplesIn{
+			Mode: &authzpbv1.DeleteTuplesIn_DeleteTuples{
+				DeleteTuples: &authzpbv1.DeleteTuples{
+					Tuples: tuples,
+				},
+			},
+		}
 
-	// 	mock.ExpectBegin()
-	// 	mock.ExpectExec(`DELETE FROM "tuples" WHERE \(sbj_ns, sbj_id, rel, obj_ns, obj_id\) IN
-	// \(\(\\$1,\\$2,\\$3,\\$4,\\$5\),\(\\$6,\\$7,\\$8,\\$9,\\$10\)\)`).
-	// 		WithArgs("user", "1", "owner", "doc", "1", "user", "2", "editor", "doc", "2").
-	// 		WillReturnResult(sqlmock.NewResult(0, 2))
-	// 	mock.ExpectCommit()
+		mock.ExpectBegin()
+		mock.ExpectExec(`DELETE FROM "tuples" WHERE \(sbj_ns, sbj_id, rel, obj_ns, obj_id\) IN \(\(\$1,\$2,\$3,\$4,\$5\),\(\$6,\$7,\$8,\$9,\$10\)\)`).
+			WithArgs("user", "1", "owner", "doc", "1", "user", "2", "editor", "doc", "2").
+			WillReturnResult(sqlmock.NewResult(0, 2))
+		mock.ExpectCommit()
 
-	// 	err := logic.Delete(ctx, in)
-	// 	assert.NoError(t, err)
-	// })
+		err := logic.Delete(ctx, in)
+		assert.NoError(t, err)
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
 
-	// // Test case 3: Delete by list of tuple IDs
-	// t.Run("DeleteByIds", func(t *testing.T) {
-	// 	db, mock := newMockDb(t)
-	// 	logic := &ZanzibarLogicImpl{
-	// 		pgdb: db,
-	// 	}
-	// 	ids := []uint32{1, 2, 3}
-	// 	in := &authzpbv1.DeleteTuplesIn{
-	// 		Mode: &authzpbv1.DeleteTuplesIn_DeleteTupleIds{
-	// 			DeleteTupleIds: &authzpbv1.DeleteTuplesIn_DeleteTupleIdList{
-	// 				Ids: ids,
-	// 			},
-	// 		},
-	// 	}
+	// Test case 3: Delete by list of tuple IDs
+	t.Run("DeleteByIds", func(t *testing.T) {
+		db, mock := newMockDb(t)
+		logic := zanzibar.NewZanzibarLogic(db, nil, nil)
+		ids := []uint64{1, 2, 3}
+		in := &authzpbv1.DeleteTuplesIn{
+			Mode: &authzpbv1.DeleteTuplesIn_DeleteTupleIds{
+				DeleteTupleIds: &authzpbv1.DeleteTupleIds{
+					Ids: ids,
+				},
+			},
+		}
 
-	// 	mock.ExpectBegin()
-	// 	mock.ExpectExec(`DELETE FROM "tuples" WHERE id IN \(\\$1,\\$2,\\$3\)`).
-	// 		WithArgs(1, 2, 3).
-	// 		WillReturnResult(sqlmock.NewResult(0, 3))
-	// 	mock.ExpectCommit()
+		mock.ExpectBegin()
+		mock.ExpectExec(`DELETE FROM "tuples" WHERE id IN \(\$1,\$2,\$3\)`).
+			WithArgs(1, 2, 3).
+			WillReturnResult(sqlmock.NewResult(0, 3))
+		mock.ExpectCommit()
 
-	// 	err := logic.Delete(ctx, in)
-	// 	assert.NoError(t, err)
-	// })
+		err := logic.Delete(ctx, in)
+		assert.NoError(t, err)
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
 }
 
 func TestZanzibarLogicImpl_Find(t *testing.T) {

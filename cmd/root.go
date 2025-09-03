@@ -13,7 +13,6 @@ import (
 	"authz/cmd/tool"
 	"authz/internal/config"
 	"authz/internal/handler/connect/middleware"
-	"authz/internal/handler/rest"
 	"authz/internal/service"
 	"authz/internal/service/database"
 	"authz/internal/service/logx"
@@ -135,7 +134,7 @@ func startConnectServer(ctx context.Context, lc *util.LifecycleParallel) error {
 		return erx.W(err, "failed to init connect handler")
 	}
 
-	restH := rest.NewHandler(db)
+	restH := wire.NewRestHandler(db)
 
 	inflightInterceptor := connect.UnaryInterceptorFunc(func(
 		next connect.UnaryFunc,
