@@ -18,7 +18,6 @@ import (
 
 type mockZanzibarMemory struct {
 	mock.Mock
-	zanzibar.ZanzibarMemory
 }
 
 func (m *mockZanzibarMemory) Check(
@@ -30,6 +29,26 @@ func (m *mockZanzibarMemory) Check(
 	args := m.Called(c, sbj, rel, obj)
 
 	return args.Bool(0), args.Error(1)
+}
+
+func (m *mockZanzibarMemory) Lookup(
+	c context.Context,
+	sbj entity.Instance,
+	rel string,
+) ([]entity.Instance, error) {
+	args := m.Called(c, sbj, rel)
+
+	return args.Get(0).([]entity.Instance), args.Error(1)
+}
+
+func (m *mockZanzibarMemory) Expand(
+	c context.Context,
+	rel string,
+	obj entity.Instance,
+) ([]entity.Instance, error) {
+	args := m.Called(c, rel, obj)
+
+	return args.Get(0).([]entity.Instance), args.Error(1)
 }
 
 func TestZanzibarLogicImpl_Check(t *testing.T) {
@@ -265,4 +284,44 @@ func TestZanzibarLogicImpl_GetPermissions(t *testing.T) {
 	assert.Equal(t, "1", perms[0].GetResourceId())
 	assert.Equal(t, "owner", perms[0].GetPermission())
 	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestZanzibarLogicImpl_Lookup(t *testing.T) {
+	mockZm := new(mockZanzibarMemory)
+	logic := zanzibar.NewZanzibarLogic(nil, mockZm, nil)
+
+	ctx := context.Background()
+	user := entity.Instance{Ns: "user", Id: "1"}
+	expectedObjs := []entity.Instance{
+		{Ns: "doc", Id: "1"},
+		{Ns: "doc", Id: "2"},
+	}
+
+	mockZm.On("Lookup", ctx, user, "owner").Return(expectedObjs, nil)
+
+	objs, err := logic.Lookup(ctx, user, "owner")
+	assert.NoError(t, err)
+	assert.Equal(t, expectedObjs, objs)
+
+	mockZm.AssertExpectations(t)
+}
+
+func TestZanzibarLogicImpl_Expand(t *testing.T) {
+	mockZm := new(mockZanzibarMemory)
+	logic := zanzibar.NewZanzibarLogic(nil, mockZm, nil)
+
+	ctx := context.Background()
+	doc := entity.Instance{Ns: "doc", Id: "1"}
+	expectedUsers := []entity.Instance{
+		{Ns: "user", Id: "1"},
+		{Ns: "user", Id: "2"},
+	}
+
+	mockZm.On("Expand", ctx, "owner", doc).Return(expectedUsers, nil)
+
+	users, err := logic.Expand(ctx, "owner", doc)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedUsers, users)
+
+	mockZm.AssertExpectations(t)
 }

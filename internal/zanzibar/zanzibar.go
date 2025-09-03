@@ -26,8 +26,8 @@ type ZanzibarLogic interface {
 	)
 
 	Check(c context.Context, in *authzpbv1.CheckIn) (*authzpbv1.CheckOut, error)
-	// Lookup(c context.Context, sbj *entity.Instance, rel string) ([]*entity.Instance, error)
-	// Expand(c context.Context, relation string, obj *entity.Instance) ([]entity.Instance, error)
+	Lookup(c context.Context, sbj entity.Instance, rel string) ([]entity.Instance, error)
+	Expand(c context.Context, relation string, obj entity.Instance) ([]entity.Instance, error)
 }
 
 var _ ZanzibarLogic = (*ZanzibarLogicImpl)(nil)
@@ -233,16 +233,16 @@ func (r *ZanzibarLogicImpl) Check(c context.Context, in *authzpbv1.CheckIn) (
 }
 
 // What are all the objs that sbj has rel on.
-func (r *ZanzibarLogicImpl) Lookup(c context.Context, user *entity.Instance, perm string) (
-	objs []*entity.Instance, err error,
+func (r *ZanzibarLogicImpl) Lookup(c context.Context, user entity.Instance, perm string) (
+	[]entity.Instance, error,
 ) {
-	return objs, nil
+	return r.zm.Lookup(c, user, perm)
 }
 
-func (r *ZanzibarLogicImpl) Expand(c context.Context, perm string, obj *entity.Instance) (
-	users []entity.Instance, err error,
+func (r *ZanzibarLogicImpl) Expand(c context.Context, perm string, obj entity.Instance) (
+	[]entity.Instance, error,
 ) {
-	return nil, nil
+	return r.zm.Expand(c, perm, obj)
 }
 
 type permission struct {

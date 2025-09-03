@@ -21,3 +21,8 @@ func TestStart(t *testing.T) {
 	// A better test would be to refactor the start function to be more testable.
 	start(nil, nil)
 }
+
+func TestStart_DBError(t *testing.T) {
+	_ = os.Setenv("DB_DRIVER", "unsupported")
+	start(nil, nil)
+}

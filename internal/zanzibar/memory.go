@@ -21,8 +21,8 @@ import (
 // zanzibar in memory.
 type ZanzibarMemory interface {
 	Check(c context.Context, sbj entity.Instance, rel string, obj entity.Instance) (bool, error)
-	// Lookup(c context.Context, sbj *entity.Instance, rel string) ([]*entity.Instance, error)
-	// Expand(c context.Context, rel string, obj *entity.Instance) ([]*entity.Instance, error)
+	Lookup(c context.Context, sbj entity.Instance, rel string) ([]entity.Instance, error)
+	Expand(c context.Context, rel string, obj entity.Instance) ([]entity.Instance, error)
 }
 
 var _ ZanzibarMemory = (*ZanzibarMemoryImpl)(nil)
@@ -83,6 +83,35 @@ func (e *ZanzibarMemoryImpl) Check(c context.Context, user entity.Instance, perm
 	obj entity.Instance) (bool, error,
 ) {
 	return e.check(user, perm, obj, map[entity.Instance]struct{}{})
+}
+
+func (e *ZanzibarMemoryImpl) Lookup(c context.Context, sbj entity.Instance, rel string) ([]entity.Instance, error) {
+	var results []entity.Instance
+	for _, shard := range e.Graph.Shards {
+		shard.Mu.RLock()
+		for obj := range shard.Graph {
+			ok, err := e.Check(c, sbj, rel, obj)
+			if err != nil {
+				// In a real implementation, you might want to handle errors more gracefully
+				log.Error().Err(err).Msgf("error checking permission for object %v", obj)
+				continue
+			}
+			if ok {
+				results = append(results, obj)
+			}
+		}
+		shard.Mu.RUnlock()
+	}
+	return results, nil
+}
+
+func (e *ZanzibarMemoryImpl) Expand(c context.Context, rel string, obj entity.Instance) ([]entity.Instance, error) {
+	var results []entity.Instance
+	subjects := e.getSbjs([]entity.Instance{obj}, rel)
+	for sbj := range subjects {
+		results = append(results, sbj)
+	}
+	return results, nil
 }
 
 func (e *ZanzibarMemoryImpl) check(user entity.Instance, perm string,

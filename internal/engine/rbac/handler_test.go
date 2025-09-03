@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"authz/internal/engine/rbac"
+	authz "authz/internal/entity"
 	"connectrpc.com/connect"
 	"github.com/skyrocket-qy/protos/gen/authzpb/rbacpb"
 	authzpbv1 "github.com/skyrocket-qy/protos/gen/authzpb/v1"
@@ -198,6 +199,24 @@ func (m *MockZanzibarLogic) Check(
 	args := m.Called(c, in)
 
 	return args.Get(0).(*authzpbv1.CheckOut), args.Error(1)
+}
+
+func (m *MockZanzibarLogic) Lookup(
+	c context.Context,
+	sbj authz.Instance,
+	rel string,
+) ([]authz.Instance, error) {
+	args := m.Called(c, sbj, rel)
+	return args.Get(0).([]authz.Instance), args.Error(1)
+}
+
+func (m *MockZanzibarLogic) Expand(
+	c context.Context,
+	relation string,
+	obj authz.Instance,
+) ([]authz.Instance, error) {
+	args := m.Called(c, relation, obj)
+	return args.Get(0).([]authz.Instance), args.Error(1)
 }
 
 func TestHandler_ListUsers(t *testing.T) {
