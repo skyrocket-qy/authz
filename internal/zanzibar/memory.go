@@ -88,6 +88,11 @@ func (e *ZanzibarMemoryImpl) Check(c context.Context, user entity.Instance, perm
 func (e *ZanzibarMemoryImpl) check(user entity.Instance, perm string,
 	obj entity.Instance, visited map[entity.Instance]struct{}) (bool, error,
 ) {
+	if _, ok := visited[obj]; ok || (len(visited) >= config.Conf.MaxCheckNodes) {
+		return false, nil
+	}
+	visited[obj] = struct{}{}
+
 	ns, ok := e.Schema.Namespaces[obj.Ns]
 	if !ok {
 		return false, erx.Newf(util.ErrBadRequest, "unknown namespace: %s", obj.Ns)
@@ -108,13 +113,6 @@ func (e *ZanzibarMemoryImpl) check(user entity.Instance, perm string,
 func (e *ZanzibarMemoryImpl) evalUsersetRewrite(rewrite *schema.UsersetRewrite,
 	user, obj entity.Instance, visited map[entity.Instance]struct{},
 ) bool {
-	if _, ok := visited[obj]; ok || (len(visited) >= config.Conf.MaxCheckNodes) {
-		// the return boolean will not tell caller to stop checking, but it will stop recursion
-		return false
-	}
-
-	visited[obj] = struct{}{}
-
 	switch {
 	case rewrite.ComputedUserSet != nil:
 		return e.Graph.Exist(obj, rewrite.ComputedUserSet.Relation, user)

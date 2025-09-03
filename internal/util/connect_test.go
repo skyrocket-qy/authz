@@ -1,12 +1,12 @@
-package util_test
+package util
 
 import (
 	"context"
 	"errors"
 	"testing"
 
-	"authz/internal/util"
 	"connectrpc.com/connect"
+	"github.com/skyrocket-qy/erx"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,23 +17,38 @@ func TestNewApiErr(t *testing.T) {
 		stdErr := errors.New("a standard error")
 
 		// Act
-		apiErr := util.NewApiErr(ctx, stdErr)
+		apiErr := NewApiErr(ctx, stdErr)
 
 		// Assert
 		assert.Equal(t, connect.CodeUnknown, apiErr.Code())
 		assert.Equal(t, stdErr, apiErr.Unwrap())
 	})
 
-	// NOTE: Testing the erx.CtxErr path of NewApiErr is not currently possible
-	// in this package's unit tests. To create a valid *erx.CtxErr, this test
-	// would need to import the `errcode` package. However, `errcode` is in
-	// `internal/service`, and this `util` package is a dependency of `service`,
-	// so importing it would create a circular dependency.
-	//
-	// The `erx` library itself does not seem to expose a public constructor
-	// for creating `erx.Code` instances from strings or integers, which is
-	// necessary to create a test-only `*erx.CtxErr`.
-	//
-	// This function is tested implicitly by the integration and e2e tests
-	// that do generate real application errors.
+	t.Run("should handle CtxErr", func(t *testing.T) {
+		testCases := []struct {
+			name         string
+			appErrCode   err
+			expectedCode connect.Code
+		}{
+			{"Bad Request", ErrBadRequest, connect.CodeInvalidArgument},
+			{"Unauthorized", ErrUnauthorized, connect.CodeUnauthenticated},
+			{"Not Found", ErrNotFound, connect.CodeNotFound},
+			{"Duplicate", ErrDuplicate, connect.CodeAlreadyExists},
+			{"Unknown", ErrUnknown, connect.CodeInternal},
+			{"Not Implemented", ErrNotImplemented, connect.CodeUnimplemented},
+			{"Invalid Code", "abc", connect.CodeInternal},
+			{"Default case", "123", connect.CodeUnknown},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				ctx := context.Background()
+				appErr := erx.New(tc.appErrCode, "test error")
+
+				apiErr := NewApiErr(ctx, appErr)
+
+				assert.Equal(t, tc.expectedCode, apiErr.Code())
+			})
+		}
+	})
 }
