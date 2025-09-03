@@ -126,73 +126,136 @@ func TestRbacLogicImpl_ListUsers(t *testing.T) {
 }
 
 func TestRbacLogicImpl_UpdateUser(t *testing.T) {
-	db, _, logic := setupTestDB(t, nil)
+	t.Run("should update a user successfully", func(t *testing.T) {
+		db, _, logic := setupTestDB(t, nil)
 
-	// Create a test user
-	user := &rbac.User{Email: "user@example.com", Name: "testuser"}
-	if err := db.Create(user).Error; err != nil {
-		t.Fatalf("failed to create user: %v", err)
-	}
+		// Create a test user
+		user := &rbac.User{Email: "user@example.com", Name: "testuser"}
+		if err := db.Create(user).Error; err != nil {
+			t.Fatalf("failed to create user: %v", err)
+		}
 
-	// Update the user
-	newName := "updateduser"
-	isActive := false
-	err := logic.UpdateUser(context.Background(), &rbacpb.UpdateUserIn{
-		Id:       user.Id,
-		Name:     &newName,
-		IsActive: &isActive,
+		// Update the user
+		newName := "updateduser"
+		isActive := false
+		err := logic.UpdateUser(context.Background(), &rbacpb.UpdateUserIn{
+			Id:       user.Id,
+			Name:     &newName,
+			IsActive: &isActive,
+		})
+		assert.NoError(t, err)
+
+		// Verify the update
+		var updatedUser rbac.User
+		if err := db.First(&updatedUser, user.Id).Error; err != nil {
+			t.Fatalf("failed to find user: %v", err)
+		}
+
+		assert.Equal(t, newName, updatedUser.Name)
+		assert.Equal(t, isActive, updatedUser.IsActive)
 	})
-	assert.NoError(t, err)
 
-	// Verify the update
-	var updatedUser rbac.User
-	if err := db.First(&updatedUser, user.Id).Error; err != nil {
-		t.Fatalf("failed to find user: %v", err)
-	}
+	t.Run("should not return an error when updating a non-existent user", func(t *testing.T) {
+		_, _, logic := setupTestDB(t, nil)
 
-	assert.Equal(t, newName, updatedUser.Name)
-	assert.Equal(t, isActive, updatedUser.IsActive)
+		// Attempt to update a non-existent user
+		newName := "updateduser"
+		isActive := false
+		err := logic.UpdateUser(context.Background(), &rbacpb.UpdateUserIn{
+			Id:       999, // Non-existent ID
+			Name:     &newName,
+			IsActive: &isActive,
+		})
+
+		// Assert that no error is returned
+		assert.NoError(t, err)
+	})
 }
 
 func TestRbacLogicImpl_DeleteUser(t *testing.T) {
-	db, mockZanzibar, logic := setupTestDB(t, nil)
+	t.Run("should delete a user successfully", func(t *testing.T) {
+		db, mockZanzibar, logic := setupTestDB(t, nil)
 
-	// Create a test user
-	user := &rbac.User{Email: "user@example.com", Name: "testuser"}
-	if err := db.Create(user).Error; err != nil {
-		t.Fatalf("failed to create user: %v", err)
-	}
+		// Create a test user
+		user := &rbac.User{Email: "user@example.com", Name: "testuser"}
+		if err := db.Create(user).Error; err != nil {
+			t.Fatalf("failed to create user: %v", err)
+		}
 
-	// Mock Zanzibar delete
-	mockZanzibar.On("Delete", mock.Anything, mock.Anything).Return(nil)
+		// Mock Zanzibar delete
+		mockZanzibar.On("Delete", mock.Anything, mock.Anything).Return(nil)
 
-	// Delete the user
-	err := logic.DeleteUser(context.Background(), &rbacpb.DeleteUserIn{Id: user.Id})
-	assert.NoError(t, err)
+		// Delete the user
+		err := logic.DeleteUser(context.Background(), &rbacpb.DeleteUserIn{Id: user.Id})
+		assert.NoError(t, err)
 
-	// Verify the user is deleted
-	var deletedUser rbac.User
+		// Verify the user is deleted
+		var deletedUser rbac.User
 
-	err = db.First(&deletedUser, user.Id).Error
-	assert.Error(t, err)
-	assert.Equal(t, gorm.ErrRecordNotFound, err)
+		err = db.First(&deletedUser, user.Id).Error
+		assert.Error(t, err)
+		assert.Equal(t, gorm.ErrRecordNotFound, err)
+	})
+
+	t.Run("should rollback transaction if zanzibar delete fails", func(t *testing.T) {
+		db, mockZanzibar, logic := setupTestDB(t, nil)
+
+		// Create a test user
+		user := &rbac.User{Email: "user@example.com", Name: "testuser"}
+		if err := db.Create(user).Error; err != nil {
+			t.Fatalf("failed to create user: %v", err)
+		}
+
+		// Mock Zanzibar delete to return an error
+		mockZanzibar.On("Delete", mock.Anything, mock.Anything).Return(assert.AnError)
+
+		// Attempt to delete the user
+		err := logic.DeleteUser(context.Background(), &rbacpb.DeleteUserIn{Id: user.Id})
+		assert.Error(t, err)
+
+		// Verify the user is not deleted
+		var notDeletedUser rbac.User
+		err = db.First(&notDeletedUser, user.Id).Error
+		assert.NoError(t, err)
+	})
 }
 
 func TestRbacLogicImpl_CreateRole(t *testing.T) {
-	db, _, logic := setupTestDB(t, nil)
+	t.Run("should create a role successfully", func(t *testing.T) {
+		db, _, logic := setupTestDB(t, nil)
 
-	// Create a role
-	roleName := "admin"
-	err := logic.CreateRole(context.Background(), &rbacpb.CreateRoleIn{Name: roleName})
-	assert.NoError(t, err)
+		// Create a role
+		roleName := "admin"
+		err := logic.CreateRole(context.Background(), &rbacpb.CreateRoleIn{Name: roleName})
+		assert.NoError(t, err)
 
-	// Verify the role is created
-	var role rbac.Role
-	if err := db.Where("name = ?", roleName).First(&role).Error; err != nil {
-		t.Fatalf("failed to find role: %v", err)
-	}
+		// Verify the role is created
+		var role rbac.Role
+		if err := db.Where("name = ?", roleName).First(&role).Error; err != nil {
+			t.Fatalf("failed to find role: %v", err)
+		}
 
-	assert.Equal(t, roleName, role.Name)
+		assert.Equal(t, roleName, role.Name)
+	})
+
+	t.Run("should return an error when creating a role with a duplicate name", func(t *testing.T) {
+		db, _, logic := setupTestDB(t, nil)
+
+		// Create a role
+		roleName := "admin"
+		err := logic.CreateRole(context.Background(), &rbacpb.CreateRoleIn{Name: roleName})
+		assert.NoError(t, err)
+
+		// Attempt to create another role with the same name
+		err = logic.CreateRole(context.Background(), &rbacpb.CreateRoleIn{Name: roleName})
+		assert.Error(t, err)
+
+		// Verify that only one role with that name exists
+		var count int64
+		err = db.Model(&rbac.Role{}).Where("name = ?", roleName).Count(&count).Error
+		assert.NoError(t, err)
+		assert.Equal(t, int64(1), count)
+	})
 }
 
 func TestRbacLogicImpl_ListRoles(t *testing.T) {
@@ -251,27 +314,51 @@ func TestRbacLogicImpl_UpdateRole(t *testing.T) {
 }
 
 func TestRbacLogicImpl_DeleteRole(t *testing.T) {
-	db, mockZanzibar, logic := setupTestDB(t, nil)
+	t.Run("should delete a role successfully", func(t *testing.T) {
+		db, mockZanzibar, logic := setupTestDB(t, nil)
 
-	// Create a test role
-	role := &rbac.Role{Name: "admin"}
-	if err := db.Create(role).Error; err != nil {
-		t.Fatalf("failed to create role: %v", err)
-	}
+		// Create a test role
+		role := &rbac.Role{Name: "admin"}
+		if err := db.Create(role).Error; err != nil {
+			t.Fatalf("failed to create role: %v", err)
+		}
 
-	// Mock Zanzibar delete
-	mockZanzibar.On("Delete", mock.Anything, mock.Anything).Return(nil)
+		// Mock Zanzibar delete
+		mockZanzibar.On("Delete", mock.Anything, mock.Anything).Return(nil)
 
-	// Delete the role
-	err := logic.DeleteRole(context.Background(), &rbacpb.DeleteRoleIn{Id: role.Id})
-	assert.NoError(t, err)
+		// Delete the role
+		err := logic.DeleteRole(context.Background(), &rbacpb.DeleteRoleIn{Id: role.Id})
+		assert.NoError(t, err)
 
-	// Verify the role is deleted
-	var deletedRole rbac.Role
+		// Verify the role is deleted
+		var deletedRole rbac.Role
 
-	err = db.First(&deletedRole, role.Id).Error
-	assert.Error(t, err)
-	assert.Equal(t, gorm.ErrRecordNotFound, err)
+		err = db.First(&deletedRole, role.Id).Error
+		assert.Error(t, err)
+		assert.Equal(t, gorm.ErrRecordNotFound, err)
+	})
+
+	t.Run("should rollback transaction if zanzibar delete fails", func(t *testing.T) {
+		db, mockZanzibar, logic := setupTestDB(t, nil)
+
+		// Create a test role
+		role := &rbac.Role{Name: "admin"}
+		if err := db.Create(role).Error; err != nil {
+			t.Fatalf("failed to create role: %v", err)
+		}
+
+		// Mock Zanzibar delete to return an error
+		mockZanzibar.On("Delete", mock.Anything, mock.Anything).Return(assert.AnError)
+
+		// Attempt to delete the role
+		err := logic.DeleteRole(context.Background(), &rbacpb.DeleteRoleIn{Id: role.Id})
+		assert.Error(t, err)
+
+		// Verify the role is not deleted
+		var notDeletedRole rbac.Role
+		err = db.First(&notDeletedRole, role.Id).Error
+		assert.NoError(t, err)
+	})
 }
 
 func TestRbacLogicImpl_CreateResource(t *testing.T) {
@@ -351,17 +438,39 @@ func TestRbacLogicImpl_DeleteResource(t *testing.T) {
 }
 
 func TestRbacLogicImpl_AssignRole(t *testing.T) {
-	_, mockZanzibar, logic := setupTestDB(t, nil)
+	t.Run("should assign a role successfully", func(t *testing.T) {
+		_, mockZanzibar, logic := setupTestDB(t, nil)
 
-	// Mock Zanzibar create
-	mockZanzibar.On("Create", mock.Anything, mock.Anything).Return(nil)
+		// Mock Zanzibar create
+		mockZanzibar.On("Create", mock.Anything, mock.Anything).Return(nil)
 
-	// Assign a role
-	err := logic.AssignRole(context.Background(), &rbacpb.AssignRoleIn{
-		UserId: 1,
-		RoleId: 1,
+		// Assign a role
+		err := logic.AssignRole(context.Background(), &rbacpb.AssignRoleIn{
+			UserId: 1,
+			RoleId: 1,
+		})
+		assert.NoError(t, err)
+
+		// Assert that Zanzibar's Create method was called
+		mockZanzibar.AssertCalled(t, "Create", mock.Anything, mock.Anything)
 	})
-	assert.NoError(t, err)
+
+	t.Run("should call zanzibar create even with non-existent user and role ids", func(t *testing.T) {
+		_, mockZanzibar, logic := setupTestDB(t, nil)
+
+		// Mock Zanzibar create
+		mockZanzibar.On("Create", mock.Anything, mock.Anything).Return(nil)
+
+		// Assign a role with non-existent IDs
+		err := logic.AssignRole(context.Background(), &rbacpb.AssignRoleIn{
+			UserId: 999,
+			RoleId: 999,
+		})
+		assert.NoError(t, err)
+
+		// Assert that Zanzibar's Create method was still called
+		mockZanzibar.AssertCalled(t, "Create", mock.Anything, mock.Anything)
+	})
 }
 
 func TestRbacLogicImpl_GetRole(t *testing.T) {
@@ -437,48 +546,69 @@ func TestRbacLogicImpl_ListResourceTypes(t *testing.T) {
 }
 
 func TestRbacLogicImpl_ListPermissionByResource(t *testing.T) {
-	// Create a mock schema
-	mockSchema := &schema.Schema{
-		Namespaces: map[string]*schema.Namespace{
-			"document": {
-				Type: "resource",
-				Relations: map[string]*schema.Relation{
-					"read":  {},
-					"write": {},
-					"owner": {},
+	t.Run("should list available permissions for a resource", func(t *testing.T) {
+		// Create a mock schema
+		mockSchema := &schema.Schema{
+			Namespaces: map[string]*schema.Namespace{
+				"document": {
+					Type: "resource",
+					Relations: map[string]*schema.Relation{
+						"read":  {},
+						"write": {},
+						"owner": {},
+					},
 				},
 			},
-		},
-	}
-	db, _, logic := setupTestDB(t, mockSchema)
+		}
+		db, _, logic := setupTestDB(t, mockSchema)
 
-	// Create a test tuple
-	tuple := &model.Tuple{
-		SbjNs:    "role",
-		SbjId:    "1",
-		Relation: "read",
-		ObjNs:    "document",
-		ObjId:    "1",
-	}
+		// Create a test tuple
+		tuple := &model.Tuple{
+			SbjNs:    "role",
+			SbjId:    "1",
+			Relation: "read",
+			ObjNs:    "document",
+			ObjId:    "1",
+		}
 
-	if err := db.Create(tuple).Error; err != nil {
-		t.Fatalf("failed to create tuple: %v", err)
-	}
+		if err := db.Create(tuple).Error; err != nil {
+			t.Fatalf("failed to create tuple: %v", err)
+		}
 
-	// Call ListPermissionByResource
-	out, err := logic.ListPermissionByResource(
-		context.Background(),
-		&rbacpb.ListPermissionByResourceIn{
-			RoleId:     "1",
-			ResourceNs: "document",
-			ResourceId: "1",
-		},
-	)
+		// Call ListPermissionByResource
+		out, err := logic.ListPermissionByResource(
+			context.Background(),
+			&rbacpb.ListPermissionByResourceIn{
+				RoleId:     "1",
+				ResourceNs: "document",
+				ResourceId: "1",
+			},
+		)
 
-	// Assert the results
-	assert.NoError(t, err)
-	assert.NotNil(t, out)
-	assert.ElementsMatch(t, []string{"write", "owner"}, out.GetPermissions())
+		// Assert the results
+		assert.NoError(t, err)
+		assert.NotNil(t, out)
+		assert.ElementsMatch(t, []string{"write", "owner"}, out.GetPermissions())
+	})
+
+	t.Run("should not panic with non-existent namespace", func(t *testing.T) {
+		_, _, logic := setupTestDB(t, &schema.Schema{
+			Namespaces: map[string]*schema.Namespace{},
+		})
+
+		out, err := logic.ListPermissionByResource(
+			context.Background(),
+			&rbacpb.ListPermissionByResourceIn{
+				RoleId:     "1",
+				ResourceNs: "non-existent-namespace",
+				ResourceId: "1",
+			},
+		)
+
+		assert.NoError(t, err)
+		assert.NotNil(t, out)
+		assert.Empty(t, out.GetPermissions())
+	})
 }
 
 func TestRbacLogicImpl_RevokeRole(t *testing.T) {
@@ -511,22 +641,38 @@ func TestRbacLogicImpl_GrantPerm(t *testing.T) {
 }
 
 func TestRbacLogicImpl_RevokePerm(t *testing.T) {
-	db, mockZanzibar, logic := setupTestDB(t, nil)
+	t.Run("should revoke a permission successfully", func(t *testing.T) {
+		db, mockZanzibar, logic := setupTestDB(t, nil)
 
-	// Create a test resource
-	resource := &rbac.Resource{Id: 1, Ns: "document", Name: "doc1"}
-	if err := db.Create(resource).Error; err != nil {
-		t.Fatalf("failed to create resource: %v", err)
-	}
+		// Create a test resource
+		resource := &rbac.Resource{Id: 1, Ns: "document", Name: "doc1"}
+		if err := db.Create(resource).Error; err != nil {
+			t.Fatalf("failed to create resource: %v", err)
+		}
 
-	// Mock Zanzibar delete
-	mockZanzibar.On("Delete", mock.Anything, mock.Anything).Return(nil)
+		// Mock Zanzibar delete
+		mockZanzibar.On("Delete", mock.Anything, mock.Anything).Return(nil)
 
-	// Revoke a permission
-	err := logic.RevokePerm(context.Background(), &rbacpb.RevokePermIn{
-		RoleId:     1,
-		ResourceId: 1,
-		Perm:       "read",
+		// Revoke a permission
+		err := logic.RevokePerm(context.Background(), &rbacpb.RevokePermIn{
+			RoleId:     1,
+			ResourceId: 1,
+			Perm:       "read",
+		})
+		assert.NoError(t, err)
 	})
-	assert.NoError(t, err)
+
+	t.Run("should return an error when revoking a permission for a non-existent resource", func(t *testing.T) {
+		_, _, logic := setupTestDB(t, nil)
+
+		// Attempt to revoke a permission for a non-existent resource
+		err := logic.RevokePerm(context.Background(), &rbacpb.RevokePermIn{
+			RoleId:     1,
+			ResourceId: 999, // Non-existent ID
+			Perm:       "read",
+		})
+
+		// Assert that an error is returned
+		assert.Error(t, err)
+	})
 }
