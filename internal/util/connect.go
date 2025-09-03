@@ -37,8 +37,8 @@ func NewApiErr(ctx context.Context, err error) *connect.Error {
 
 func logError(traceId string, err *erx.CtxErr) {
 	e := log.Error().Str("traceId", traceId)
-	if cause := err.Unwrap().Error(); cause != "" {
-		e.Str("cause", cause)
+	if cause := err.Unwrap(); cause != nil {
+		e.Str("cause", cause.Error())
 	}
 
 	e.Str("code", err.Code.Str())

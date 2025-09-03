@@ -1,7 +1,10 @@
 package tuplememory
 
-import "testing"
+import (
+	"testing"
+)
 
-func TestDummy(t *testing.T) {
-	// This is a dummy test to make the coverage tool happy.
+func TestCalculateMemoryUsage(t *testing.T) {
+	// Call calculateMemoryUsage with smaller parameters to avoid out-of-memory errors.
+	calculateMemoryUsage(100, 5)
 }
