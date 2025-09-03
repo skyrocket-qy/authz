@@ -7,17 +7,19 @@ import (
 	"time"
 
 	"authz/internal/config"
-	"github.com/segmentio/kafka-go"
+	"authz/internal/service"
 	"gorm.io/gorm"
 )
 
 type Handler struct {
-	pgdb *gorm.DB
+	pgdb        *gorm.DB
+	kafkaDialer service.KafkaDialer
 }
 
-func NewHandler(pgdb *gorm.DB) *Handler {
+func NewHandler(pgdb *gorm.DB, kafkaDialer service.KafkaDialer) *Handler {
 	return &Handler{
-		pgdb: pgdb,
+		pgdb:        pgdb,
+		kafkaDialer: kafkaDialer,
 	}
 }
 
@@ -49,7 +51,7 @@ func (h *Handler) ReadinessProbe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 2️⃣ Check Kafka (connection only, don't consume messages)
-	conn, err := kafka.DialLeader(ctx, "tcp",
+	conn, err := h.kafkaDialer.DialLeader(ctx, "tcp",
 		fmt.Sprintf("%s:%s", config.Conf.Kafka.Host, config.Conf.Kafka.Port), "pg.public.tuples", 0,
 	)
 	if err != nil {

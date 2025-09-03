@@ -1,10 +1,13 @@
 //go:build wireinject
 // +build wireinject
 
+//go:generate wire
+
 package wire
 
 import (
 	"authz/internal/engine/rbac"
+	"authz/internal/handler/rest"
 	"authz/internal/schema"
 	"authz/internal/service"
 	"authz/internal/util"
@@ -38,3 +41,11 @@ func NewRbacHandler(context.Context, *util.LifecycleParallel, *gorm.DB) (*rbac.H
 // 	)
 // 	return nil, nil
 // }
+
+func NewRestHandler(db *gorm.DB) *rest.Handler {
+	wire.Build(
+		service.NewKafkaDialer,
+		rest.NewHandler,
+	)
+	return &rest.Handler{}
+}

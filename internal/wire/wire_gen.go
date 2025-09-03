@@ -8,6 +8,7 @@ package wire
 
 import (
 	"authz/internal/engine/rbac"
+	"authz/internal/handler/rest"
 	"authz/internal/schema"
 	"authz/internal/service"
 	"authz/internal/util"
@@ -32,4 +33,10 @@ func NewRbacHandler(contextContext context.Context, lifecycleParallel *util.Life
 	rbacLogicImpl := rbac.NewRbacLogic(zanzibarLogicImpl, db, schemaSchema)
 	handler := rbac.NewHandler(zanzibarLogicImpl, rbacLogicImpl)
 	return handler, nil
+}
+
+func NewRestHandler(db *gorm.DB) *rest.Handler {
+	kafkaDialer := service.NewKafkaDialer()
+	handler := rest.NewHandler(db, kafkaDialer)
+	return handler
 }
