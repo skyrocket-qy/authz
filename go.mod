@@ -19,6 +19,7 @@ require (
 	github.com/rs/zerolog v1.34.0
 	github.com/segmentio/kafka-go v0.4.49
 	github.com/skyrocket-qy/erx v0.3.28
+	github.com/skyrocket-qy/gox v1.2.38
 	github.com/skyrocket-qy/protos v0.1.52
 	github.com/skyrocket-qy/srand v0.1.0
 	github.com/spf13/cobra v1.9.1
@@ -73,7 +74,6 @@ require (
 	github.com/spf13/pflag v1.0.7 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	golang.org/x/crypto v0.41.0 // indirect
-	golang.org/x/net v0.43.0 // indirect
 	golang.org/x/sync v0.16.0 // indirect
 	golang.org/x/sys v0.35.0 // indirect
 	golang.org/x/text v0.28.0 // indirect

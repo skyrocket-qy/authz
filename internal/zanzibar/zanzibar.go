@@ -2,18 +2,21 @@ package zanzibar
 
 import (
 	"context"
+	"strings"
 
 	"authz/internal/entity"
 	"authz/internal/entity/model"
 	"authz/internal/schema"
 	"authz/internal/util"
+
+	"github.com/redis/go-redis/v9"
 	"github.com/skyrocket-qy/erx"
+	"github.com/skyrocket-qy/gox/redisx"
 	"github.com/skyrocket-qy/protos/gen/authzpb/rbacpb"
 	authzpbv1 "github.com/skyrocket-qy/protos/gen/authzpb/v1"
 	pkgpbv1 "github.com/skyrocket-qy/protos/gen/pkgpb/v1"
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
-	"github.com/redis/go-redis/v9"
 )
 
 type ZanzibarLogic interface {
@@ -41,13 +44,20 @@ type ZanzibarLogicImpl struct {
 }
 
 func NewZanzibarLogic(db *gorm.DB, zm ZanzibarMemory, s *schema.Schema, rdb *redis.Client,
-) *ZanzibarLogicImpl {
+) (*ZanzibarLogicImpl, error) {
+	if err := redisx.CuckooFilterReserve(context.Background(), rdb, "zanzibar:cuckoo", 1000000); err != nil {
+		// if filter already exists, we don't need to return error
+		if !strings.Contains(err.Error(), "key already exists") {
+			return nil, erx.W(err)
+		}
+	}
+
 	return &ZanzibarLogicImpl{
 		pgdb:   db,
 		zm:     zm,
 		schema: s,
 		rdb:    rdb,
-	}
+	}, nil
 }
 
 func (r *ZanzibarLogicImpl) db(c context.Context) *gorm.DB {
