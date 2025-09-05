@@ -46,7 +46,6 @@ type ZanzibarLogicImpl struct {
 func NewZanzibarLogic(db *gorm.DB, zm ZanzibarMemory, s *schema.Schema, rdb *redis.Client,
 ) (*ZanzibarLogicImpl, error) {
 	if err := redisx.CuckooFilterReserve(context.Background(), rdb, "zanzibar:cuckoo", 1000000); err != nil {
-		// if filter already exists, we don't need to return error
 		if !strings.Contains(err.Error(), "key already exists") {
 			return nil, erx.W(err)
 		}
