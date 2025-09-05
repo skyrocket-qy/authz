@@ -7,6 +7,7 @@ import (
 	"authz/internal/entity"
 	"authz/internal/schema"
 	"authz/internal/zanzibar"
+
 	"github.com/DATA-DOG/go-sqlmock"
 	authzpbv1 "github.com/skyrocket-qy/protos/gen/authzpb/v1"
 	pkgpbv1 "github.com/skyrocket-qy/protos/gen/pkgpb/v1"

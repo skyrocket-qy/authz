@@ -13,6 +13,7 @@ import (
 	pkgpbv1 "github.com/skyrocket-qy/protos/gen/pkgpb/v1"
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
+	"github.com/redis/go-redis/v9"
 )
 
 type ZanzibarLogic interface {
@@ -36,14 +37,16 @@ type ZanzibarLogicImpl struct {
 	pgdb   *gorm.DB
 	zm     ZanzibarMemory
 	schema *schema.Schema
+	rdb    *redis.Client
 }
 
-func NewZanzibarLogic(db *gorm.DB, zm ZanzibarMemory, s *schema.Schema,
+func NewZanzibarLogic(db *gorm.DB, zm ZanzibarMemory, s *schema.Schema, rdb *redis.Client,
 ) *ZanzibarLogicImpl {
 	return &ZanzibarLogicImpl{
 		pgdb:   db,
 		zm:     zm,
 		schema: s,
+		rdb:    rdb,
 	}
 }
 
