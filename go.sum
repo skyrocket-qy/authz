@@ -176,8 +176,6 @@ github.com/segmentio/kafka-go v0.4.49 h1:GJiNX1d/g+kG6ljyJEoi9++PUMdXGAxb7JGPiDC
 github.com/segmentio/kafka-go v0.4.49/go.mod h1:Y1gn60kzLEEaW28YshXyk2+VCUKbJ3Qr6DrnT3i4+9E=
 github.com/skyrocket-qy/erx v0.3.28 h1:O0gkjmAY0CUAjMPF0jenQifO78IdkeHJPQysRdvaceU=
 github.com/skyrocket-qy/erx v0.3.28/go.mod h1:VNuuSMK0LFEe1KkHrtqNUnDpCv2mA0TyzN2j8sz0LEY=
-github.com/skyrocket-qy/gox v1.2.38 h1:56V5zh7oqdXDMfVb9/0xXkmxNQW1QXoqTNpLiZ4uNzM=
-github.com/skyrocket-qy/gox v1.2.38/go.mod h1:HMHqTI7+cCDEBNKlGZ99L3QH8BKEMZoEF7fQ4Gq2JFo=
 github.com/skyrocket-qy/protos v0.1.52 h1:b7DPwHKEjoKFy1vRvhFOFGDKnI6B0H9sPz1bZaDImVs=
 github.com/skyrocket-qy/protos v0.1.52/go.mod h1:BfcArsgU7HMSJK+A/FHrVOo5IenOve9Rx2vQQbV7TQs=
 github.com/skyrocket-qy/srand v0.1.0 h1:tz0nTtzIRAILn/zRjznZpxHHRtGXCFLTQYbO57ItnrY=
