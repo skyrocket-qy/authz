@@ -21,7 +21,7 @@ import (
 
 func NewRbacHandler(context.Context, *util.LifecycleParallel, *gorm.DB) (*rbac.Handler, error) {
 	wire.Build(
-		redis.New,
+		redis.NewAndInit,
 		schema.NewSchema,
 
 		service.NewKafkaReader,
