@@ -65,7 +65,8 @@ func newMockRedis(t *testing.T) (*redis.Client, redismock.ClientMock) {
 func TestZanzibarLogicImpl_Check(t *testing.T) {
 	mockZm := new(mockZanzibarMemory)
 	rdb, _ := newMockRedis(t)
-	logic := zanzibar.NewZanzibarLogic(nil, mockZm, nil, rdb)
+	logic, err := zanzibar.NewZanzibarLogic(nil, mockZm, nil, rdb)
+	assert.NoError(t, err)
 
 	ctx := context.Background()
 	in := &authzpbv1.CheckIn{
@@ -104,7 +105,8 @@ func newMockDb(t *testing.T) (*gorm.DB, sqlmock.Sqlmock) {
 func TestZanzibarLogicImpl_Create(t *testing.T) {
 	db, mock := newMockDb(t)
 	rdb, _ := newMockRedis(t)
-	logic := zanzibar.NewZanzibarLogic(db, nil, nil, rdb)
+	logic, err := zanzibar.NewZanzibarLogic(db, nil, nil, rdb)
+	assert.NoError(t, err)
 
 	ctx := context.Background()
 	tuple := &authzpbv1.Tuple{
@@ -121,7 +123,7 @@ func TestZanzibarLogicImpl_Create(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 	mock.ExpectCommit()
 
-	err := logic.Create(ctx, tuple)
+	err = logic.Create(ctx, tuple)
 	assert.NoError(t, err)
 
 	assert.NoError(t, mock.ExpectationsWereMet())
@@ -130,7 +132,8 @@ func TestZanzibarLogicImpl_Create(t *testing.T) {
 func TestZanzibarLogicImpl_Delete(t *testing.T) {
 	db, mock := newMockDb(t)
 	rdb, _ := newMockRedis(t)
-	logic := zanzibar.NewZanzibarLogic(db, nil, nil, rdb)
+	logic, err := zanzibar.NewZanzibarLogic(db, nil, nil, rdb)
+	assert.NoError(t, err)
 	ctx := context.Background()
 
 	// Test case 1: Delete by filter
@@ -155,13 +158,11 @@ func TestZanzibarLogicImpl_Delete(t *testing.T) {
 
 		err := logic.Delete(ctx, in)
 		assert.NoError(t, err)
+		assert.NoError(t, mock.ExpectationsWereMet())
 	})
 
 	// Test case 2: Delete by list of tuples
 	t.Run("DeleteByTuples", func(t *testing.T) {
-		db, mock := newMockDb(t)
-		rdb, _ := newMockRedis(t)
-		logic := zanzibar.NewZanzibarLogic(db, nil, nil, rdb)
 		tuples := []*authzpbv1.Tuple{
 			{SbjNs: "user", SbjId: "1", Rel: "owner", ObjNs: "doc", ObjId: "1"},
 			{SbjNs: "user", SbjId: "2", Rel: "editor", ObjNs: "doc", ObjId: "2"},
@@ -187,9 +188,6 @@ func TestZanzibarLogicImpl_Delete(t *testing.T) {
 
 	// Test case 3: Delete by list of tuple IDs
 	t.Run("DeleteByIds", func(t *testing.T) {
-		db, mock := newMockDb(t)
-		rdb, _ := newMockRedis(t)
-		logic := zanzibar.NewZanzibarLogic(db, nil, nil, rdb)
 		ids := []uint64{1, 2, 3}
 		in := &authzpbv1.DeleteTuplesIn{
 			Mode: &authzpbv1.DeleteTuplesIn_DeleteTupleIds{
@@ -214,7 +212,8 @@ func TestZanzibarLogicImpl_Delete(t *testing.T) {
 func TestZanzibarLogicImpl_Find(t *testing.T) {
 	db, mock := newMockDb(t)
 	rdb, _ := newMockRedis(t)
-	logic := zanzibar.NewZanzibarLogic(db, nil, nil, rdb)
+	logic, err := zanzibar.NewZanzibarLogic(db, nil, nil, rdb)
+	assert.NoError(t, err)
 	ctx := context.Background()
 	userNs := "user"
 	filter := &authzpbv1.TupleFilter{
@@ -238,7 +237,8 @@ func TestZanzibarLogicImpl_Find(t *testing.T) {
 func TestZanzibarLogicImpl_List(t *testing.T) {
 	db, mock := newMockDb(t)
 	rdb, _ := newMockRedis(t)
-	logic := zanzibar.NewZanzibarLogic(db, nil, nil, rdb)
+	logic, err := zanzibar.NewZanzibarLogic(db, nil, nil, rdb)
+	assert.NoError(t, err)
 	ctx := context.Background()
 	in := &authzpbv1.ListTuplesIn{
 		Cursor: &pkgpbv1.Cursor{
@@ -253,8 +253,8 @@ func TestZanzibarLogicImpl_List(t *testing.T) {
 		AddRow("user", "1", "owner", "doc", "1").
 		AddRow("user", "2", "editor", "doc", "2")
 
-	mock.ExpectQuery("SELECT \\* FROM \"tuples\" WHERE `sbj_ns` = \\$1 LIMIT \\$2").
-		WithArgs("user", 10).
+	mock.ExpectQuery(`SELECT * FROM "tuples" WHERE "sbj_ns" = $1 LIMIT 10`).
+		WithArgs("user").
 		WillReturnRows(rows)
 
 	out, err := logic.List(ctx, in)
@@ -282,7 +282,8 @@ func TestZanzibarLogicImpl_GetPermissions(t *testing.T) {
 			},
 		},
 	}
-	logic := zanzibar.NewZanzibarLogic(db, nil, s, rdb)
+	logic, err := zanzibar.NewZanzibarLogic(db, nil, s, rdb)
+	assert.NoError(t, err)
 	ctx := context.Background()
 	sbj := &authzpbv1.Instance{
 		Ns: "user",
@@ -308,7 +309,8 @@ func TestZanzibarLogicImpl_GetPermissions(t *testing.T) {
 func TestZanzibarLogicImpl_Lookup(t *testing.T) {
 	mockZm := new(mockZanzibarMemory)
 	rdb, _ := newMockRedis(t)
-	logic := zanzibar.NewZanzibarLogic(nil, mockZm, nil, rdb)
+	logic, err := zanzibar.NewZanzibarLogic(nil, mockZm, nil, rdb)
+	assert.NoError(t, err)
 
 	ctx := context.Background()
 	user := entity.Instance{Ns: "user", Id: "1"}
@@ -329,7 +331,8 @@ func TestZanzibarLogicImpl_Lookup(t *testing.T) {
 func TestZanzibarLogicImpl_Expand(t *testing.T) {
 	mockZm := new(mockZanzibarMemory)
 	rdb, _ := newMockRedis(t)
-	logic := zanzibar.NewZanzibarLogic(nil, mockZm, nil, rdb)
+	logic, err := zanzibar.NewZanzibarLogic(nil, mockZm, nil, rdb)
+	assert.NoError(t, err)
 
 	ctx := context.Background()
 	doc := entity.Instance{Ns: "doc", Id: "1"}

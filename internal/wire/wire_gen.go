@@ -11,6 +11,7 @@ import (
 	"authz/internal/handler/rest"
 	"authz/internal/schema"
 	"authz/internal/service"
+	"authz/internal/service/redis"
 	"authz/internal/util"
 	"authz/internal/zanzibar"
 	"context"
@@ -29,7 +30,11 @@ func NewRbacHandler(contextContext context.Context, lifecycleParallel *util.Life
 	if err != nil {
 		return nil, err
 	}
-	zanzibarLogicImpl := zanzibar.NewZanzibarLogic(db, zanzibarMemoryImpl, schemaSchema)
+	client := redis.New(lifecycleParallel)
+	zanzibarLogicImpl, err := zanzibar.NewZanzibarLogic(db, zanzibarMemoryImpl, schemaSchema, client)
+	if err != nil {
+		return nil, err
+	}
 	rbacLogicImpl := rbac.NewRbacLogic(zanzibarLogicImpl, db, schemaSchema)
 	handler := rbac.NewHandler(zanzibarLogicImpl, rbacLogicImpl)
 	return handler, nil

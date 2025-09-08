@@ -10,6 +10,7 @@ import (
 	"authz/internal/handler/rest"
 	"authz/internal/schema"
 	"authz/internal/service"
+	"authz/internal/service/redis"
 	"authz/internal/util"
 	"authz/internal/zanzibar"
 	"context"
@@ -20,6 +21,7 @@ import (
 
 func NewRbacHandler(context.Context, *util.LifecycleParallel, *gorm.DB) (*rbac.Handler, error) {
 	wire.Build(
+		redis.New,
 		schema.NewSchema,
 
 		service.NewKafkaReader,

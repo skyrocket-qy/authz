@@ -97,11 +97,11 @@ func QuoteIfNeeded(field string) string {
 	if strings.Contains(field, ".") {
 		parts := strings.Split(field, ".")
 		for i, p := range parts {
-			parts[i] = "`" + p + "`"
+			parts[i] = `"` + p + `"`
 		}
 
 		return strings.Join(parts, ".")
 	}
 
-	return "`" + field + "`"
+	return `"` + field + `"`
 }
