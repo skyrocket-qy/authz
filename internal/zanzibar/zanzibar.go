@@ -2,7 +2,6 @@ package zanzibar
 
 import (
 	"context"
-	"strings"
 
 	"authz/internal/entity"
 	"authz/internal/entity/model"
@@ -46,12 +45,6 @@ type ZanzibarLogicImpl struct {
 
 func NewZanzibarLogic(db *gorm.DB, zm ZanzibarMemory, s *schema.Schema, rdb *redis.Client,
 ) (*ZanzibarLogicImpl, error) {
-	if err := redisx.CuckooFilterReserve(context.Background(), rdb, "zanzibar:cuckoo", 1000000); err != nil {
-		if !strings.Contains(err.Error(), "key already exists") {
-			return nil, erx.W(err)
-		}
-	}
-
 	return &ZanzibarLogicImpl{
 		pgdb:   db,
 		zm:     zm,
@@ -157,14 +150,16 @@ func (r *ZanzibarLogicImpl) List(c context.Context, in *authzpbv1.ListTuplesIn) 
 		return nil, erx.W(err)
 	}
 
-	go func() {
-		for _, tuple := range tuples {
-			_, err := redisx.CuckooFilterAddNX(c, r.rdb, "zanzibar:cuckoo", tuple.String())
-			if err != nil {
-				return
+	if r.rdb != nil {
+		go func() {
+			for _, tuple := range tuples {
+				_, err := redisx.CuckooFilterAddNX(c, r.rdb, "zanzibar:cuckoo", tuple.String())
+				if err != nil {
+					return
+				}
 			}
-		}
-	}()
+		}()
+	}
 
 	return out, nil
 }
@@ -188,25 +183,29 @@ func (r *ZanzibarLogicImpl) Find(c context.Context, filter *authzpbv1.TupleFilte
 		})
 	}
 
-	go func() {
-		for _, tuple := range tuplesProto {
-			_, err := redisx.CuckooFilterAddNX(c, r.rdb, "zanzibar:cuckoo", tuple.String())
-			if err != nil {
-				return
+	if r.rdb != nil {
+		go func() {
+			for _, tuple := range tuplesProto {
+				_, err := redisx.CuckooFilterAddNX(c, r.rdb, "zanzibar:cuckoo", tuple.String())
+				if err != nil {
+					return
+				}
 			}
-		}
-	}()
+		}()
+	}
 
 	return tuplesProto, nil
 }
 
 func (r *ZanzibarLogicImpl) Create(c context.Context, tuple *authzpbv1.Tuple) error {
-	ok, err := redisx.CuckooFilterExists(c, r.rdb, "zanzibar:cuckoo", tuple.String())
-	if err != nil {
-		return erx.W(err)
-	}
-	if ok {
-		return erx.New(errcode.ErrDuplicate)
+	if r.rdb != nil {
+		ok, err := redisx.CuckooFilterExists(c, r.rdb, "zanzibar:cuckoo", tuple.String())
+		if err != nil {
+			return erx.W(err)
+		}
+		if ok {
+			return erx.New(errcode.ErrDuplicate)
+		}
 	}
 
 	if err := r.db(c).Create(&model.Tuple{
@@ -219,9 +218,11 @@ func (r *ZanzibarLogicImpl) Create(c context.Context, tuple *authzpbv1.Tuple) er
 		return erx.W(err)
 	}
 
-	_, err = redisx.CuckooFilterAddNX(c, r.rdb, "zanzibar:cuckoo", tuple.String())
-	if err != nil {
-		return erx.W(err)
+	if r.rdb != nil {
+		_, err := redisx.CuckooFilterAddNX(c, r.rdb, "zanzibar:cuckoo", tuple.String())
+		if err != nil {
+			return erx.W(err)
+		}
 	}
 
 	return nil
@@ -248,14 +249,16 @@ func (r *ZanzibarLogicImpl) Delete(c context.Context, in *authzpbv1.DeleteTuples
 			return erx.W(err)
 		}
 
-		go func() {
-			for _, tuple := range tuples {
-				_, err := redisx.CuckooFilterDel(c, r.rdb, "zanzibar:cuckoo", tuple.String())
-				if err != nil {
-					continue
+		if r.rdb != nil {
+			go func() {
+				for _, tuple := range tuples {
+					_, err := redisx.CuckooFilterDel(c, r.rdb, "zanzibar:cuckoo", tuple.String())
+					if err != nil {
+						continue
+					}
 				}
-			}
-		}()
+			}()
+		}
 
 	case *authzpbv1.DeleteTuplesIn_DeleteTupleIds:
 		if err := r.db(c).

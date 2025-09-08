@@ -30,7 +30,10 @@ func NewRbacHandler(contextContext context.Context, lifecycleParallel *util.Life
 	if err != nil {
 		return nil, err
 	}
-	client := redis.New(lifecycleParallel)
+	client, err := redis.NewAndInit(lifecycleParallel)
+	if err != nil {
+		return nil, err
+	}
 	zanzibarLogicImpl, err := zanzibar.NewZanzibarLogic(db, zanzibarMemoryImpl, schemaSchema, client)
 	if err != nil {
 		return nil, err

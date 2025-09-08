@@ -64,8 +64,7 @@ func newMockRedis(t *testing.T) (*redis.Client, redismock.ClientMock) {
 
 func TestZanzibarLogicImpl_Check(t *testing.T) {
 	mockZm := new(mockZanzibarMemory)
-	rdb, _ := newMockRedis(t)
-	logic, err := zanzibar.NewZanzibarLogic(nil, mockZm, nil, rdb)
+	logic, err := zanzibar.NewZanzibarLogic(nil, mockZm, nil, nil)
 	assert.NoError(t, err)
 
 	ctx := context.Background()
@@ -104,8 +103,7 @@ func newMockDb(t *testing.T) (*gorm.DB, sqlmock.Sqlmock) {
 
 func TestZanzibarLogicImpl_Create(t *testing.T) {
 	db, mock := newMockDb(t)
-	rdb, _ := newMockRedis(t)
-	logic, err := zanzibar.NewZanzibarLogic(db, nil, nil, rdb)
+	logic, err := zanzibar.NewZanzibarLogic(db, nil, nil, nil)
 	assert.NoError(t, err)
 
 	ctx := context.Background()
@@ -131,8 +129,7 @@ func TestZanzibarLogicImpl_Create(t *testing.T) {
 
 func TestZanzibarLogicImpl_Delete(t *testing.T) {
 	db, mock := newMockDb(t)
-	rdb, _ := newMockRedis(t)
-	logic, err := zanzibar.NewZanzibarLogic(db, nil, nil, rdb)
+	logic, err := zanzibar.NewZanzibarLogic(db, nil, nil, nil)
 	assert.NoError(t, err)
 	ctx := context.Background()
 
@@ -211,8 +208,7 @@ func TestZanzibarLogicImpl_Delete(t *testing.T) {
 
 func TestZanzibarLogicImpl_Find(t *testing.T) {
 	db, mock := newMockDb(t)
-	rdb, _ := newMockRedis(t)
-	logic, err := zanzibar.NewZanzibarLogic(db, nil, nil, rdb)
+	logic, err := zanzibar.NewZanzibarLogic(db, nil, nil, nil)
 	assert.NoError(t, err)
 	ctx := context.Background()
 	userNs := "user"
@@ -236,8 +232,7 @@ func TestZanzibarLogicImpl_Find(t *testing.T) {
 
 func TestZanzibarLogicImpl_List(t *testing.T) {
 	db, mock := newMockDb(t)
-	rdb, _ := newMockRedis(t)
-	logic, err := zanzibar.NewZanzibarLogic(db, nil, nil, rdb)
+	logic, err := zanzibar.NewZanzibarLogic(db, nil, nil, nil)
 	assert.NoError(t, err)
 	ctx := context.Background()
 	in := &authzpbv1.ListTuplesIn{
@@ -253,8 +248,8 @@ func TestZanzibarLogicImpl_List(t *testing.T) {
 		AddRow("user", "1", "owner", "doc", "1").
 		AddRow("user", "2", "editor", "doc", "2")
 
-	mock.ExpectQuery(`SELECT * FROM "tuples" WHERE "sbj_ns" = $1 LIMIT 10`).
-		WithArgs("user").
+	mock.ExpectQuery("SELECT \\* FROM \"tuples\" WHERE `sbj_ns` = \\$1 LIMIT \\$2").
+		WithArgs("user", 10).
 		WillReturnRows(rows)
 
 	out, err := logic.List(ctx, in)
@@ -265,7 +260,6 @@ func TestZanzibarLogicImpl_List(t *testing.T) {
 
 func TestZanzibarLogicImpl_GetPermissions(t *testing.T) {
 	db, mock := newMockDb(t)
-	rdb, _ := newMockRedis(t)
 	s := &schema.Schema{
 		Namespaces: map[string]*schema.Namespace{
 			"doc": {
@@ -282,7 +276,7 @@ func TestZanzibarLogicImpl_GetPermissions(t *testing.T) {
 			},
 		},
 	}
-	logic, err := zanzibar.NewZanzibarLogic(db, nil, s, rdb)
+	logic, err := zanzibar.NewZanzibarLogic(db, nil, s, nil)
 	assert.NoError(t, err)
 	ctx := context.Background()
 	sbj := &authzpbv1.Instance{
@@ -308,8 +302,7 @@ func TestZanzibarLogicImpl_GetPermissions(t *testing.T) {
 
 func TestZanzibarLogicImpl_Lookup(t *testing.T) {
 	mockZm := new(mockZanzibarMemory)
-	rdb, _ := newMockRedis(t)
-	logic, err := zanzibar.NewZanzibarLogic(nil, mockZm, nil, rdb)
+	logic, err := zanzibar.NewZanzibarLogic(nil, mockZm, nil, nil)
 	assert.NoError(t, err)
 
 	ctx := context.Background()
@@ -330,8 +323,7 @@ func TestZanzibarLogicImpl_Lookup(t *testing.T) {
 
 func TestZanzibarLogicImpl_Expand(t *testing.T) {
 	mockZm := new(mockZanzibarMemory)
-	rdb, _ := newMockRedis(t)
-	logic, err := zanzibar.NewZanzibarLogic(nil, mockZm, nil, rdb)
+	logic, err := zanzibar.NewZanzibarLogic(nil, mockZm, nil, nil)
 	assert.NoError(t, err)
 
 	ctx := context.Background()

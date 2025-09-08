@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"authz/internal/config"
@@ -9,6 +10,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
+	"github.com/skyrocket-qy/erx"
+	"github.com/skyrocket-qy/gox/redisx"
 )
 
 func New(lc *util.LifecycleParallel) *redis.Client {
@@ -25,6 +28,16 @@ func New(lc *util.LifecycleParallel) *redis.Client {
 	})
 
 	return rdb
+}
+
+func NewAndInit(lc *util.LifecycleParallel) (*redis.Client, error) {
+	client := New(lc)
+	if err := redisx.CuckooFilterReserve(context.Background(), client, "zanzibar:cuckoo", 1000000); err != nil {
+		if !strings.Contains(err.Error(), "key already exists") {
+			return nil, erx.W(err)
+		}
+	}
+	return client, nil
 }
 
 type DistributedLock struct {
