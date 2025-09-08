@@ -11,6 +11,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 	"github.com/skyrocket-qy/erx"
+	"github.com/skyrocket-qy/gox/errcode"
 	"github.com/skyrocket-qy/gox/redisx"
 	"github.com/skyrocket-qy/protos/gen/authzpb/rbacpb"
 	authzpbv1 "github.com/skyrocket-qy/protos/gen/authzpb/v1"
@@ -156,6 +157,15 @@ func (r *ZanzibarLogicImpl) List(c context.Context, in *authzpbv1.ListTuplesIn) 
 		return nil, erx.W(err)
 	}
 
+	go func() {
+		for _, tuple := range tuples {
+			_, err := redisx.CuckooFilterAddNX(c, r.rdb, "zanzibar:cuckoo", tuple.String())
+			if err != nil {
+				return
+			}
+		}
+	}()
+
 	return out, nil
 }
 
@@ -178,17 +188,43 @@ func (r *ZanzibarLogicImpl) Find(c context.Context, filter *authzpbv1.TupleFilte
 		})
 	}
 
+	go func() {
+		for _, tuple := range tuplesProto {
+			_, err := redisx.CuckooFilterAddNX(c, r.rdb, "zanzibar:cuckoo", tuple.String())
+			if err != nil {
+				return
+			}
+		}
+	}()
+
 	return tuplesProto, nil
 }
 
 func (r *ZanzibarLogicImpl) Create(c context.Context, tuple *authzpbv1.Tuple) error {
-	return r.db(c).Create(&model.Tuple{
+	ok, err := redisx.CuckooFilterExists(c, r.rdb, "zanzibar:cuckoo", tuple.String())
+	if err != nil {
+		return erx.W(err)
+	}
+	if ok {
+		return erx.New(errcode.ErrDuplicate)
+	}
+
+	if err := r.db(c).Create(&model.Tuple{
 		SbjNs:    tuple.GetSbjNs(),
 		SbjId:    tuple.GetSbjId(),
 		Relation: tuple.GetRel(),
 		ObjNs:    tuple.GetObjNs(),
 		ObjId:    tuple.GetObjId(),
-	}).Error
+	}).Error; err != nil {
+		return erx.W(err)
+	}
+
+	_, err = redisx.CuckooFilterAddNX(c, r.rdb, "zanzibar:cuckoo", tuple.String())
+	if err != nil {
+		return erx.W(err)
+	}
+
+	return nil
 }
 
 func (r *ZanzibarLogicImpl) Delete(c context.Context, in *authzpbv1.DeleteTuplesIn) error {
@@ -206,9 +242,20 @@ func (r *ZanzibarLogicImpl) Delete(c context.Context, in *authzpbv1.DeleteTuples
 			values[i] = []any{t.GetSbjNs(), t.GetSbjId(), t.GetRel(), t.GetObjNs(), t.GetObjId()}
 		}
 
-		return r.db(c).
+		if err := r.db(c).
 			Where("(sbj_ns, sbj_id, rel, obj_ns, obj_id) IN ?", values).
-			Delete(&model.Tuple{}).Error
+			Delete(&model.Tuple{}).Error; err != nil {
+			return erx.W(err)
+		}
+
+		go func() {
+			for _, tuple := range tuples {
+				_, err := redisx.CuckooFilterDel(c, r.rdb, "zanzibar:cuckoo", tuple.String())
+				if err != nil {
+					continue
+				}
+			}
+		}()
 
 	case *authzpbv1.DeleteTuplesIn_DeleteTupleIds:
 		if err := r.db(c).
