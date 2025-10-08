@@ -7,11 +7,6 @@ import (
 	"github.com/skyrocket-qy/erx"
 )
 
-type ErrResp struct {
-	ReqId string `json:"reqId"`
-	Code  string `json:"code"`
-}
-
 func TrimToProject(path string) string {
 	projectRoot, _ := os.Getwd()
 	if rel, ok := strings.CutPrefix(path, projectRoot); ok {
