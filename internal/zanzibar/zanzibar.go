@@ -11,7 +11,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/skyrocket-qy/erx"
 	"github.com/skyrocket-qy/gox/errcode"
-	"github.com/skyrocket-qy/gox/redisx"
+	"github.com/skyrocket-qy/gox/probfilter/cuckoofilter"
 	"github.com/skyrocket-qy/protos/gen/authzpb/rbacpb"
 	authzpbv1 "github.com/skyrocket-qy/protos/gen/authzpb/v1"
 	pkgpbv1 "github.com/skyrocket-qy/protos/gen/pkgpb/v1"
@@ -153,7 +153,7 @@ func (r *ZanzibarLogicImpl) List(c context.Context, in *authzpbv1.ListTuplesIn) 
 	if r.rdb != nil {
 		go func() {
 			for _, tuple := range tuples {
-				_, err := redisx.CuckooFilterAddNX(c, r.rdb, "zanzibar:cuckoo", tuple.String())
+				_, err := cuckoofilter.Add(c, r.rdb, "zanzibar:cuckoo", tuple.String())
 				if err != nil {
 					return
 				}
@@ -186,7 +186,7 @@ func (r *ZanzibarLogicImpl) Find(c context.Context, filter *authzpbv1.TupleFilte
 	if r.rdb != nil {
 		go func() {
 			for _, tuple := range tuplesProto {
-				_, err := redisx.CuckooFilterAddNX(c, r.rdb, "zanzibar:cuckoo", tuple.String())
+				_, err := cuckoofilter.Add(c, r.rdb, "zanzibar:cuckoo", tuple.String())
 				if err != nil {
 					return
 				}
@@ -199,7 +199,7 @@ func (r *ZanzibarLogicImpl) Find(c context.Context, filter *authzpbv1.TupleFilte
 
 func (r *ZanzibarLogicImpl) Create(c context.Context, tuple *authzpbv1.Tuple) error {
 	if r.rdb != nil {
-		ok, err := redisx.CuckooFilterExists(c, r.rdb, "zanzibar:cuckoo", tuple.String())
+		ok, err := cuckoofilter.Exists(c, r.rdb, "zanzibar:cuckoo", tuple.String())
 		if err != nil {
 			return erx.W(err)
 		}
@@ -219,7 +219,7 @@ func (r *ZanzibarLogicImpl) Create(c context.Context, tuple *authzpbv1.Tuple) er
 	}
 
 	if r.rdb != nil {
-		_, err := redisx.CuckooFilterAddNX(c, r.rdb, "zanzibar:cuckoo", tuple.String())
+		_, err := cuckoofilter.Add(c, r.rdb, "zanzibar:cuckoo", tuple.String())
 		if err != nil {
 			return erx.W(err)
 		}
@@ -252,7 +252,7 @@ func (r *ZanzibarLogicImpl) Delete(c context.Context, in *authzpbv1.DeleteTuples
 		if r.rdb != nil {
 			go func() {
 				for _, tuple := range tuples {
-					_, err := redisx.CuckooFilterDel(c, r.rdb, "zanzibar:cuckoo", tuple.String())
+					_, err := cuckoofilter.Del(c, r.rdb, "zanzibar:cuckoo", tuple.String())
 					if err != nil {
 						continue
 					}
